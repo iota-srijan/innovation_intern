@@ -29,9 +29,9 @@ export default function SignIn() {
       setUserType('pro')
       navigate('/pro-dashboard')
     } else {
-      // no plan param — Google defaults to pro
-      setUserType('pro')
-      navigate('/pro-dashboard')
+      // no plan param — Google defaults to free
+      setUserType('free')
+      navigate('/dashboard')
     }
   }
 

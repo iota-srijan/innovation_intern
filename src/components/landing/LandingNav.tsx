@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 
 const navLinks = [
@@ -13,6 +13,7 @@ const navLinks = [
 export function LandingNav() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 24);
@@ -59,20 +60,18 @@ export function LandingNav() {
 
         {/* Desktop CTA */}
         <div className="hidden items-center gap-3 md:flex">
-          <Link
-            to="/signin"
-            state={{ plan: 'free', returnTo: '/dashboard' }}
+          <button
+            onClick={() => navigate('/signin')}
             className="text-sm font-medium text-white/60 transition-colors hover:text-white"
           >
             Sign in
-          </Link>
-          <Link
-            to="/signin"
-            state={{ plan: 'free', returnTo: '/dashboard' }}
+          </button>
+          <button
+            onClick={() => navigate('/signin')}
             className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-md shadow-indigo-600/20 transition-all hover:bg-indigo-500 hover:shadow-indigo-500/30 active:scale-[0.98]"
           >
             Get started
-          </Link>
+          </button>
         </div>
 
         {/* Mobile menu button */}
@@ -106,20 +105,18 @@ export function LandingNav() {
                 </a>
               ))}
               <div className="mt-4 flex flex-col gap-2">
-                <Link
-                  to="/signin"
-                  state={{ plan: 'free', returnTo: '/dashboard' }}
+                <button
+                  onClick={() => navigate('/signin')}
                   className="rounded-lg border border-white/10 px-4 py-2.5 text-center text-sm font-medium text-white/70 transition-colors hover:border-white/20 hover:text-white"
                 >
                   Sign in
-                </Link>
-                <Link
-                  to="/signin"
-                  state={{ plan: 'free', returnTo: '/dashboard' }}
+                </button>
+                <button
+                  onClick={() => navigate('/signin')}
                   className="rounded-lg bg-indigo-600 px-4 py-2.5 text-center text-sm font-semibold text-white"
                 >
                   Get started
-                </Link>
+                </button>
               </div>
             </nav>
           </motion.div>

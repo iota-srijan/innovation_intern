@@ -275,7 +275,7 @@ export function HeroSection() {
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </button>
             <button
-              onClick={() => { setUserType('pro'); navigate('/pro-dashboard') }}
+              onClick={() => navigate('/signin?plan=free')}
               className="inline-flex items-center gap-2 rounded-xl border border-white/10 px-6 py-3 text-sm font-semibold text-white/70 transition-all hover:border-white/20 hover:text-white"
             >
               View demo dashboard
