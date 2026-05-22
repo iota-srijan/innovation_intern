@@ -1,0 +1,130 @@
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Link } from "react-router-dom";
+import { Menu, X } from "lucide-react";
+
+const navLinks = [
+  { label: "Features", href: "#features" },
+  { label: "Workflow", href: "#workflow" },
+  { label: "Pricing", href: "#pricing" },
+  { label: "Docs", href: "#docs" },
+];
+
+export function LandingNav() {
+  const [scrolled, setScrolled] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+    const handler = () => setScrolled(window.scrollY > 24);
+    window.addEventListener("scroll", handler, { passive: true });
+    return () => window.removeEventListener("scroll", handler);
+  }, []);
+
+  return (
+    <motion.header
+      initial={{ opacity: 0, y: -12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+      className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
+        scrolled
+          ? "border-b border-white/8 bg-[#0a0a0b]/90 backdrop-blur-xl"
+          : "bg-transparent"
+      }`}
+    >
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
+        {/* Logo */}
+        <Link to="/" className="flex items-center gap-2.5 focus-visible:outline-none">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 shadow-lg shadow-indigo-600/30">
+            <svg viewBox="0 0 32 32" className="h-5 w-5" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <polygon points="16,4 28,11 16,18 4,11" fill="white" opacity="0.95" />
+              <polygon points="4,11 16,18 16,28 4,21" fill="white" opacity="0.65" />
+              <polygon points="28,11 16,18 16,28 28,21" fill="white" opacity="0.45" />
+            </svg>
+          </div>
+          <span className="text-[15px] font-semibold tracking-tight text-white">StockPilot</span>
+        </Link>
+
+        {/* Desktop Nav */}
+        <nav className="hidden items-center gap-1 md:flex">
+          {navLinks.map((link) => (
+            <a
+              key={link.href}
+              href={link.href}
+              className="rounded-md px-3 py-1.5 text-sm font-medium text-white/60 transition-colors hover:text-white"
+            >
+              {link.label}
+            </a>
+          ))}
+        </nav>
+
+        {/* Desktop CTA */}
+        <div className="hidden items-center gap-3 md:flex">
+          <Link
+            to="/signin"
+            state={{ plan: 'free', returnTo: '/dashboard' }}
+            className="text-sm font-medium text-white/60 transition-colors hover:text-white"
+          >
+            Sign in
+          </Link>
+          <Link
+            to="/signin"
+            state={{ plan: 'free', returnTo: '/dashboard' }}
+            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-md shadow-indigo-600/20 transition-all hover:bg-indigo-500 hover:shadow-indigo-500/30 active:scale-[0.98]"
+          >
+            Get started
+          </Link>
+        </div>
+
+        {/* Mobile menu button */}
+        <button
+          onClick={() => setMobileOpen(!mobileOpen)}
+          className="rounded-md p-2 text-white/60 hover:text-white md:hidden"
+        >
+          {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        </button>
+      </div>
+
+      {/* Mobile Menu */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
+            className="border-t border-white/8 bg-[#0a0a0b]/95 px-6 pb-6 backdrop-blur-xl md:hidden"
+          >
+            <nav className="flex flex-col gap-1 pt-4">
+              {navLinks.map((link) => (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setMobileOpen(false)}
+                  className="rounded-md px-3 py-2.5 text-sm font-medium text-white/60 transition-colors hover:bg-white/5 hover:text-white"
+                >
+                  {link.label}
+                </a>
+              ))}
+              <div className="mt-4 flex flex-col gap-2">
+                <Link
+                  to="/signin"
+                  state={{ plan: 'free', returnTo: '/dashboard' }}
+                  className="rounded-lg border border-white/10 px-4 py-2.5 text-center text-sm font-medium text-white/70 transition-colors hover:border-white/20 hover:text-white"
+                >
+                  Sign in
+                </Link>
+                <Link
+                  to="/signin"
+                  state={{ plan: 'free', returnTo: '/dashboard' }}
+                  className="rounded-lg bg-indigo-600 px-4 py-2.5 text-center text-sm font-semibold text-white"
+                >
+                  Get started
+                </Link>
+              </div>
+            </nav>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.header>
+  );
+}
