@@ -4,6 +4,7 @@ import { MoreHorizontal, Sparkles, Package, AlertTriangle, FileText, TrendingUp 
 import { AppShell } from "../components/layout/AppShell";
 import { useUserType } from "../context/UserTypeContext";
 import { useAuth } from "../context/AuthContext";
+import { useItems } from "../hooks/useItems";
 import {
   AreaChart,
   Area,
@@ -184,6 +185,14 @@ export default function ProDashboard() {
   const [spendTab, setSpendTab] = useState("Monthly");
   const [invoiceTab, setInvoiceTab] = useState("Yearly");
 
+  const { data: items = [] } = useItems();
+  const totalSKUs = items.length;
+  const lowStockItems = items.filter(i => i.quantity <= i.reorder_threshold);
+  const lowStockCount = lowStockItems.length;
+  const fulfillmentRate = items.length > 0
+    ? ((items.filter(i => i.quantity > 0).length / items.length) * 100).toFixed(1)
+    : '0.0';
+
   const tabs = ["All", "Daily", "Weekly", "Monthly", "Yearly"];
 
   return (
@@ -202,9 +211,9 @@ export default function ProDashboard() {
               </div>
             </div>
             <div className="flex items-baseline gap-2 mt-2">
-              <span className="text-3xl font-bold text-zinc-900 dark:text-white tracking-tight">12,847</span>
+              <span className="text-3xl font-bold text-zinc-900 dark:text-white tracking-tight">{totalSKUs.toLocaleString()}</span>
               <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400">
-                +3.2%
+                Live
               </span>
             </div>
             <span className="text-[10px] text-zinc-500 mt-2 block">
@@ -222,9 +231,9 @@ export default function ProDashboard() {
               </div>
             </div>
             <div className="flex items-baseline gap-2 mt-2">
-              <span className="text-3xl font-bold text-red-400 tracking-tight">34</span>
+              <span className="text-3xl font-bold text-red-400 tracking-tight">{lowStockCount}</span>
               <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-red-500/15 text-red-400">
-                Needs Action
+                {lowStockCount > 0 ? 'Needs Action' : 'All Good'}
               </span>
             </div>
             <span className="text-[10px] text-zinc-500 mt-2 block">
@@ -260,9 +269,9 @@ export default function ProDashboard() {
               </div>
             </div>
             <div className="flex items-baseline gap-2 mt-2">
-              <span className="text-3xl font-bold text-zinc-900 dark:text-white tracking-tight">98.1%</span>
+              <span className="text-3xl font-bold text-zinc-900 dark:text-white tracking-tight">{fulfillmentRate}%</span>
               <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400">
-                +0.4%
+                Live
               </span>
             </div>
             <span className="text-[10px] text-zinc-500 mt-2 block">

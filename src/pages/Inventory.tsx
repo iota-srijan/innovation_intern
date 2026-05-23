@@ -1,13 +1,15 @@
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, AlertCircle } from "lucide-react";
 import { AppShell } from "../components/layout/AppShell";
 import { InventoryTable } from "../components/inventory/InventoryTable";
 import { AddEditItemModal } from "../components/inventory/AddEditItemModal";
+import { useItems } from "../hooks/useItems";
 import type { InventoryItem } from "../types";
 
 export default function Inventory() {
   const [modalOpen, setModalOpen] = useState(false);
   const [itemToEdit, setItemToEdit] = useState<InventoryItem | null>(null);
+  const { isLoading, error } = useItems();
 
   const handleOpenAddModal = () => {
     setItemToEdit(null);
@@ -39,7 +41,30 @@ export default function Inventory() {
           </button>
         </div>
 
-        <InventoryTable onEdit={handleOpenEditModal} />
+        {/* Loading skeleton */}
+        {isLoading && (
+          <div className="flex flex-col gap-2">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div
+                key={i}
+                className="animate-pulse bg-zinc-100 dark:bg-zinc-800 h-10 rounded-lg"
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Error state */}
+        {error && !isLoading && (
+          <div className="flex flex-col items-center justify-center gap-3 py-20 text-zinc-500 dark:text-zinc-400">
+            <AlertCircle className="h-8 w-8 text-red-400" />
+            <span className="text-sm">Failed to load inventory</span>
+          </div>
+        )}
+
+        {/* Table (only rendered when not loading and no error) */}
+        {!isLoading && !error && (
+          <InventoryTable onEdit={handleOpenEditModal} />
+        )}
       </div>
 
       <AddEditItemModal

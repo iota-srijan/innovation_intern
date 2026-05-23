@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ArrowUpRight, MoreHorizontal, Zap } from "lucide-react";
 import { AppShell } from "../components/layout/AppShell";
+import { useItems } from "../hooks/useItems";
 import {
   LineChart,
   Line,
@@ -156,6 +157,14 @@ const InvoiceTooltip = ({ active, payload }: any) => {
 export default function Dashboard() {
   const [spendTab, setSpendTab] = useState("Monthly");
   const [invoiceTab, setInvoiceTab] = useState("Yearly");
+  const { data: items = [] } = useItems();
+
+  const totalSKUs = items.length;
+  const lowStockItems = items.filter(i => i.quantity <= i.reorder_threshold);
+  const lowStockCount = lowStockItems.length;
+  const fulfillmentRate = items.length > 0
+    ? ((items.filter(i => i.quantity > 0).length / items.length) * 100).toFixed(1)
+    : '0.0';
 
   const tabs = ["All", "Daily", "Weekly", "Monthly", "Yearly"];
 
@@ -171,9 +180,9 @@ export default function Dashboard() {
             <div className="text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-4">Overview</div>
             <div className="flex flex-col gap-3">
               {[
-                { label: "Total Orders", value: "13.7K", badge: "+8.2%", green: true },
-                { label: "Qty Ordered", value: "98.6K", badge: "+4.8%", green: true },
-                { label: "Procurement ROI", value: "312%", badge: "+0.2%", green: true },
+                { label: "Total SKUs", value: totalSKUs.toLocaleString(), badge: "Live", green: true },
+                { label: "Low Stock Items", value: String(lowStockCount), badge: lowStockCount > 0 ? "Alert" : "OK", green: lowStockCount === 0 },
+                { label: "Fulfillment Rate", value: `${fulfillmentRate}%`, badge: "Live", green: true },
               ].map((s) => (
                 <div key={s.label}>
                   <div className="flex items-baseline gap-1.5">
