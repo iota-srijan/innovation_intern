@@ -8,22 +8,32 @@ export default function AuthCallback() {
   const { setUserType } = useUserType()
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session) {
-        const intendedPlan = localStorage.getItem('sp-intended-plan') ?? 'free'
-        setUserType(intendedPlan as 'free' | 'pro')
-        localStorage.removeItem('sp-intended-plan')
-        if (intendedPlan === 'pro') {
-          navigate('/pro-dashboard', { replace: true })
-        } else {
-          navigate('/dashboard', { replace: true })
-        }
-      } else if (event === 'SIGNED_OUT') {
-        navigate('/signin', { replace: true })
-      }
-    })
+    const handleCallback = async () => {
+      const { data, error } = await supabase.auth.exchangeCodeForSession(
+        window.location.href
+      )
 
-    return () => subscription.unsubscribe()
+      if (error || !data.session) {
+        const { data: sessionData } = await supabase.auth.getSession()
+        if (sessionData.session) {
+          redirect(sessionData.session)
+        } else {
+          navigate('/signin', { replace: true })
+        }
+        return
+      }
+
+      redirect(data.session)
+    }
+
+    const redirect = (_session: any) => {
+      const intendedPlan = localStorage.getItem('sp-intended-plan') ?? 'free'
+      setUserType(intendedPlan as 'free' | 'pro')
+      localStorage.removeItem('sp-intended-plan')
+      navigate(intendedPlan === 'pro' ? '/pro-dashboard' : '/dashboard', { replace: true })
+    }
+
+    handleCallback()
   }, [])
 
   return (
