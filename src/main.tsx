@@ -19,6 +19,7 @@ import { ProtectedRoute, AdminRoute } from "./components/ProtectedRoute";
 
 import LandingPage from "./pages/LandingPage";
 import SignIn from "./pages/SignIn";
+import AuthCallback from "./pages/AuthCallback";
 import Dashboard from "./pages/Dashboard";
 import ProDashboard from "./pages/ProDashboard";
 import Inventory from "./pages/Inventory";
@@ -39,6 +40,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               {/* Public routes */}
               <Route path="/" element={<LandingPage />} />
               <Route path="/signin" element={<SignIn />} />
+              <Route path="/auth/callback" element={<AuthCallback />} />
 
               {/* Protected app routes */}
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />

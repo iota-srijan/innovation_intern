@@ -1,87 +1,96 @@
-import { createContext, useContext, useState, type ReactNode } from 'react'
-
-export type UserRole = 'free' | 'pro' | 'admin' | null
-
-interface AuthUser {
-  name: string
-  email: string
-  avatar: string
-  role: UserRole
-  provider: 'google' | 'microsoft' | 'admin'
-}
+import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
+import { type User, type Session } from '@supabase/supabase-js'
+import { supabase } from '../lib/supabaseClient'
 
 interface AuthContextValue {
-  user: AuthUser | null
+  user: User | null
+  session: Session | null
   isAuthenticated: boolean
-  signInWithGoogle: (requestedRole?: UserRole) => void
-  signInWithMicrosoft: (requestedRole?: UserRole) => void
-  signInAsAdmin: () => void
-  signOut: () => void
+  isLoading: boolean
+  signInWithGoogle: () => Promise<void>
+  signInAsAdmin: (email: string, password: string) => Promise<boolean>
+  signOut: () => Promise<void>
+  userRole: 'free' | 'pro' | 'admin' | null
 }
 
 const AuthContext = createContext<AuthContextValue>({
   user: null,
+  session: null,
   isAuthenticated: false,
-  signInWithGoogle: () => {},
-  signInWithMicrosoft: () => {},
-  signInAsAdmin: () => {},
-  signOut: () => {}
+  isLoading: true,
+  signInWithGoogle: async () => {},
+  signInAsAdmin: async () => false,
+  signOut: async () => {},
+  userRole: null
 })
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(() => {
-    const stored = localStorage.getItem('sp-auth-user')
-    return stored ? JSON.parse(stored) : null
-  })
+  const [user, setUser] = useState<User | null>(null)
+  const [session, setSession] = useState<Session | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [userRole, setUserRole] = useState<'free' | 'pro' | 'admin' | null>(null)
 
-  const persist = (u: AuthUser | null) => {
-    setUser(u)
-    if (u) {
-      localStorage.setItem('sp-auth-user', JSON.stringify(u))
-      localStorage.setItem('sp-user-type', u.role ?? 'free')
-    } else {
-      localStorage.removeItem('sp-auth-user')
-      localStorage.removeItem('sp-user-type')
-    }
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
+      setUser(session?.user ?? null)
+      if (session?.user) {
+        const stored = localStorage.getItem('sp-user-type') as 'free' | 'pro' | 'admin' | null
+        setUserRole(stored ?? 'free')
+      }
+      setIsLoading(false)
+    })
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session)
+      setUser(session?.user ?? null)
+      if (session?.user) {
+        const stored = localStorage.getItem('sp-user-type') as 'free' | 'pro' | 'admin' | null
+        setUserRole(stored ?? 'free')
+      } else {
+        setUserRole(null)
+      }
+      setIsLoading(false)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  const signInWithGoogle = async () => {
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`
+      }
+    })
   }
 
-  const signInWithGoogle = () => persist({
-    name: 'Shrijan Mishra',
-    email: 'shrijan@gmail.com',
-    avatar: 'SM',
-    role: 'pro',
-    provider: 'google'
-  })
+  const signInAsAdmin = async (email: string, password: string): Promise<boolean> => {
+    if (email === 'admin@stockpilot.inc' && password === 'admin123') {
+      localStorage.setItem('sp-user-type', 'admin')
+      setUserRole('admin')
+      return true
+    }
+    return false
+  }
 
-  const signInWithMicrosoft = (requestedRole?: UserRole) => persist({
-    name: 'Shrijan Mishra',
-    email: 'shrijan@outlook.com',
-    avatar: 'SM',
-    role: requestedRole || 'free',
-    provider: 'microsoft'
-  })
-
-  const signInAsAdmin = () => persist({
-    name: 'Admin',
-    email: 'admin@stockpilot.inc',
-    avatar: 'AD',
-    role: 'admin',
-    provider: 'admin'
-  })
-
-  const signOut = () => {
-    persist(null)
+  const signOut = async () => {
+    await supabase.auth.signOut()
     localStorage.removeItem('sp-user-type')
+    localStorage.removeItem('sp-auth-user')
+    setUserRole(null)
   }
 
   return (
     <AuthContext.Provider value={{
       user,
-      isAuthenticated: !!user,
+      session,
+      isAuthenticated: !!user || userRole === 'admin',
+      isLoading,
       signInWithGoogle,
-      signInWithMicrosoft,
       signInAsAdmin,
-      signOut
+      signOut,
+      userRole
     }}>
       {children}
     </AuthContext.Provider>

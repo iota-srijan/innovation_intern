@@ -25,14 +25,14 @@ const navItems = [
 
 export function Sidebar() {
   const location = useLocation();
-  const { user, signOut } = useAuth();
+  const { userRole, signOut } = useAuth();
   const { userType } = useUserType();
   const navigate = useNavigate();
 
   const goToDashboard = () => {
-    if (user?.role === 'admin') {
+    if (userRole === 'admin') {
       navigate('/admin')
-    } else if (user?.role === 'pro' || userType === 'pro') {
+    } else if (userRole === 'pro' || userType === 'pro') {
       navigate('/pro-dashboard')
     } else {
       navigate('/dashboard')
@@ -99,7 +99,7 @@ export function Sidebar() {
       {/* Bottom actions */}
       <div className="flex flex-col items-center gap-1 mt-auto">
         {/* Admin shield icon — only visible to admin users */}
-        {user?.role === 'admin' && (
+        {userRole === 'admin' && (
           <Link
             to="/admin"
             title="Admin Panel"
@@ -115,8 +115,8 @@ export function Sidebar() {
 
         {/* Logout */}
         <button
-          onClick={() => {
-            signOut();
+          onClick={async () => {
+            await signOut();
             toast.info("Signed out successfully");
             navigate("/signin");
           }}

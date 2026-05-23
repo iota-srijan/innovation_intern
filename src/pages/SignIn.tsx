@@ -9,44 +9,28 @@ export default function SignIn() {
   const location = useLocation()
   const { setUserType } = useUserType()
   const params = new URLSearchParams(location.search)
-  const intendedPlan = params.get('plan') // null if absent — no default
+  const intendedPlan = params.get('plan') ?? 'free'
 
-  const { signInWithGoogle, signInWithMicrosoft, signInAsAdmin } = useAuth()
+  const { signInWithGoogle, signInAsAdmin } = useAuth()
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
 
-  const handleGoogleSignIn = () => {
-    signInWithGoogle()
-    if (intendedPlan === 'free') {
-      setUserType('free')
-      navigate('/dashboard')
-    } else if (intendedPlan === 'pro') {
-      setUserType('pro')
-      navigate('/pro-dashboard')
-    } else {
-      // no plan param — Google defaults to free
-      setUserType('free')
-      navigate('/dashboard')
-    }
+  const handleGoogleSignIn = async () => {
+    localStorage.setItem('sp-intended-plan', intendedPlan)
+    await signInWithGoogle()
+    // Page will redirect to Google — no navigate() needed here
   }
 
-  const handleMicrosoftSignIn = () => {
-    signInWithMicrosoft()
-    if (intendedPlan === 'pro') {
-      setUserType('pro')
-      navigate('/pro-dashboard')
-    } else {
-      // free or no plan param — Microsoft defaults to free
-      setUserType('free')
-      navigate('/dashboard')
-    }
-  }
-
-  const handleAdminSignIn = () => {
-    if (email === 'admin@stockpilot.inc' && password === 'admin123') {
-      signInAsAdmin()
+  const handleAdminSignIn = async () => {
+    setError('')
+    setIsLoading(true)
+    const success = await signInAsAdmin(email, password)
+    setIsLoading(false)
+    if (success) {
+      setUserType('admin' as any)
       navigate('/admin')
     } else {
       setError('Invalid credentials')
@@ -85,10 +69,10 @@ export default function SignIn() {
           Continue with Google
         </button>
 
-        {/* Microsoft Button */}
+        {/* Microsoft Button — disabled (coming soon) */}
         <button
-          onClick={handleMicrosoftSignIn}
-          className="w-full flex items-center justify-center gap-3 py-2.5 bg-[#2f2f2f] hover:bg-[#3a3a3a] text-white font-medium text-sm rounded-xl border border-zinc-700 transition-colors cursor-pointer"
+          disabled
+          className="w-full flex items-center justify-center gap-3 py-2.5 bg-[#2f2f2f] text-zinc-500 font-medium text-sm rounded-xl border border-zinc-700 cursor-not-allowed opacity-50"
         >
           {/* Microsoft colored 4-square SVG */}
           <svg width="18" height="18" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg">
@@ -97,7 +81,7 @@ export default function SignIn() {
             <rect x="1" y="11" width="9" height="9" fill="#00A4EF"/>
             <rect x="11" y="11" width="9" height="9" fill="#FFB900"/>
           </svg>
-          Continue with Microsoft
+          Continue with Microsoft (coming soon)
         </button>
 
         {/* Divider */}
@@ -132,9 +116,10 @@ export default function SignIn() {
 
           <button
             onClick={handleAdminSignIn}
-            className="w-full py-2 bg-violet-700 hover:bg-violet-600 text-white text-sm font-medium rounded-lg mt-3 transition-colors cursor-pointer"
+            disabled={isLoading}
+            className="w-full py-2 bg-violet-700 hover:bg-violet-600 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg mt-3 transition-colors cursor-pointer"
           >
-            Sign in
+            {isLoading ? 'Signing in…' : 'Sign in'}
           </button>
 
           {error && (
