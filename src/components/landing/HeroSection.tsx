@@ -1,7 +1,6 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight, TrendingUp, AlertTriangle, Package } from "lucide-react";
-import { useUserType } from "../../context/UserTypeContext";
 
 const containerVariants = {
   hidden: {},
@@ -209,7 +208,6 @@ function MiniDashboard() {
 
 export function HeroSection() {
   const navigate = useNavigate();
-  const { setUserType } = useUserType();
 
   return (
     <section className="relative overflow-hidden pt-28 pb-16 md:pt-36 md:pb-24">

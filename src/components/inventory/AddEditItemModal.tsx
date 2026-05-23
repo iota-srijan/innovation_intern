@@ -65,7 +65,7 @@ export function AddEditItemModal({ open, onOpenChange, item }: AddEditItemModalP
   const onSubmit = async (data: ItemFormData) => {
     try {
       if (isEditing && item) {
-        await updateMutation.mutateAsync({ id: item.id, updates: data });
+        await updateMutation.mutateAsync({ id: item.id, ...data });
         toast.success("Item updated successfully");
       } else {
         await createMutation.mutateAsync(data);

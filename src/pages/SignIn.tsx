@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Layers, Shield } from 'lucide-react'
-import { useAuth, type UserRole } from '../context/AuthContext'
+import { useAuth } from '../context/AuthContext'
 import { useUserType } from '../context/UserTypeContext'
 
 export default function SignIn() {
@@ -16,9 +16,6 @@ export default function SignIn() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
-
-  const plan = location.state?.plan as UserRole | undefined
-  const returnTo = location.state?.returnTo
 
   const handleGoogleSignIn = () => {
     signInWithGoogle()
