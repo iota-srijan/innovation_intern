@@ -9,24 +9,41 @@ export default function AuthCallback() {
 
   useEffect(() => {
     const handleCallback = async () => {
-      const { data, error } = await supabase.auth.exchangeCodeForSession(
-        window.location.href
-      )
+      const hashParams = new URLSearchParams(window.location.hash.substring(1))
+      const queryParams = new URLSearchParams(window.location.search)
 
-      if (error || !data.session) {
-        const { data: sessionData } = await supabase.auth.getSession()
-        if (sessionData.session) {
-          redirect(sessionData.session)
-        } else {
-          navigate('/signin', { replace: true })
+      const accessToken = hashParams.get('access_token')
+      const code = queryParams.get('code')
+
+      if (accessToken) {
+        const { data, error: _e1 } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: hashParams.get('refresh_token') ?? ''
+        })
+        if (data.session) {
+          redirectUser()
+          return
         }
+      }
+
+      if (code) {
+        const { data, error: _e2 } = await supabase.auth.exchangeCodeForSession(code)
+        if (data.session) {
+          redirectUser()
+          return
+        }
+      }
+
+      const { data } = await supabase.auth.getSession()
+      if (data.session) {
+        redirectUser()
         return
       }
 
-      redirect(data.session)
+      navigate('/signin', { replace: true })
     }
 
-    const redirect = (_session: any) => {
+    const redirectUser = () => {
       const intendedPlan = localStorage.getItem('sp-intended-plan') ?? 'free'
       setUserType(intendedPlan as 'free' | 'pro')
       localStorage.removeItem('sp-intended-plan')
