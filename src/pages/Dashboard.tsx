@@ -14,6 +14,18 @@ import {
   ComposedChart,
 } from "recharts";
 
+interface ExtendedItem {
+  id: string;
+  name: string;
+  sku: string;
+  quantity: number;
+  min_quantity: number;
+  unit_price?: number;
+  reorder_threshold: number;
+  supplier: string;
+  created_at: string;
+}
+
 // ── Mini spark data ──────────────────────────────────────────
 const poData = [
   { v: 3420 }, { v: 3180 }, { v: 3500 }, { v: 3050 },
@@ -157,14 +169,19 @@ const InvoiceTooltip = ({ active, payload }: any) => {
 export default function Dashboard() {
   const [spendTab, setSpendTab] = useState("Monthly");
   const [invoiceTab, setInvoiceTab] = useState("Yearly");
-  const { data: items = [] } = useItems();
+  const { data = [] } = useItems();
+  const items = data as any[] as ExtendedItem[];
 
   const totalSKUs = items.length;
-  const lowStockItems = items.filter(i => i.quantity <= i.reorder_threshold);
+  const lowStockItems = items.filter(i => i.quantity <= i.min_quantity);
   const lowStockCount = lowStockItems.length;
   const fulfillmentRate = items.length > 0
     ? ((items.filter(i => i.quantity > 0).length / items.length) * 100).toFixed(1)
     : '0.0';
+  const totalValue = items.reduce((sum, i) => sum + (i.quantity * (i.unit_price || 0)), 0);
+  const totalValueFormatted = totalValue >= 1000000
+    ? `$${(totalValue / 1000000).toFixed(2)}M`
+    : `$${(totalValue / 1000).toFixed(1)}K`;
 
   const tabs = ["All", "Daily", "Weekly", "Monthly", "Yearly"];
 
@@ -183,6 +200,7 @@ export default function Dashboard() {
                 { label: "Total SKUs", value: totalSKUs.toLocaleString(), badge: "Live", green: true },
                 { label: "Low Stock Items", value: String(lowStockCount), badge: lowStockCount > 0 ? "Alert" : "OK", green: lowStockCount === 0 },
                 { label: "Fulfillment Rate", value: `${fulfillmentRate}%`, badge: "Live", green: true },
+                { label: "Inventory Value", value: totalValueFormatted, badge: "Live", green: true },
               ].map((s) => (
                 <div key={s.label}>
                   <div className="flex items-baseline gap-1.5">
@@ -372,7 +390,7 @@ export default function Dashboard() {
                     onClick={() => setSpendTab(t)}
                     className={`px-2 py-1 rounded-md text-[10px] transition-colors ${
                       spendTab === t
-                        ? "bg-violet-700 text-white"
+                        ? "bg-violet-750 text-white"
                         : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300"
                     }`}
                   >
@@ -451,7 +469,7 @@ export default function Dashboard() {
                     onClick={() => setInvoiceTab(t)}
                     className={`px-2 py-1 rounded-md text-[10px] transition-colors ${
                       invoiceTab === t
-                        ? "bg-violet-700 text-white"
+                        ? "bg-violet-750 text-white"
                         : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300"
                     }`}
                   >

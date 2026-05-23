@@ -8,14 +8,26 @@ import { useItems } from "../hooks/useItems";
 import {
   AreaChart,
   Area,
-  Line,
-  Bar,
   XAxis,
   YAxis,
   Tooltip,
   ResponsiveContainer,
+  Bar,
+  Line,
   ComposedChart,
 } from "recharts";
+
+interface ExtendedItem {
+  id: string;
+  name: string;
+  sku: string;
+  quantity: number;
+  min_quantity: number;
+  unit_price?: number;
+  reorder_threshold: number;
+  supplier: string;
+  created_at: string;
+}
 
 // ── Mock data for the Pro-exclusive AreaChart ────────────────
 const areaChartData: Record<string, { date: string; qty: number }[]> = {
@@ -185,13 +197,32 @@ export default function ProDashboard() {
   const [spendTab, setSpendTab] = useState("Monthly");
   const [invoiceTab, setInvoiceTab] = useState("Yearly");
 
-  const { data: items = [] } = useItems();
+  const { data = [] } = useItems();
+  const items = data as any[] as ExtendedItem[];
+
   const totalSKUs = items.length;
-  const lowStockItems = items.filter(i => i.quantity <= i.reorder_threshold);
+  const lowStockItems = items.filter(i => i.quantity <= i.min_quantity);
   const lowStockCount = lowStockItems.length;
   const fulfillmentRate = items.length > 0
     ? ((items.filter(i => i.quantity > 0).length / items.length) * 100).toFixed(1)
     : '0.0';
+  const totalValue = items.reduce((sum, i) => sum + (i.quantity * (i.unit_price || 0)), 0);
+  const totalValueFormatted = totalValue >= 1000000
+    ? `$${(totalValue / 1000000).toFixed(2)}M`
+    : `$${(totalValue / 1000).toFixed(1)}K`;
+
+  const restockItems = items
+    .filter(i => i.quantity <= i.min_quantity)
+    .sort((a, b) => (a.quantity / a.min_quantity) - (b.quantity / b.min_quantity))
+    .slice(0, 4)
+    .map(i => ({
+      sku: i.sku,
+      name: i.name,
+      qty: i.quantity,
+      urgency: i.quantity === 0 ? 'Critical' : i.quantity <= i.min_quantity * 0.3 ? 'Critical' : i.quantity <= i.min_quantity * 0.6 ? 'Low' : 'Healthy'
+    }));
+
+  const maxQty = items.length > 0 ? Math.max(1, ...items.map(i => i.quantity || 0)) * 10 : 6000;
 
   const tabs = ["All", "Daily", "Weekly", "Monthly", "Yearly"];
 
@@ -237,26 +268,26 @@ export default function ProDashboard() {
               </span>
             </div>
             <span className="text-[10px] text-zinc-500 mt-2 block">
-              12 items are currently below critical safety levels
+              {lowStockCount} items are currently below critical safety levels
             </span>
           </div>
 
-          {/* Card 3: Open POs */}
+          {/* Card 3: Inventory Value */}
           <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 flex flex-col justify-between hover:border-zinc-300 dark:hover:border-zinc-700 transition-all duration-200">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Open POs</span>
+              <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Inventory Value</span>
               <div className="p-1.5 bg-blue-500/10 text-blue-400 rounded-lg">
                 <FileText className="h-4 w-4" />
               </div>
             </div>
             <div className="flex items-baseline gap-2 mt-2">
-              <span className="text-3xl font-bold text-zinc-900 dark:text-white tracking-tight">128</span>
+              <span className="text-3xl font-bold text-zinc-900 dark:text-white tracking-tight">{totalValueFormatted}</span>
               <span className="text-[10px] font-semibold text-blue-400">
-                $2.4M value
+                Live
               </span>
             </div>
             <span className="text-[10px] text-zinc-500 mt-2 block">
-              Estimated arrival: 3 transit routes active
+              Estimated valuation of all tracked stock
             </span>
           </div>
 
@@ -327,6 +358,7 @@ export default function ProDashboard() {
                     tick={{ fontSize: 9, fill: "#71717a" }}
                     axisLine={false}
                     tickLine={false}
+                    domain={[0, maxQty]}
                     tickFormatter={(v) => `${(v / 1000).toFixed(1)}k`}
                   />
                   <Tooltip
@@ -364,25 +396,32 @@ export default function ProDashboard() {
             </div>
 
             <div className="divide-y divide-zinc-200 dark:divide-zinc-800 flex-1 flex flex-col justify-center">
-              {[
-                { id: "SKU-992", name: "MacBook Pro M3 Max", qty: 12, label: "Critical", badgeClass: "bg-red-500/20 text-red-400" },
-                { id: "SKU-184", name: "Dell UltraSharp 32\"", qty: 45, label: "Low", badgeClass: "bg-amber-500/20 text-amber-400" },
-                { id: "SKU-223", name: "Sony WH-1000XM5", qty: 182, label: "Healthy", badgeClass: "bg-green-500/20 text-green-400" },
-                { id: "SKU-445", name: "Logitech MX Master 3S", qty: 89, label: "Low", badgeClass: "bg-amber-500/20 text-amber-400" },
-              ].map((row) => (
-                <div key={row.id} className="flex items-center justify-between py-3 text-xs last:border-b-0">
-                  <div className="flex items-center">
-                    <span className="text-zinc-500 dark:text-zinc-600 font-mono text-[10px] mr-2.5 w-14 shrink-0">{row.id}</span>
-                    <span className="text-zinc-900 dark:text-zinc-200 font-medium">{row.name}</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-zinc-500 dark:text-zinc-400 mr-2">Qty: {row.qty}</span>
-                    <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${row.badgeClass}`}>
-                      {row.label}
-                    </span>
-                  </div>
+              {restockItems.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-sm text-zinc-500">
+                  All stock levels healthy
                 </div>
-              ))}
+              ) : (
+                restockItems.map((row) => (
+                  <div key={row.sku} className="flex items-center justify-between py-3 text-xs last:border-b-0">
+                    <div className="flex items-center">
+                      <span className="text-zinc-500 dark:text-zinc-600 font-mono text-[10px] mr-2.5 w-14 shrink-0">{row.sku}</span>
+                      <span className="text-zinc-900 dark:text-zinc-200 font-medium">{row.name}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-zinc-500 dark:text-zinc-400 mr-2">Qty: {row.qty}</span>
+                      <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${
+                        row.urgency === 'Critical'
+                          ? 'bg-red-500/20 text-red-400'
+                          : row.urgency === 'Low'
+                          ? 'bg-amber-500/20 text-amber-400'
+                          : 'bg-green-500/20 text-green-400'
+                      }`}>
+                        {row.urgency}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
@@ -559,7 +598,7 @@ export default function ProDashboard() {
 
         </div>
 
-        </div>
+      </div>
     </AppShell>
   );
 }
