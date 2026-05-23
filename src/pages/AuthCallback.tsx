@@ -8,8 +8,8 @@ export default function AuthCallback() {
   const { setUserType } = useUserType()
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session) {
         const intendedPlan = localStorage.getItem('sp-intended-plan') ?? 'free'
         setUserType(intendedPlan as 'free' | 'pro')
         localStorage.removeItem('sp-intended-plan')
@@ -18,10 +18,12 @@ export default function AuthCallback() {
         } else {
           navigate('/dashboard', { replace: true })
         }
-      } else {
+      } else if (event === 'SIGNED_OUT') {
         navigate('/signin', { replace: true })
       }
     })
+
+    return () => subscription.unsubscribe()
   }, [])
 
   return (
