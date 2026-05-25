@@ -1,4 +1,3 @@
-import React from "react";
 import ReactDOM from "react-dom/client";
 import {
   BrowserRouter,
@@ -31,8 +30,7 @@ import Profile from "./pages/Profile";
 import AdminDashboard from "./pages/AdminDashboard";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <QueryClientProvider client={queryClient}>
+  <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <UserTypeProvider>
           <BrowserRouter>
@@ -64,6 +62,5 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           </BrowserRouter>
         </UserTypeProvider>
       </AuthProvider>
-    </QueryClientProvider>
-  </React.StrictMode>
+  </QueryClientProvider>
 );

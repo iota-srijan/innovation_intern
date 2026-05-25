@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useUserType } from '../context/UserTypeContext'
@@ -6,32 +6,35 @@ import { useUserType } from '../context/UserTypeContext'
 export default function AuthCallback() {
   const navigate = useNavigate()
   const { setUserType } = useUserType()
+  const handled = useRef(false)
 
   useEffect(() => {
-    const redirectUser = (plan: string) => {
-      setUserType(plan as 'free' | 'pro')
+    if (handled.current) return
+    handled.current = true
+
+    const intendedPlan = localStorage.getItem('sp-intended-plan') ?? 'free'
+
+    const redirectUser = () => {
+      setUserType(intendedPlan as 'free' | 'pro')
       localStorage.removeItem('sp-intended-plan')
-      navigate(plan === 'pro' ? '/pro-dashboard' : '/dashboard', { replace: true })
+      navigate(intendedPlan === 'pro' ? '/pro-dashboard' : '/dashboard', { replace: true })
     }
 
-    const checkSession = async () => {
-      const intendedPlan = localStorage.getItem('sp-intended-plan') ?? 'free'
+    let attempts = 0
+    const maxAttempts = 10
 
+    const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (session) {
-        redirectUser(intendedPlan)
+        redirectUser()
         return
       }
-
-      await new Promise(resolve => setTimeout(resolve, 2000))
-
-      const { data: { session: session2 } } = await supabase.auth.getSession()
-      if (session2) {
-        redirectUser(intendedPlan)
-        return
+      attempts++
+      if (attempts < maxAttempts) {
+        setTimeout(checkSession, 500)
+      } else {
+        navigate('/signin', { replace: true })
       }
-
-      navigate('/signin', { replace: true })
     }
 
     checkSession()
