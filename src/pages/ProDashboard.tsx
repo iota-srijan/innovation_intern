@@ -22,7 +22,6 @@ interface ExtendedItem {
   name: string;
   sku: string;
   quantity: number;
-  min_quantity: number;
   unit_price?: number;
   reorder_threshold: number;
   supplier: string;
@@ -201,7 +200,7 @@ export default function ProDashboard() {
   const items = data as any[] as ExtendedItem[];
 
   const totalSKUs = items.length;
-  const lowStockItems = items.filter(i => i.quantity <= i.min_quantity);
+  const lowStockItems = items.filter(i => i.quantity <= i.reorder_threshold);
   const lowStockCount = lowStockItems.length;
   const fulfillmentRate = items.length > 0
     ? ((items.filter(i => i.quantity > 0).length / items.length) * 100).toFixed(1)
@@ -212,14 +211,14 @@ export default function ProDashboard() {
     : `$${(totalValue / 1000).toFixed(1)}K`;
 
   const restockItems = items
-    .filter(i => i.quantity <= i.min_quantity)
-    .sort((a, b) => (a.quantity / a.min_quantity) - (b.quantity / b.min_quantity))
+    .filter(i => i.quantity <= i.reorder_threshold)
+    .sort((a, b) => (a.quantity / a.reorder_threshold) - (b.quantity / b.reorder_threshold))
     .slice(0, 4)
     .map(i => ({
       sku: i.sku,
       name: i.name,
       qty: i.quantity,
-      urgency: i.quantity === 0 ? 'Critical' : i.quantity <= i.min_quantity * 0.3 ? 'Critical' : i.quantity <= i.min_quantity * 0.6 ? 'Low' : 'Healthy'
+      urgency: i.quantity === 0 ? 'Critical' : i.quantity <= i.reorder_threshold * 0.3 ? 'Critical' : i.quantity <= i.reorder_threshold * 0.6 ? 'Low' : 'Healthy'
     }));
 
   const maxQty = items.length > 0 ? Math.max(1, ...items.map(i => i.quantity || 0)) * 10 : 6000;

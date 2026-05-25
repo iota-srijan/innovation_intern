@@ -3,45 +3,7 @@ import { Search, AlertTriangle, ShoppingCart, RefreshCw, X, TrendingUp } from "l
 import { toast } from "sonner";
 import { AppShell } from "../components/layout/AppShell";
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip as RechartsTooltip, CartesianGrid } from 'recharts';
-
-const mockLowStock = [
-  {
-    id: "SKU-992",
-    name: 'MacBook Pro M3 Max',
-    warehouse: "WH-West (California)",
-    stock: 12,
-    threshold: 50,
-    urgency: "Critical",
-    dailyVelocity: 4.5,
-    suggestedReorder: 100,
-    supplier: "TechCorp Electronics",
-    sparkData: [{v:3},{v:4},{v:3.5},{v:5},{v:6},{v:7},{v:8}],
-  },
-  {
-    id: "SKU-104",
-    name: 'Dell UltraSharp 32"',
-    warehouse: "WH-East (New York)",
-    stock: 45,
-    threshold: 100,
-    urgency: "High",
-    dailyVelocity: 12.2,
-    suggestedReorder: 250,
-    supplier: "TechCorp Electronics",
-    sparkData: [{v:12},{v:11},{v:13},{v:12.5},{v:14},{v:13},{v:15}],
-  },
-  {
-    id: "SKU-445",
-    name: "Logitech MX Master 3S",
-    warehouse: "WH-Central (Texas)",
-    stock: 89,
-    threshold: 150,
-    urgency: "Medium",
-    dailyVelocity: 8.4,
-    suggestedReorder: 300,
-    supplier: "Global Logistics Ltd",
-    sparkData: [{v:8},{v:8.2},{v:7.8},{v:8.5},{v:8.4},{v:8.1},{v:8.4}],
-  },
-];
+import { useItems } from "../hooks/useItems";
 
 const forecastData = Array.from({ length: 14 }).map((_, i) => ({
   day: `Day ${i + 1}`,
@@ -73,11 +35,36 @@ export default function LowStockAlerts() {
   // Forecast Modal State
   const [isForecastOpen, setIsForecastOpen] = useState(false);
 
-  const filtered = mockLowStock.filter((item) => {
-    const matchesSearch = item.name.toLowerCase().includes(search.toLowerCase()) || item.id.toLowerCase().includes(search.toLowerCase());
+  const { data: items = [], isLoading } = useItems()
+
+  const lowStockItems = items
+    .filter(i => i.quantity <= i.reorder_threshold)
+    .map(i => ({
+      id: i.id,
+      name: i.name,
+      sku: i.sku,
+      quantity: i.quantity,
+      reorder_threshold: i.reorder_threshold,
+      supplier: i.supplier,
+      urgency: i.quantity === 0 ? 'Critical'
+        : i.quantity <= i.reorder_threshold * 0.3 ? 'Critical'
+        : i.quantity <= i.reorder_threshold * 0.6 ? 'High'
+        : 'Medium',
+      suggestedOrder: Math.max(i.reorder_threshold * 3 - i.quantity, 50),
+      // Use fake data for the spark line to maintain UI
+      dailyVelocity: Math.floor(Math.random() * 10) + 1,
+      sparkData: [{v:3},{v:4},{v:3.5},{v:5},{v:6},{v:7},{v:8}],
+    }))
+
+  const filtered = lowStockItems.filter((item) => {
+    const matchesSearch = item.name.toLowerCase().includes(search.toLowerCase()) || item.sku.toLowerCase().includes(search.toLowerCase());
     const matchesTab = filterTab === "All" || item.urgency === filterTab;
     return matchesSearch && matchesTab;
   });
+
+  const criticalCount = lowStockItems.filter(i => i.urgency === 'Critical').length
+  const highCount = lowStockItems.filter(i => i.urgency === 'High').length
+  const mediumCount = lowStockItems.filter(i => i.urgency === 'Medium').length
 
   const handleDraftSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -125,9 +112,9 @@ export default function LowStockAlerts() {
         {/* Summary stat cards */}
         <div className="mb-5 grid grid-cols-3 gap-4">
           {[
-            { label: "Critical Items", value: "1", color: "text-red-500" },
-            { label: "High Priority", value: "1", color: "text-amber-500" },
-            { label: "Medium Priority", value: "1", color: "text-orange-500" },
+            { label: "Critical Items", value: criticalCount, color: "text-red-500" },
+            { label: "High Priority", value: highCount, color: "text-amber-500" },
+            { label: "Medium Priority", value: mediumCount, color: "text-orange-500" },
           ].map((s) => (
             <div key={s.label} className="rounded-2xl border border-zinc-200 bg-white p-4 dark:border-white/8 dark:bg-zinc-900 shadow-sm">
               <div className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-1">{s.label}</div>
@@ -153,90 +140,107 @@ export default function LowStockAlerts() {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead className="border-b border-zinc-100 dark:border-white/8 bg-zinc-50 dark:bg-zinc-950">
-                <tr>
-                  {["Item Details", "Warehouse", "Stock Level", "Urgency", "Velocity", "Suggested Order", "Action"].map((h) => (
-                    <th key={h} className="px-4 py-3 text-[9px] font-semibold uppercase tracking-wide text-zinc-400">
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-100 dark:divide-white/6">
-                {filtered.map((item) => {
-                  const pct = (item.stock / item.threshold) * 100;
-                  const barColor = pct < 25 ? "bg-red-500" : pct < 50 ? "bg-amber-500" : "bg-green-500";
-                  
-                  return (
-                    <tr key={item.id} className="group transition-colors hover:bg-zinc-50 dark:hover:bg-white/4">
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-3">
-                          <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
-                            item.urgency === "Critical" ? "bg-red-500/10 text-red-500" : item.urgency === "High" ? "bg-amber-500/10 text-amber-500" : "bg-orange-500/10 text-orange-500"
-                          }`}>
-                            <AlertTriangle className="h-3.5 w-3.5" />
+            {isLoading ? (
+              <div className="p-8 space-y-4">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="h-16 w-full animate-pulse bg-zinc-100 dark:bg-white/5 rounded-xl"></div>
+                ))}
+              </div>
+            ) : lowStockItems.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <div className="h-12 w-12 rounded-full bg-green-500/10 flex items-center justify-center mb-3">
+                  <TrendingUp className="h-6 w-6 text-green-500" />
+                </div>
+                <h3 className="text-sm font-semibold text-zinc-900 dark:text-white mb-1">Inventory is Healthy</h3>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 text-center max-w-sm">
+                  No low stock items — all inventory is healthy and above reorder thresholds.
+                </p>
+              </div>
+            ) : (
+              <table className="w-full text-left">
+                <thead className="border-b border-zinc-100 dark:border-white/8 bg-zinc-50 dark:bg-zinc-950">
+                  <tr>
+                    {["Item Details", "Stock Level", "Urgency", "Velocity", "Suggested Order", "Action"].map((h) => (
+                      <th key={h} className="px-4 py-3 text-[9px] font-semibold uppercase tracking-wide text-zinc-400">
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-100 dark:divide-white/6">
+                  {filtered.map((item) => {
+                    const pct = (item.quantity / item.reorder_threshold) * 100;
+                    const barColor = pct < 25 ? "bg-red-500" : pct < 50 ? "bg-amber-500" : "bg-green-500";
+                    
+                    return (
+                      <tr key={item.id} className="group transition-colors hover:bg-zinc-50 dark:hover:bg-white/4">
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-3">
+                            <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
+                              item.urgency === "Critical" ? "bg-red-500/10 text-red-500" : item.urgency === "High" ? "bg-amber-500/10 text-amber-500" : "bg-orange-500/10 text-orange-500"
+                            }`}>
+                              <AlertTriangle className="h-3.5 w-3.5" />
+                            </div>
+                            <div>
+                              <div className="text-xs font-bold text-zinc-900 dark:text-zinc-200">{item.name}</div>
+                              <div className="text-[10px] font-mono text-zinc-500 mt-0.5">{item.sku}</div>
+                            </div>
                           </div>
-                          <div>
-                            <div className="text-xs font-bold text-zinc-900 dark:text-zinc-200">{item.name}</div>
-                            <div className="text-[10px] font-mono text-zinc-500 mt-0.5">{item.id}</div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-end gap-1 mb-1.5">
+                            <span className="text-sm font-black text-zinc-900 dark:text-zinc-200 leading-none">{item.quantity}</span>
+                            <span className="text-[10px] font-bold text-zinc-400">/ {item.reorder_threshold}</span>
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-xs font-medium text-zinc-600 dark:text-zinc-400">{item.warehouse}</td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-end gap-1 mb-1.5">
-                          <span className="text-sm font-black text-zinc-900 dark:text-zinc-200 leading-none">{item.stock}</span>
-                          <span className="text-[10px] font-bold text-zinc-400">/ {item.threshold}</span>
-                        </div>
-                        <div className="h-1.5 w-32 bg-slate-100 dark:bg-zinc-800 rounded-full overflow-hidden">
-                          <div className={`h-full rounded-full ${barColor}`} style={{ width: `${Math.min(pct, 100)}%` }} />
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <UrgencyBadge urgency={item.urgency} />
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-3">
-                          <div>
-                            <div className="text-xs font-bold text-zinc-700 dark:text-zinc-300">{item.dailyVelocity}/day</div>
-                            <div className="text-[10px] font-medium text-zinc-500 mt-0.5">Out in ~{Math.floor(item.stock / item.dailyVelocity)}d</div>
+                          <div className="h-1.5 w-32 bg-slate-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                            <div className={`h-full rounded-full ${barColor}`} style={{ width: `${Math.min(pct, 100)}%` }} />
                           </div>
-                          <div className="w-[60px] h-[24px]">
-                            <ResponsiveContainer width="100%" height="100%">
-                              <LineChart data={item.sparkData}>
-                                <Line 
-                                  type="monotone" 
-                                  dataKey="v" 
-                                  stroke={item.urgency === 'Critical' ? '#ef4444' : item.urgency === 'High' ? '#f59e0b' : '#3b82f6'} 
-                                  strokeWidth={1.5} 
-                                  dot={false} 
-                                  isAnimationActive={false}
-                                />
-                              </LineChart>
-                            </ResponsiveContainer>
+                        </td>
+                        <td className="px-4 py-3">
+                          <UrgencyBadge urgency={item.urgency} />
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-3">
+                            <div>
+                              <div className="text-xs font-bold text-zinc-700 dark:text-zinc-300">{item.dailyVelocity}/day</div>
+                              <div className="text-[10px] font-medium text-zinc-500 mt-0.5">Out in ~{Math.floor(item.quantity / item.dailyVelocity)}d</div>
+                            </div>
+                            <div className="w-[60px] h-[24px]">
+                              <ResponsiveContainer width="100%" height="100%">
+                                <LineChart data={item.sparkData}>
+                                  <Line 
+                                    type="monotone" 
+                                    dataKey="v" 
+                                    stroke={item.urgency === 'Critical' ? '#ef4444' : item.urgency === 'High' ? '#f59e0b' : '#3b82f6'} 
+                                    strokeWidth={1.5} 
+                                    dot={false} 
+                                    isAnimationActive={false}
+                                  />
+                                </LineChart>
+                              </ResponsiveContainer>
+                            </div>
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="inline-flex items-center rounded-lg bg-zinc-100 px-2.5 py-1 text-xs font-bold text-zinc-700 dark:bg-white/8 dark:text-zinc-300">
-                          +{item.suggestedReorder} units
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <button
-                          onClick={() => setDraftPO(item)}
-                          className="inline-flex items-center gap-1.5 rounded-lg bg-violet-700/10 px-3 py-1.5 text-[10px] font-bold text-violet-600 transition-colors hover:bg-violet-700/20 dark:text-violet-400"
-                        >
-                          <ShoppingCart className="h-3 w-3" />
-                          Draft PO
-                        </button>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="inline-flex items-center rounded-lg bg-zinc-100 px-2.5 py-1 text-xs font-bold text-zinc-700 dark:bg-white/8 dark:text-zinc-300">
+                            +{item.suggestedOrder} units
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <button
+                            onClick={() => setDraftPO(item)}
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-violet-700/10 px-3 py-1.5 text-[10px] font-bold text-violet-600 transition-colors hover:bg-violet-700/20 dark:text-violet-400"
+                          >
+                            <ShoppingCart className="h-3 w-3" />
+                            Draft PO
+                          </button>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
       </div>
@@ -254,15 +258,15 @@ export default function LowStockAlerts() {
             <form onSubmit={handleDraftSubmit} className="space-y-4 text-sm">
               <div>
                 <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">Supplier</label>
-                <input type="text" readOnly value={draftPO.supplier} className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-zinc-900 font-medium dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300" />
+                <input type="text" readOnly value={draftPO.supplier || 'Unknown'} className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-zinc-900 font-medium dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300" />
               </div>
               <div>
                 <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">SKU</label>
-                <input type="text" readOnly value={`${draftPO.id} - ${draftPO.name}`} className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-zinc-900 font-medium dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300" />
+                <input type="text" readOnly value={`${draftPO.sku} - ${draftPO.name}`} className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-zinc-900 font-medium dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300" />
               </div>
               <div>
                 <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">Order Quantity</label>
-                <input type="number" defaultValue={draftPO.suggestedReorder} className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-zinc-900 outline-none focus:border-violet-600 font-bold dark:border-zinc-700 dark:bg-zinc-950 dark:text-white" />
+                <input type="number" defaultValue={draftPO.suggestedOrder} className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-zinc-900 outline-none focus:border-violet-600 font-bold dark:border-zinc-700 dark:bg-zinc-950 dark:text-white" />
               </div>
               <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-zinc-200 dark:border-zinc-800">
                 <button type="button" onClick={() => setDraftPO(null)} className="rounded-xl px-4 py-2 font-bold text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800">Cancel</button>

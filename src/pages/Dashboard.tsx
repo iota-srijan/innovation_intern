@@ -19,7 +19,6 @@ interface ExtendedItem {
   name: string;
   sku: string;
   quantity: number;
-  min_quantity: number;
   unit_price?: number;
   reorder_threshold: number;
   supplier: string;
@@ -173,7 +172,7 @@ export default function Dashboard() {
   const items = data as any[] as ExtendedItem[];
 
   const totalSKUs = items.length;
-  const lowStockItems = items.filter(i => i.quantity <= i.min_quantity);
+  const lowStockItems = items.filter(i => i.quantity <= i.reorder_threshold);
   const lowStockCount = lowStockItems.length;
   const fulfillmentRate = items.length > 0
     ? ((items.filter(i => i.quantity > 0).length / items.length) * 100).toFixed(1)
