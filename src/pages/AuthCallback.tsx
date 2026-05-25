@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useUserType } from '../context/UserTypeContext'
@@ -6,42 +6,11 @@ import { useUserType } from '../context/UserTypeContext'
 export default function AuthCallback() {
   const navigate = useNavigate()
   const { setUserType } = useUserType()
+  const handled = useRef(false)
 
   useEffect(() => {
-    const handleCallback = async () => {
-      const hashParams = new URLSearchParams(window.location.hash.substring(1))
-      const queryParams = new URLSearchParams(window.location.search)
-
-      const accessToken = hashParams.get('access_token')
-      const code = queryParams.get('code')
-
-      if (accessToken) {
-        const { data, error: _e1 } = await supabase.auth.setSession({
-          access_token: accessToken,
-          refresh_token: hashParams.get('refresh_token') ?? ''
-        })
-        if (data.session) {
-          redirectUser()
-          return
-        }
-      }
-
-      if (code) {
-        const { data, error: _e2 } = await supabase.auth.exchangeCodeForSession(code)
-        if (data.session) {
-          redirectUser()
-          return
-        }
-      }
-
-      const { data } = await supabase.auth.getSession()
-      if (data.session) {
-        redirectUser()
-        return
-      }
-
-      navigate('/signin', { replace: true })
-    }
+    if (handled.current) return
+    handled.current = true
 
     const redirectUser = () => {
       const intendedPlan = localStorage.getItem('sp-intended-plan') ?? 'free'
@@ -50,7 +19,33 @@ export default function AuthCallback() {
       navigate(intendedPlan === 'pro' ? '/pro-dashboard' : '/dashboard', { replace: true })
     }
 
-    handleCallback()
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        redirectUser()
+        return
+      }
+
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_IN' && session) {
+          subscription.unsubscribe()
+          redirectUser()
+        } else if (event === 'SIGNED_OUT') {
+          subscription.unsubscribe()
+          navigate('/signin', { replace: true })
+        }
+      })
+
+      setTimeout(() => {
+        subscription.unsubscribe()
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          if (session) {
+            redirectUser()
+          } else {
+            navigate('/signin', { replace: true })
+          }
+        })
+      }, 5000)
+    })
   }, [])
 
   return (
