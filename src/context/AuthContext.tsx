@@ -9,6 +9,7 @@ type UserRole = 'student' | 'faculty' | 'admin' | 'blocked' | null
 const getUserRole = (email: string): UserRole => {
   if (email === ADMIN_EMAIL) return 'admin'
   if (email === 'srijanmishra1669@gmail.com') return 'student'
+  if (email === 'mishrasrijan2305@gmail.com') return 'faculty'
   if (email.endsWith('@opju.ac.in')) return 'faculty'
   if (email.endsWith('@opju.edu.in')) return 'student'
   return 'blocked'

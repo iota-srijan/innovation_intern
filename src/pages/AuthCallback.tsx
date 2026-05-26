@@ -28,6 +28,14 @@ export default function AuthCallback() {
           return
         }
 
+        // Test faculty account — checked before domain rules
+        if (email === 'mishrasrijan2305@gmail.com') {
+          setUserType('faculty' as any)
+          localStorage.setItem('sp-user-type', 'faculty')
+          navigate('/faculty-dashboard', { replace: true })
+          return
+        }
+
         // Block non-OPJU emails
         if (
           !email.endsWith('@opju.edu.in') &&
