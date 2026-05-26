@@ -9,7 +9,7 @@ export default function SignIn() {
   const location = useLocation()
   const { setUserType } = useUserType()
   const params = new URLSearchParams(location.search)
-  const intendedPlan = params.get('plan') ?? 'free'
+  const errorParam = params.get('error')
 
   const { signInWithGoogle, signInAsAdmin } = useAuth()
 
@@ -19,7 +19,6 @@ export default function SignIn() {
   const [isLoading, setIsLoading] = useState(false)
 
   const handleGoogleSignIn = async () => {
-    localStorage.setItem('sp-intended-plan', intendedPlan)
     await signInWithGoogle()
     // Page will redirect to Google — no navigate() needed here
   }
@@ -48,16 +47,23 @@ export default function SignIn() {
 
         {/* Headings */}
         <h1 className="text-xl font-semibold text-white text-center mb-1">
-          Sign in to StockPilot
+          Sign in to IdeaLab
         </h1>
         <p className="text-sm text-zinc-400 text-center mb-8">
-          Access your inventory dashboard
+          OPJU students and faculty only. Use your college Google account.
         </p>
+
+        {/* Blocked error from redirect */}
+        {errorParam === 'blocked' && (
+          <p className="text-xs text-red-400 text-center mb-4">
+            Access restricted to OPJU college emails only.
+          </p>
+        )}
 
         {/* Google Button */}
         <button
           onClick={handleGoogleSignIn}
-          className="w-full flex items-center justify-center gap-3 py-2.5 bg-white hover:bg-zinc-100 text-zinc-900 font-medium text-sm rounded-xl transition-colors cursor-pointer mb-3"
+          className="w-full flex items-center justify-center gap-3 py-2.5 bg-white hover:bg-zinc-100 text-zinc-900 font-medium text-sm rounded-xl transition-colors cursor-pointer mb-1"
         >
           {/* Google colored SVG */}
           <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
@@ -68,6 +74,11 @@ export default function SignIn() {
           </svg>
           Continue with Google
         </button>
+
+        {/* Domain hint */}
+        <p className="text-[10px] text-zinc-500 text-center mt-2 mb-4">
+          Only @opju.edu.in and @opju.ac.in emails are permitted
+        </p>
 
         {/* Microsoft Button — disabled (coming soon) */}
         <button

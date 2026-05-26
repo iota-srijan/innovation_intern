@@ -12,21 +12,41 @@ export default function AuthCallback() {
     if (handled.current) return
     handled.current = true
 
-    const intendedPlan = localStorage.getItem('sp-intended-plan') ?? 'free'
-
-    const redirectUser = () => {
-      setUserType(intendedPlan as 'free' | 'pro')
-      localStorage.removeItem('sp-intended-plan')
-      navigate(intendedPlan === 'pro' ? '/pro-dashboard' : '/dashboard', { replace: true })
-    }
-
     let attempts = 0
     const maxAttempts = 10
 
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (session) {
-        redirectUser()
+        const email = session.user.email ?? ''
+
+        // Block non-OPJU emails
+        if (
+          !email.endsWith('@opju.edu.in') &&
+          !email.endsWith('@opju.ac.in') &&
+          email !== 'admin@stockpilot.inc'
+        ) {
+          await supabase.auth.signOut()
+          navigate('/signin?error=blocked', { replace: true })
+          return
+        }
+
+        if (email.endsWith('@opju.ac.in')) {
+          setUserType('faculty' as any)
+          localStorage.setItem('sp-user-type', 'faculty')
+          navigate('/faculty-dashboard', { replace: true })
+          return
+        }
+
+        if (email.endsWith('@opju.edu.in')) {
+          setUserType('student' as any)
+          localStorage.setItem('sp-user-type', 'student')
+          navigate('/student-dashboard', { replace: true })
+          return
+        }
+
+        // admin@stockpilot.inc falls through to /admin (handled by admin login not OAuth)
+        navigate('/dashboard', { replace: true })
         return
       }
       attempts++

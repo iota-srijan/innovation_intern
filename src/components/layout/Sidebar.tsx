@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../../context/AuthContext";
-import { useUserType } from "../../context/UserTypeContext";
 
 const navItems = [
   { icon: LayoutDashboard, path: "/dashboard", label: "Dashboard" },
@@ -26,14 +25,15 @@ const navItems = [
 export function Sidebar() {
   const location = useLocation();
   const { userRole, signOut } = useAuth();
-  const { userType } = useUserType();
   const navigate = useNavigate();
 
   const goToDashboard = () => {
     if (userRole === 'admin') {
       navigate('/admin')
-    } else if (userRole === 'pro' || userType === 'pro') {
-      navigate('/pro-dashboard')
+    } else if (userRole === 'faculty') {
+      navigate('/faculty-dashboard')
+    } else if (userRole === 'student') {
+      navigate('/student-dashboard')
     } else {
       navigate('/dashboard')
     }
@@ -46,7 +46,11 @@ export function Sidebar() {
         location.pathname === "/purchase-orders/pending"
       );
     }
-    if (path === "/dashboard" && location.pathname === "/pro-dashboard") {
+    if (path === "/dashboard" && (
+      location.pathname === "/pro-dashboard" ||
+      location.pathname === "/student-dashboard" ||
+      location.pathname === "/faculty-dashboard"
+    )) {
       return true;
     }
     return location.pathname === path || location.pathname.startsWith(path + "/");
@@ -77,6 +81,11 @@ export function Sidebar() {
                 <Icon className="h-4 w-4" />
               </button>
             );
+          }
+
+          // Students only see Dashboard and Settings (inventory is read-only via StudentDashboard)
+          if (userRole === 'student' && path !== '/profile') {
+            return null;
           }
 
           return (

@@ -14,7 +14,7 @@ import "./index.css";
 import { queryClient } from "./lib/queryClient";
 import { UserTypeProvider } from "./context/UserTypeContext";
 import { AuthProvider } from "./context/AuthContext";
-import { ProtectedRoute, AdminRoute } from "./components/ProtectedRoute";
+import { ProtectedRoute, AdminRoute, StudentRoute, FacultyRoute } from "./components/ProtectedRoute";
 
 import LandingPage from "./pages/LandingPage";
 import SignIn from "./pages/SignIn";
@@ -28,6 +28,8 @@ import LowStockAlerts from "./pages/LowStockAlerts";
 import PendingPOs from "./pages/PendingPOs";
 import Profile from "./pages/Profile";
 import AdminDashboard from "./pages/AdminDashboard";
+import StudentDashboard from "./pages/StudentDashboard";
+import FacultyDashboard from "./pages/FacultyDashboard";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <QueryClientProvider client={queryClient}>
@@ -50,6 +52,10 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               <Route path="/alerts/low-stock" element={<ProtectedRoute><LowStockAlerts /></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+
+              {/* IdeaLab role-based routes */}
+              <Route path="/student-dashboard" element={<StudentRoute><StudentDashboard /></StudentRoute>} />
+              <Route path="/faculty-dashboard" element={<FacultyRoute><FacultyDashboard /></FacultyRoute>} />
 
               {/* Admin-only route */}
               <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />

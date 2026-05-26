@@ -14,7 +14,12 @@ serve(async (req) => {
   }
 
   try {
-    const { itemName, sku, quantity, reorderThreshold, supplierName } = await req.json()
+    const { itemName, sku, quantity, reorderThreshold, supplierName, toEmails } = await req.json()
+
+    // Use provided toEmails array or fall back to lab incharge
+    const recipients: string[] = Array.isArray(toEmails) && toEmails.length > 0
+      ? toEmails
+      : ['lab.incharge@opju.ac.in']
 
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -24,7 +29,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         from: 'StockPilot <onboarding@resend.dev>',
-        to: ['mishrasrijan2305@gmail.com'],
+        to: recipients,
         subject: `⚠️ Low Stock Alert: ${itemName}`,
         html: `
           <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px;">
