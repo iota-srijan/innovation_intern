@@ -20,6 +20,14 @@ export default function AuthCallback() {
       if (session) {
         const email = session.user.email ?? ''
 
+        // Test student account — checked before domain rules
+        if (email === 'srijanmishra1669@gmail.com') {
+          setUserType('student' as any)
+          localStorage.setItem('sp-user-type', 'student')
+          navigate('/student-dashboard', { replace: true })
+          return
+        }
+
         // Block non-OPJU emails
         if (
           !email.endsWith('@opju.edu.in') &&

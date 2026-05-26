@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Layers, Shield } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
@@ -17,6 +17,15 @@ export default function SignIn() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [showBlockedError, setShowBlockedError] = useState(false)
+
+  useEffect(() => {
+    if (errorParam === 'blocked') {
+      setShowBlockedError(true)
+      // Clear the query parameter so the error does not persist on page refresh/load
+      navigate('/signin', { replace: true })
+    }
+  }, [errorParam, navigate])
 
   const handleGoogleSignIn = async () => {
     await signInWithGoogle()
@@ -54,7 +63,7 @@ export default function SignIn() {
         </p>
 
         {/* Blocked error from redirect */}
-        {errorParam === 'blocked' && (
+        {showBlockedError && (
           <p className="text-xs text-red-400 text-center mb-4">
             Access restricted to OPJU college emails only.
           </p>
