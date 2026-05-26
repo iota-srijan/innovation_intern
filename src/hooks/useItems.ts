@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { supabase } from '../lib/supabaseClient'
+import { sendLowStockAlert } from '../lib/sendLowStockAlert'
 import type { InventoryItem, ItemFormData } from '../types'
 
 export function useItems() {
@@ -30,9 +31,13 @@ export function useCreateItem() {
       if (error) throw error
       return data
     },
-    onSuccess: () => {
+    onSuccess: async (newItem) => {
       queryClient.invalidateQueries({ queryKey: ['items'] })
       toast.success('Item added successfully')
+      if (newItem.quantity <= newItem.reorder_threshold) {
+        await sendLowStockAlert(newItem)
+        toast.warning(`Low stock alert sent for ${newItem.name}`)
+      }
     },
     onError: () => toast.error('Failed to add item'),
   })
@@ -52,9 +57,13 @@ export function useUpdateItem() {
       if (error) throw error
       return data
     },
-    onSuccess: () => {
+    onSuccess: async (updatedItem) => {
       queryClient.invalidateQueries({ queryKey: ['items'] })
       toast.success('Item updated')
+      if (updatedItem.quantity <= updatedItem.reorder_threshold) {
+        await sendLowStockAlert(updatedItem)
+        toast.warning(`Low stock alert sent for ${updatedItem.name}`)
+      }
     },
     onError: () => toast.error('Failed to update item'),
   })
