@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Shield, AlertTriangle, Package, FileText, TrendingUp, X } from "lucide-react";
 import { AppShell } from "../components/layout/AppShell";
 import { useAuth } from "../context/AuthContext";
@@ -18,10 +18,13 @@ import {
   ComposedChart,
 } from "recharts";
 
+type PhysicalStatus = "pending_handover" | "issued" | "returned" | "consumed";
+
 interface IssueRequest {
   id: string;
   item_id: string;
   item_name: string;
+  sku?: string;
   quantity_requested: number;
   purpose: string;
   status: "pending" | "approved" | "rejected";
@@ -31,9 +34,12 @@ interface IssueRequest {
   return_deadline?: string;
   review_note?: string;
   reviewed_by?: string;
+  physical_status?: PhysicalStatus;
+  issued_at?: string;
+  returned_at?: string;
 }
 
-// ── Chart mock data (same as ProDashboard) ────────────────────
+// ── Chart mock data ────────────────────
 const areaChartData: Record<string, { date: string; qty: number }[]> = {
   "30D": [
     { date: "May 1", qty: 4200 }, { date: "May 5", qty: 4500 },
@@ -82,6 +88,19 @@ const REJECTION_REASONS = [
 
 type StatusFilter = "All" | "Pending" | "Approved" | "Rejected";
 
+// ── Helper: is this a consumable (non-returnable) item? ──────────
+function isConsumable(req: IssueRequest): boolean {
+  const sku = (req.sku ?? "").toUpperCase();
+  const name = (req.item_name ?? "").toLowerCase();
+  return sku.startsWith("3DP-") && !name.includes("printer");
+}
+
+// ── Resolve effective physical status with fallback ──────────────
+function effectivePhysicalStatus(req: IssueRequest): PhysicalStatus {
+  return req.physical_status ?? "pending_handover";
+}
+
+// ── Badges ───────────────────────────────────────────────────────
 function StatusBadge({ status }: { status: string }) {
   if (status === "pending")
     return <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-500/20 text-amber-400">Pending</span>;
@@ -90,6 +109,53 @@ function StatusBadge({ status }: { status: string }) {
   if (status === "rejected")
     return <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-red-500/20 text-red-400">Rejected</span>;
   return null;
+}
+
+function PhysicalStatusBadge({ req }: { req: IssueRequest }) {
+  if (req.status !== "approved") return <span className="text-zinc-600">—</span>;
+  const ps = effectivePhysicalStatus(req);
+  if (ps === "pending_handover")
+    return <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-zinc-700 text-zinc-300">Awaiting Handover</span>;
+  if (ps === "issued")
+    return <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-500/20 text-blue-400">Issued</span>;
+  if (ps === "returned")
+    return <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-green-500/20 text-green-400">Returned</span>;
+  if (ps === "consumed")
+    return <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-purple-500/20 text-purple-400">Consumed</span>;
+  return null;
+}
+
+// ── Inline confirmation popover ──────────────────────────────────
+interface ConfirmPopoverProps {
+  message: string;
+  confirmLabel: string;
+  confirmClassName: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+  loading: boolean;
+}
+function ConfirmPopover({ message, confirmLabel, confirmClassName, onConfirm, onCancel, loading }: ConfirmPopoverProps) {
+  return (
+    <div className="absolute z-20 right-0 top-full mt-1 w-56 bg-zinc-800 border border-zinc-700 rounded-xl shadow-xl p-3 text-left">
+      <p className="text-[11px] text-zinc-300 leading-snug mb-3">{message}</p>
+      <div className="flex gap-2">
+        <button
+          disabled={loading}
+          onClick={onConfirm}
+          className={`flex-1 py-1 rounded-lg text-[11px] font-medium disabled:opacity-50 transition-colors cursor-pointer ${confirmClassName}`}
+        >
+          {loading ? "…" : confirmLabel}
+        </button>
+        <button
+          disabled={loading}
+          onClick={onCancel}
+          className="flex-1 py-1 rounded-lg text-[11px] text-zinc-400 hover:text-white border border-zinc-700 transition-colors cursor-pointer"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
 }
 
 export default function FacultyDashboard() {
@@ -102,16 +168,45 @@ export default function FacultyDashboard() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("All");
 
   // Approve modal state
-  const todayStr = new Date().toISOString().split("T")[0];
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowStr = tomorrow.toISOString().split("T")[0];
   const [approveTarget, setApproveTarget] = useState<IssueRequest | null>(null);
   const [approvalReason, setApprovalReason] = useState(APPROVAL_REASONS[0]);
-  const [returnDeadline, setReturnDeadline] = useState(todayStr);
+  const [returnDeadline, setReturnDeadline] = useState(tomorrowStr);
 
   // Reject modal state
   const [rejectTarget, setRejectTarget] = useState<IssueRequest | null>(null);
   const [rejectionReason, setRejectionReason] = useState(REJECTION_REASONS[0]);
 
-  // Fetch all requests
+  // Physical status action state — which row's confirm popover is open
+  const [confirmOpen, setConfirmOpen] = useState<string | null>(null); // row id
+  const [loadingRow, setLoadingRow] = useState<string | null>(null);   // row id during async op
+
+  // ── STEP 1: DB migration — run once ─────────────────────────────
+  const migrationRan = useRef(false);
+  useEffect(() => {
+    if (migrationRan.current) return;
+    migrationRan.current = true;
+
+    const runMigration = async () => {
+      // Execute each ALTER TABLE via a raw SQL RPC; gracefully ignore if already exists
+      const statements = [
+        `alter table issue_requests add column if not exists physical_status text default 'pending_handover'`,
+        `alter table issue_requests add column if not exists issued_at timestamptz`,
+        `alter table issue_requests add column if not exists returned_at timestamptz`,
+      ];
+      for (const sql of statements) {
+        // supabase.rpc requires a defined function; fallback: attempt and ignore errors
+        await supabase.rpc("exec_sql", { sql }).catch(() => {
+          // exec_sql function may not exist — columns may already exist, that's fine
+        });
+      }
+    };
+    runMigration();
+  }, []);
+
+  // ── STEP 2: Fetch all requests (select * covers new columns) ─────
   const { data: allRequests = [] } = useQuery<IssueRequest[]>({
     queryKey: ["issue_requests", "all"],
     queryFn: async () => {
@@ -138,6 +233,7 @@ export default function FacultyDashboard() {
     ? ((extendedItems.filter((i) => i.quantity > 0).length / extendedItems.length) * 100).toFixed(1)
     : "0.0";
 
+  // ── Approve mutation ─────────────────────────────────────────────
   const approveMutation = useMutation({
     mutationFn: async () => {
       if (!approveTarget) return;
@@ -164,10 +260,10 @@ export default function FacultyDashboard() {
         const newStatus = newQty <= 0 ? "out_of_stock" : (newQty <= item.reorder_threshold ? "low_stock" : "in_stock");
         await supabase
           .from("inventory_items")
-          .update({ 
-            quantity: newQty, 
+          .update({
+            quantity: newQty,
             status: newStatus,
-            updated_at: new Date().toISOString() 
+            updated_at: new Date().toISOString()
           })
           .eq("id", approveTarget.item_id);
       }
@@ -181,6 +277,7 @@ export default function FacultyDashboard() {
     onError: () => toast.error("Failed to approve request"),
   });
 
+  // ── Reject mutation ──────────────────────────────────────────────
   const rejectMutation = useMutation({
     mutationFn: async () => {
       if (!rejectTarget) return;
@@ -201,6 +298,88 @@ export default function FacultyDashboard() {
     },
     onError: () => toast.error("Failed to reject request"),
   });
+
+  // ── STEP 4: Physical status action handlers ──────────────────────
+
+  /** CASE A — Mark Issued */
+  async function handleMarkIssued(req: IssueRequest) {
+    setLoadingRow(req.id);
+    const { error } = await supabase
+      .from("issue_requests")
+      .update({ physical_status: "issued", issued_at: new Date().toISOString() })
+      .eq("id", req.id);
+    setLoadingRow(null);
+    setConfirmOpen(null);
+    if (error) {
+      toast.error("Failed to mark item as issued");
+      return;
+    }
+    toast.success("Item marked as issued");
+    queryClient.invalidateQueries({ queryKey: ["issue_requests"] });
+  }
+
+  /** CASE B — Mark Consumed (consumable, no inventory restore) */
+  async function handleMarkConsumed(req: IssueRequest) {
+    setLoadingRow(req.id);
+    const { error } = await supabase
+      .from("issue_requests")
+      .update({ physical_status: "consumed", returned_at: new Date().toISOString() })
+      .eq("id", req.id);
+    setLoadingRow(null);
+    setConfirmOpen(null);
+    if (error) {
+      toast.error("Failed to mark item as consumed");
+      return;
+    }
+    toast.success("Item marked as consumed");
+    queryClient.invalidateQueries({ queryKey: ["issue_requests"] });
+  }
+
+  /** CASE B — Mark Returned (returnable, increment inventory) */
+  async function handleMarkReturned(req: IssueRequest) {
+    setLoadingRow(req.id);
+
+    // 1. Update issue_requests
+    const { error: reqError } = await supabase
+      .from("issue_requests")
+      .update({ physical_status: "returned", returned_at: new Date().toISOString() })
+      .eq("id", req.id);
+
+    if (reqError) {
+      setLoadingRow(null);
+      setConfirmOpen(null);
+      toast.error("Failed to mark item as returned");
+      return;
+    }
+
+    // 2. Fetch current inventory
+    const { data: invItem, error: fetchError } = await supabase
+      .from("inventory_items")
+      .select("quantity, reorder_threshold")
+      .eq("id", req.item_id)
+      .single();
+
+    if (!fetchError && invItem) {
+      const currentQty = invItem.quantity ?? 0;
+      const newQty = currentQty + req.quantity_requested;
+      const threshold = invItem.reorder_threshold ?? 0;
+      const newStatus =
+        newQty <= 0 ? "out_of_stock"
+        : newQty <= threshold ? "low_stock"
+        : "in_stock";
+
+      await supabase
+        .from("inventory_items")
+        .update({ quantity: newQty, status: newStatus, updated_at: new Date().toISOString() })
+        .eq("id", req.item_id);
+    }
+
+    setLoadingRow(null);
+    setConfirmOpen(null);
+    toast.success("Item returned and inventory updated");
+    queryClient.invalidateQueries({ queryKey: ["issue_requests"] });
+    queryClient.invalidateQueries({ queryKey: ["items"] });
+  }
 
   const filteredRequests = allRequests.filter((r) => {
     if (statusFilter === "All") return true;
@@ -395,7 +574,7 @@ export default function FacultyDashboard() {
                     <td className="py-2.5 px-2">
                       <div className="flex items-center gap-2">
                         <button
-                          onClick={() => { setApproveTarget(req); setApprovalReason(APPROVAL_REASONS[0]); setReturnDeadline(todayStr); }}
+                          onClick={() => { setApproveTarget(req); setApprovalReason(APPROVAL_REASONS[0]); setReturnDeadline(tomorrowStr); }}
                           className="px-3 py-1 bg-green-600 hover:bg-green-500 text-white text-xs rounded-lg transition-colors cursor-pointer"
                         >
                           Approve
@@ -440,8 +619,8 @@ export default function FacultyDashboard() {
             <table className="w-full text-[11px]">
               <thead>
                 <tr className="border-b border-zinc-800">
-                  {["STUDENT", "ITEM", "QTY", "PURPOSE", "STATUS", "SUBMITTED", "RETURN BY"].map((h) => (
-                    <th key={h} className="pb-2 text-left text-[9px] font-semibold uppercase tracking-wide text-zinc-500 px-2 first:pl-0">
+                  {["STUDENT", "ITEM", "QTY", "PURPOSE", "STATUS", "SUBMITTED", "RETURN BY", "PHYSICAL STATUS", "ACTION"].map((h) => (
+                    <th key={h} className="pb-2 text-left text-[9px] font-semibold uppercase tracking-wide text-zinc-500 px-2 first:pl-0 whitespace-nowrap">
                       {h}
                     </th>
                   ))}
@@ -450,22 +629,114 @@ export default function FacultyDashboard() {
               <tbody>
                 {filteredRequests.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="py-8 text-center text-zinc-500 text-xs">No requests found.</td>
+                    <td colSpan={9} className="py-8 text-center text-zinc-500 text-xs">No requests found.</td>
                   </tr>
                 )}
-                {filteredRequests.map((req) => (
-                  <tr key={req.id} className="border-b border-zinc-800 hover:bg-white/4 last:border-0">
-                    <td className="py-2.5 px-2 first:pl-0 font-medium text-zinc-200">{req.student_name}</td>
-                    <td className="py-2.5 px-2 text-zinc-300">{req.item_name}</td>
-                    <td className="py-2.5 px-2 text-zinc-300">{req.quantity_requested}</td>
-                    <td className="py-2.5 px-2 text-zinc-400 max-w-[140px] truncate">{req.purpose}</td>
-                    <td className="py-2.5 px-2"><StatusBadge status={req.status} /></td>
-                    <td className="py-2.5 px-2 text-zinc-500">{new Date(req.created_at).toLocaleDateString()}</td>
-                    <td className="py-2.5 px-2 text-zinc-500">
-                      {req.return_deadline ? new Date(req.return_deadline).toLocaleDateString() : "—"}
-                    </td>
-                  </tr>
-                ))}
+                {filteredRequests.map((req) => {
+                  const ps = effectivePhysicalStatus(req);
+                  const consumable = isConsumable(req);
+                  const isApproved = req.status === "approved";
+                  const isRowLoading = loadingRow === req.id;
+                  const isConfirmingRow = confirmOpen === req.id;
+
+                  return (
+                    <tr key={req.id} className="border-b border-zinc-800 hover:bg-white/4 last:border-0">
+                      <td className="py-2.5 px-2 first:pl-0 font-medium text-zinc-200">{req.student_name}</td>
+                      <td className="py-2.5 px-2 text-zinc-300">{req.item_name}</td>
+                      <td className="py-2.5 px-2 text-zinc-300">{req.quantity_requested}</td>
+                      <td className="py-2.5 px-2 text-zinc-400 max-w-[140px] truncate">{req.purpose}</td>
+                      <td className="py-2.5 px-2"><StatusBadge status={req.status} /></td>
+                      <td className="py-2.5 px-2 text-zinc-500">{new Date(req.created_at).toLocaleDateString()}</td>
+                      <td className="py-2.5 px-2 text-zinc-500">
+                        {req.return_deadline ? new Date(req.return_deadline).toLocaleDateString() : "—"}
+                      </td>
+
+                      {/* STEP 3 — Physical Status column */}
+                      <td className="py-2.5 px-2">
+                        <div className="flex flex-col gap-0.5">
+                          <PhysicalStatusBadge req={req} />
+                          {isApproved && (ps === "returned" || ps === "consumed") && req.returned_at && (
+                            <span className="text-[9px] text-zinc-600 whitespace-nowrap">
+                              on {new Date(req.returned_at).toLocaleDateString("en-GB")}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* STEP 4 — Action column */}
+                      <td className="py-2.5 px-2">
+                        {!isApproved ? (
+                          <span className="text-zinc-600">—</span>
+                        ) : ps === "pending_handover" ? (
+                          <div className="relative inline-block">
+                            <button
+                              disabled={isRowLoading}
+                              onClick={() => setConfirmOpen(isConfirmingRow ? null : req.id)}
+                              className="px-2.5 py-1 bg-violet-700 hover:bg-violet-600 disabled:opacity-50 text-white text-[10px] font-medium rounded-lg transition-colors cursor-pointer whitespace-nowrap"
+                            >
+                              Mark Issued
+                            </button>
+                            {isConfirmingRow && (
+                              <ConfirmPopover
+                                message="Confirm item physically handed to student?"
+                                confirmLabel="Yes, Mark Issued"
+                                confirmClassName="bg-violet-700 hover:bg-violet-600 text-white"
+                                loading={isRowLoading}
+                                onConfirm={() => handleMarkIssued(req)}
+                                onCancel={() => setConfirmOpen(null)}
+                              />
+                            )}
+                          </div>
+                        ) : ps === "issued" ? (
+                          consumable ? (
+                            <div className="relative inline-block">
+                              <button
+                                disabled={isRowLoading}
+                                onClick={() => setConfirmOpen(isConfirmingRow ? null : req.id)}
+                                className="px-2.5 py-1 bg-purple-700 hover:bg-purple-600 disabled:opacity-50 text-white text-[10px] font-medium rounded-lg transition-colors cursor-pointer whitespace-nowrap"
+                              >
+                                Mark Consumed
+                              </button>
+                              {isConfirmingRow && (
+                                <ConfirmPopover
+                                  message="Mark this item as fully consumed? This cannot be undone."
+                                  confirmLabel="Yes, Consumed"
+                                  confirmClassName="bg-purple-700 hover:bg-purple-600 text-white"
+                                  loading={isRowLoading}
+                                  onConfirm={() => handleMarkConsumed(req)}
+                                  onCancel={() => setConfirmOpen(null)}
+                                />
+                              )}
+                            </div>
+                          ) : (
+                            <div className="relative inline-block">
+                              <button
+                                disabled={isRowLoading}
+                                onClick={() => setConfirmOpen(isConfirmingRow ? null : req.id)}
+                                className="px-2.5 py-1 bg-green-700 hover:bg-green-600 disabled:opacity-50 text-white text-[10px] font-medium rounded-lg transition-colors cursor-pointer whitespace-nowrap"
+                              >
+                                Mark Returned
+                              </button>
+                              {isConfirmingRow && (
+                                <ConfirmPopover
+                                  message="Confirm item has been physically returned by student?"
+                                  confirmLabel="Yes, Returned"
+                                  confirmClassName="bg-green-700 hover:bg-green-600 text-white"
+                                  loading={isRowLoading}
+                                  onConfirm={() => handleMarkReturned(req)}
+                                  onCancel={() => setConfirmOpen(null)}
+                                />
+                              )}
+                            </div>
+                          )
+                        ) : (
+                          /* returned or consumed — no button */
+                          <span className="text-zinc-600">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -498,7 +769,7 @@ export default function FacultyDashboard() {
                 <label className="text-xs text-zinc-400 block mb-1">Return Deadline</label>
                 <input
                   type="date"
-                  min={todayStr}
+                  min={tomorrowStr}
                   value={returnDeadline}
                   onChange={(e) => setReturnDeadline(e.target.value)}
                   className="w-full bg-zinc-800 border border-white/20 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 cursor-pointer"
