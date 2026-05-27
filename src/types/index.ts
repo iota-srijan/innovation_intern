@@ -12,7 +12,36 @@ export interface InventoryItem {
   quantity: number;
   reorder_threshold: number;
   supplier: string;
+  unit_price?: number;
+  status?: string;
   created_at: string;
 }
 
 export type ItemFormData = Omit<InventoryItem, 'id' | 'created_at' | 'category'>;
+
+export interface CartItem {
+  item_id: string;
+  item_name: string;
+  sku: string;
+  quantity_requested: number;
+  available_quantity: number;
+  purpose: string;
+}
+
+export interface IssueRequest {
+  id: string;
+  student_id?: string;
+  student_email: string;
+  student_name: string;
+  item_id: string;
+  item_name: string;
+  quantity_requested: number;
+  purpose: string;
+  status: 'pending' | 'approved' | 'rejected';
+  reviewed_by?: string;
+  review_note?: string;
+  return_deadline?: string | null;
+  created_at: string;
+  updated_at?: string;
+}
+

@@ -14,6 +14,7 @@ import "./index.css";
 import { queryClient } from "./lib/queryClient";
 import { UserTypeProvider } from "./context/UserTypeContext";
 import { AuthProvider } from "./context/AuthContext";
+import { CartProvider } from "./context/CartContext";
 import { ProtectedRoute, AdminRoute, StudentRoute, FacultyRoute } from "./components/ProtectedRoute";
 
 import LandingPage from "./pages/LandingPage";
@@ -30,11 +31,14 @@ import Profile from "./pages/Profile";
 import AdminDashboard from "./pages/AdminDashboard";
 import StudentDashboard from "./pages/StudentDashboard";
 import FacultyDashboard from "./pages/FacultyDashboard";
+import CartPage from "./pages/CartPage";
+import StudentRequestsPage from "./pages/StudentRequestsPage";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <UserTypeProvider>
+        <CartProvider>
+          <UserTypeProvider>
           <BrowserRouter>
             <Routes>
               {/* Public routes */}
@@ -55,6 +59,8 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
 
               {/* IdeaLab role-based routes */}
               <Route path="/student-dashboard" element={<StudentRoute><StudentDashboard /></StudentRoute>} />
+              <Route path="/cart" element={<StudentRoute><CartPage /></StudentRoute>} />
+              <Route path="/student/requests" element={<StudentRoute><StudentRequestsPage /></StudentRoute>} />
               <Route path="/faculty-dashboard" element={<FacultyRoute><FacultyDashboard /></FacultyRoute>} />
 
               {/* Admin-only route */}
@@ -67,6 +73,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             <Toaster richColors position="top-right" />
           </BrowserRouter>
         </UserTypeProvider>
+        </CartProvider>
       </AuthProvider>
   </QueryClientProvider>
 );

@@ -1,11 +1,13 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { AppShell } from "../components/layout/AppShell";
 import { useItems } from "../hooks/useItems";
 import { useAuth } from "../context/AuthContext";
+import { useCart } from "../context/CartContext";
 import { supabase } from "../lib/supabaseClient";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { X, BookOpen } from "lucide-react";
+import { X, BookOpen, ShoppingCart } from "lucide-react";
 
 interface IssueRequest {
   id: string;
@@ -44,8 +46,8 @@ function StatusBadge({ status }: { status: string }) {
 
 export default function StudentDashboard() {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
   const { data: items = [] } = useItems();
+  const { addToCart, cartCount } = useCart();
 
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All");
@@ -54,7 +56,6 @@ export default function StudentDashboard() {
   const [purpose, setPurpose] = useState("");
 
   const studentEmail = user?.email ?? "";
-  const studentName = user?.user_metadata?.full_name ?? user?.email ?? "Student";
 
   // Fetch student's own requests
   const { data: myRequests = [] } = useQuery<IssueRequest[]>({
@@ -70,9 +71,6 @@ export default function StudentDashboard() {
     },
     enabled: !!studentEmail,
   });
-
-  // Stat counts
-  const totalAvailable = (items as any[]).filter((i) => i.quantity > 0).length;
   const pendingCount = myRequests.filter((r) => r.status === "pending").length;
   const approvedCount = myRequests.filter((r) => r.status === "approved").length;
   const toReturnCount = myRequests.filter(
@@ -91,33 +89,8 @@ export default function StudentDashboard() {
     return matchSearch && matchCat;
   });
 
-  const submitRequest = useMutation({
-    mutationFn: async () => {
-      if (!modalItem) return;
-      const { error } = await supabase.from("issue_requests").insert([
-        {
-          item_id: modalItem.id,
-          item_name: modalItem.name,
-          quantity_requested: requestQty,
-          purpose,
-          status: "pending",
-          student_id: user?.id,
-          student_email: studentEmail,
-          student_name: studentName,
-        },
-      ]);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["issue_requests"] });
-      toast.success("Request submitted successfully. Awaiting faculty approval.");
-      setModalItem(null);
-      setPurpose("");
-      setRequestQty(1);
-    },
-    onError: () => toast.error("Failed to submit request"),
-  });
-
+  // Stat counts
+  const totalAvailable = (items as any[]).filter((i) => i.quantity > 0).length;
   const statCards = [
     { label: "Total Items Available", value: totalAvailable, color: "text-violet-400" },
     { label: "My Pending Requests", value: pendingCount, color: "text-amber-400" },
@@ -130,14 +103,36 @@ export default function StudentDashboard() {
       <div className="flex flex-col gap-5 p-5">
 
         {/* Page header */}
-        <div>
-          <div className="flex items-center gap-2">
-            <BookOpen className="w-4 h-4 text-violet-400" />
-            <h2 className="text-lg font-medium text-zinc-900 dark:text-white">IdeaLab Inventory</h2>
+        <div className="flex items-start justify-between flex-wrap gap-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <BookOpen className="w-4 h-4 text-violet-400" />
+              <h2 className="text-lg font-medium text-zinc-900 dark:text-white">IdeaLab Inventory</h2>
+            </div>
+            <p className="text-sm text-zinc-400 mt-0.5">
+              Browse and request components from OPJU IdeaLab.
+            </p>
           </div>
-          <p className="text-sm text-zinc-400 mt-0.5">
-            Browse and request components from OPJU IdeaLab.
-          </p>
+          <div className="flex items-center gap-3">
+            <Link
+              to="/student/requests"
+              className="text-xs text-zinc-400 hover:text-violet-400 transition-colors"
+            >
+              My requests →
+            </Link>
+            <Link
+              to="/cart"
+              className="relative flex items-center gap-1.5 rounded-xl bg-violet-700 hover:bg-violet-600 px-4 py-2 text-xs font-semibold text-white transition-colors"
+            >
+              <ShoppingCart className="h-3.5 w-3.5" />
+              Cart
+              {cartCount > 0 && (
+                <span className="ml-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[9px] font-bold text-violet-700">
+                  {cartCount}
+                </span>
+              )}
+            </Link>
+          </div>
         </div>
 
         {/* Stat cards */}
@@ -253,7 +248,7 @@ export default function StudentDashboard() {
                               : "bg-violet-700 hover:bg-violet-600 cursor-pointer"
                           }`}
                         >
-                          Issue Request
+                          Add to Cart
                         </button>
                       </td>
                     </tr>
@@ -345,7 +340,7 @@ export default function StudentDashboard() {
               <X className="w-4 h-4" />
             </button>
 
-            <h3 className="text-lg font-semibold text-white mb-1">Issue Request</h3>
+            <h3 className="text-lg font-semibold text-white mb-1">Add to Cart</h3>
             <p className="text-xs text-zinc-400 mb-5">{modalItem.name}</p>
 
             <div className="space-y-4">
@@ -373,22 +368,35 @@ export default function StudentDashboard() {
               <div>
                 <label className="text-xs text-zinc-400 block mb-1">
                   Purpose / Project Description
+                  <span className="text-zinc-600 ml-1">(optional — set in cart)</span>
                 </label>
                 <textarea
                   value={purpose}
                   onChange={(e) => setPurpose(e.target.value)}
                   placeholder="Describe your project or purpose for this item…"
-                  rows={4}
+                  rows={3}
                   className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-violet-500 transition-colors resize-none"
                 />
               </div>
 
               <button
-                onClick={() => submitRequest.mutate()}
-                disabled={submitRequest.isPending || !purpose.trim()}
-                className="w-full py-2.5 bg-violet-700 hover:bg-violet-600 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-medium rounded-xl transition-colors cursor-pointer"
+                onClick={() => {
+                  addToCart({
+                    item_id: modalItem.id,
+                    item_name: modalItem.name,
+                    sku: modalItem.sku ?? '',
+                    quantity_requested: requestQty,
+                    available_quantity: modalItem.quantity,
+                    purpose,
+                  });
+                  toast.success(`"${modalItem.name}" added to cart. Go to Cart to submit.`);
+                  setModalItem(null);
+                  setPurpose('');
+                  setRequestQty(1);
+                }}
+                className="w-full py-2.5 bg-violet-700 hover:bg-violet-600 text-white text-sm font-medium rounded-xl transition-colors cursor-pointer"
               >
-                {submitRequest.isPending ? "Submitting…" : "Submit Request"}
+                Add to Cart
               </button>
             </div>
           </div>

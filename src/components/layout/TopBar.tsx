@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Bell, RefreshCw, Download, Share2, Sun, Moon } from "lucide-react";
+import { Bell, RefreshCw, Download, Share2, Sun, Moon, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 import { useUserType } from "../../context/UserTypeContext";
 
@@ -9,9 +9,10 @@ interface TopBarProps {
   isDark: boolean;
   onToggleDark: () => void;
   isPro?: boolean;
+  cartCount?: number;
 }
 
-export function TopBar({ title, isDark, onToggleDark, isPro }: TopBarProps) {
+export function TopBar({ title, isDark, onToggleDark, isPro, cartCount }: TopBarProps) {
   const [initials, setInitials] = useState("SM");
   const { setUserType } = useUserType();
   const navigate = useNavigate();
@@ -107,6 +108,20 @@ export function TopBar({ title, isDark, onToggleDark, isPro }: TopBarProps) {
           <Bell className="h-4 w-4" />
           <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-red-500" />
         </button>
+
+        {/* Cart badge — only when cart has items */}
+        {(cartCount ?? 0) > 0 && (
+          <Link
+            to="/cart"
+            title="Your Cart"
+            className="relative flex h-8 w-8 items-center justify-center rounded-lg border border-violet-500/40 bg-violet-500/10 text-violet-400 transition-colors hover:bg-violet-500/20 hover:text-violet-300"
+          >
+            <ShoppingCart className="h-4 w-4" />
+            <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-violet-600 text-[9px] font-bold text-white">
+              {cartCount}
+            </span>
+          </Link>
+        )}
 
         {/* Refresh button */}
         <button

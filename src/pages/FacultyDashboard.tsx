@@ -80,14 +80,6 @@ const REJECTION_REASONS = [
   "Item reserved for other use",
 ];
 
-const RETURN_DEADLINES: { label: string; days: number | null }[] = [
-  { label: "3 days", days: 3 },
-  { label: "7 days", days: 7 },
-  { label: "14 days", days: 14 },
-  { label: "1 month", days: 30 },
-  { label: "No deadline", days: null },
-];
-
 type StatusFilter = "All" | "Pending" | "Approved" | "Rejected";
 
 function StatusBadge({ status }: { status: string }) {
@@ -110,9 +102,10 @@ export default function FacultyDashboard() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("All");
 
   // Approve modal state
+  const todayStr = new Date().toISOString().split("T")[0];
   const [approveTarget, setApproveTarget] = useState<IssueRequest | null>(null);
   const [approvalReason, setApprovalReason] = useState(APPROVAL_REASONS[0]);
-  const [returnDeadline, setReturnDeadline] = useState(RETURN_DEADLINES[1].label);
+  const [returnDeadline, setReturnDeadline] = useState(todayStr);
 
   // Reject modal state
   const [rejectTarget, setRejectTarget] = useState<IssueRequest | null>(null);
@@ -148,10 +141,6 @@ export default function FacultyDashboard() {
   const approveMutation = useMutation({
     mutationFn: async () => {
       if (!approveTarget) return;
-      const deadlineEntry = RETURN_DEADLINES.find((d) => d.label === returnDeadline);
-      const deadlineDate = deadlineEntry?.days
-        ? new Date(Date.now() + deadlineEntry.days * 86400000).toISOString()
-        : null;
 
       const { error: updateError } = await supabase
         .from("issue_requests")
@@ -159,7 +148,7 @@ export default function FacultyDashboard() {
           status: "approved",
           reviewed_by: user?.id,
           review_note: approvalReason,
-          return_deadline: deadlineDate,
+          return_deadline: returnDeadline,
         })
         .eq("id", approveTarget.id);
       if (updateError) throw updateError;
@@ -167,14 +156,19 @@ export default function FacultyDashboard() {
       // Decrement inventory quantity
       const { data: item } = await supabase
         .from("inventory_items")
-        .select("quantity")
+        .select("quantity, reorder_threshold")
         .eq("id", approveTarget.item_id)
         .single();
       if (item) {
         const newQty = Math.max(0, item.quantity - approveTarget.quantity_requested);
+        const newStatus = newQty <= 0 ? "out_of_stock" : (newQty <= item.reorder_threshold ? "low_stock" : "in_stock");
         await supabase
           .from("inventory_items")
-          .update({ quantity: newQty, updated_at: new Date().toISOString() })
+          .update({ 
+            quantity: newQty, 
+            status: newStatus,
+            updated_at: new Date().toISOString() 
+          })
           .eq("id", approveTarget.item_id);
       }
     },
@@ -401,7 +395,7 @@ export default function FacultyDashboard() {
                     <td className="py-2.5 px-2">
                       <div className="flex items-center gap-2">
                         <button
-                          onClick={() => { setApproveTarget(req); setApprovalReason(APPROVAL_REASONS[0]); setReturnDeadline(RETURN_DEADLINES[1].label); }}
+                          onClick={() => { setApproveTarget(req); setApprovalReason(APPROVAL_REASONS[0]); setReturnDeadline(todayStr); }}
                           className="px-3 py-1 bg-green-600 hover:bg-green-500 text-white text-xs rounded-lg transition-colors cursor-pointer"
                         >
                           Approve
@@ -502,13 +496,18 @@ export default function FacultyDashboard() {
               </div>
               <div>
                 <label className="text-xs text-zinc-400 block mb-1">Return Deadline</label>
-                <select
+                <input
+                  type="date"
+                  min={todayStr}
                   value={returnDeadline}
                   onChange={(e) => setReturnDeadline(e.target.value)}
-                  className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500 cursor-pointer"
-                >
-                  {RETURN_DEADLINES.map((d) => <option key={d.label}>{d.label}</option>)}
-                </select>
+                  className="w-full bg-zinc-800 border border-white/20 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 cursor-pointer"
+                />
+                {returnDeadline && (
+                  <p className="mt-1.5 text-[11px] text-zinc-400">
+                    Return by: <span className="font-medium text-white">{new Date(returnDeadline).toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                  </p>
+                )}
               </div>
               <button
                 onClick={() => approveMutation.mutate()}

@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
 import { type User, type Session } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabaseClient'
+import { clearCartRef } from './CartContext'
 
 const ADMIN_EMAIL = 'admin@stockpilot.inc'
 
@@ -126,6 +127,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut()
     localStorage.removeItem('sp-user-type')
     localStorage.removeItem('sp-auth-user')
+    clearCartRef.current?.()
     setUserRole(null)
   }
 
