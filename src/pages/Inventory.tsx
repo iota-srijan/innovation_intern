@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Plus, AlertCircle } from "lucide-react";
 import { AppShell } from "../components/layout/AppShell";
 import { InventoryTable } from "../components/inventory/InventoryTable";
@@ -10,6 +11,7 @@ export default function Inventory() {
   const [modalOpen, setModalOpen] = useState(false);
   const [itemToEdit, setItemToEdit] = useState<InventoryItem | null>(null);
   const { isLoading, error } = useItems();
+  const [searchParams] = useSearchParams();
 
   const handleOpenAddModal = () => {
     setItemToEdit(null);
@@ -63,7 +65,7 @@ export default function Inventory() {
 
         {/* Table (only rendered when not loading and no error) */}
         {!isLoading && !error && (
-          <InventoryTable onEdit={handleOpenEditModal} />
+          <InventoryTable onEdit={handleOpenEditModal} lowStockFilter={searchParams.get('lowStockFilter') === 'true'} />
         )}
       </div>
 

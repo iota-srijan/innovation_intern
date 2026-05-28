@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { Search, ChevronDown, ArrowUpDown, Edit2, Trash2, X } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useItems, useDeleteItem } from "../../hooks/useItems";
 import { useCategories } from "../../hooks/useCategories";
 import type { InventoryItem } from "../../types";
@@ -11,9 +12,11 @@ type SortOrder = "asc" | "desc";
 
 interface InventoryTableProps {
   onEdit: (item: InventoryItem) => void;
+  lowStockFilter?: boolean;
 }
 
-export function InventoryTable({ onEdit }: InventoryTableProps) {
+export function InventoryTable({ onEdit, lowStockFilter = false }: InventoryTableProps) {
+  const navigate = useNavigate();
   const { data: items } = useItems();
   const { data: categories } = useCategories();
   const deleteMutation = useDeleteItem();
@@ -41,7 +44,15 @@ export function InventoryTable({ onEdit }: InventoryTableProps) {
         item.sku.toLowerCase().includes(search.toLowerCase());
       const matchesCategory =
         categoryFilter === "all" || item.category_id === categoryFilter;
-      return matchesSearch && matchesCategory;
+      if (!matchesSearch || !matchesCategory) return false;
+      if (lowStockFilter) {
+        const qty = item.quantity ?? 0;
+        const threshold = item.reorder_threshold;
+        const matchesStatus = item.status === 'low_stock';
+        const matchesThreshold = threshold != null && threshold > 0 && qty <= threshold;
+        return matchesStatus || matchesThreshold;
+      }
+      return true;
     });
     result = result.sort((a, b) => {
       let aVal: string | number | undefined = a[sortField as keyof InventoryItem] as string | number;
@@ -54,7 +65,7 @@ export function InventoryTable({ onEdit }: InventoryTableProps) {
       return 0;
     });
     return result;
-  }, [items, search, categoryFilter, sortField, sortOrder]);
+  }, [items, search, categoryFilter, sortField, sortOrder, lowStockFilter]);
 
   const totalPages = Math.ceil(filteredAndSortedItems.length / ITEMS_PER_PAGE);
   const paginatedItems = filteredAndSortedItems.slice(
@@ -253,6 +264,21 @@ export function InventoryTable({ onEdit }: InventoryTableProps) {
         )}
       </div>
 
+      {/* Low-stock filter header: clear button */}
+      {lowStockFilter && (
+        <div className="flex items-center justify-between mb-1">
+          <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+            Showing low stock items only
+          </span>
+          <button
+            onClick={() => navigate('/inventory')}
+            className="text-xs text-white/50 hover:text-white underline bg-transparent border-0 p-0 cursor-pointer"
+          >
+            Clear filter ×
+          </button>
+        </div>
+      )}
+
       {/* Table card */}
       <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-white/8 dark:bg-[#1a1a1a]">
         <div className="overflow-x-auto">
@@ -277,93 +303,101 @@ export function InventoryTable({ onEdit }: InventoryTableProps) {
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-100 dark:divide-white/6">
-              {paginatedItems.map((item) => {
-                const fillPct = Math.min((item.quantity / 50) * 100, 100);
-                const barColor = item.quantity < 10 ? "bg-red-400" : item.quantity < 20 ? "bg-amber-400" : "bg-green-400";
-                
-                return (
-                  <tr
-                    key={item.id}
-                    onClick={() => setExpandedItem(item)}
-                    className="group transition-colors hover:bg-zinc-50 dark:hover:bg-white/4 cursor-pointer"
-                  >
-                    <td className="px-4 py-2.5 w-10" onClick={(e) => e.stopPropagation()}>
-                      <input
-                        type="checkbox"
-                        checked={selectedRows.includes(item.id)}
-                        onChange={() => toggleRow(item.id)}
-                        className="rounded border-zinc-300 text-violet-600 focus:ring-violet-600 bg-white dark:bg-zinc-800 dark:border-zinc-600"
-                      />
-                    </td>
-                    <td className="px-4 py-2.5 font-medium text-zinc-900 dark:text-zinc-200">
-                      {item.name}
-                    </td>
-                    <td className="px-4 py-2.5 font-mono text-[10px] text-zinc-500 dark:text-zinc-400">
-                      {item.sku}
-                    </td>
-                    <td className="px-4 py-2.5">
-                      <span className="inline-flex items-center rounded-md border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-[10px] font-medium text-zinc-600 dark:border-white/8 dark:bg-white/6 dark:text-zinc-400">
-                        {item.category?.name || "Uncategorized"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-2.5" onClick={(e) => e.stopPropagation()}>
-                      {editingQtyId === item.id ? (
+              {paginatedItems.length === 0 && lowStockFilter ? (
+                <tr>
+                  <td colSpan={8} className="py-16 text-center text-sm text-white/50">
+                    No low stock items found
+                  </td>
+                </tr>
+              ) : (
+                paginatedItems.map((item) => {
+                  const fillPct = Math.min((item.quantity / 50) * 100, 100);
+                  const barColor = item.quantity < 10 ? "bg-red-400" : item.quantity < 20 ? "bg-amber-400" : "bg-green-400";
+                  
+                  return (
+                    <tr
+                      key={item.id}
+                      onClick={() => setExpandedItem(item)}
+                      className="group transition-colors hover:bg-zinc-50 dark:hover:bg-white/4 cursor-pointer"
+                    >
+                      <td className="px-4 py-2.5 w-10" onClick={(e) => e.stopPropagation()}>
                         <input
-                          type="number"
-                          autoFocus
-                          value={tempQty}
-                          onChange={(e) => setTempQty(e.target.value)}
-                          onBlur={() => saveQty(item.id)}
-                          onKeyDown={(e) => { if (e.key === 'Enter') saveQty(item.id); }}
-                          className="w-16 bg-transparent border-b border-violet-500 text-sm focus:outline-none dark:text-white"
+                          type="checkbox"
+                          checked={selectedRows.includes(item.id)}
+                          onChange={() => toggleRow(item.id)}
+                          className="rounded border-zinc-300 text-violet-600 focus:ring-violet-600 bg-white dark:bg-zinc-800 dark:border-zinc-600"
                         />
-                      ) : (
-                        <div className="flex flex-col w-16">
-                          <span 
-                            onClick={() => { setEditingQtyId(item.id); setTempQty(item.quantity.toString()); }}
-                            className="font-medium text-zinc-900 dark:text-zinc-200 hover:text-violet-600 dark:hover:text-violet-400 cursor-text"
-                          >
-                            {item.quantity}
-                          </span>
-                          <div className="h-1 w-full rounded-full bg-slate-100 dark:bg-zinc-800 mt-1 overflow-hidden">
-                            <div className={`h-full ${barColor}`} style={{ width: `${fillPct}%` }} />
+                      </td>
+                      <td className="px-4 py-2.5 font-medium text-zinc-900 dark:text-zinc-200">
+                        {item.name}
+                      </td>
+                      <td className="px-4 py-2.5 font-mono text-[10px] text-zinc-500 dark:text-zinc-400">
+                        {item.sku}
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <span className="inline-flex items-center rounded-md border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-[10px] font-medium text-zinc-600 dark:border-white/8 dark:bg-white/6 dark:text-zinc-400">
+                          {item.category?.name || "Uncategorized"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2.5" onClick={(e) => e.stopPropagation()}>
+                        {editingQtyId === item.id ? (
+                          <input
+                            type="number"
+                            autoFocus
+                            value={tempQty}
+                            onChange={(e) => setTempQty(e.target.value)}
+                            onBlur={() => saveQty(item.id)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') saveQty(item.id); }}
+                            className="w-16 bg-transparent border-b border-violet-500 text-sm focus:outline-none dark:text-white"
+                          />
+                        ) : (
+                          <div className="flex flex-col w-16">
+                            <span 
+                              onClick={() => { setEditingQtyId(item.id); setTempQty(item.quantity.toString()); }}
+                              className="font-medium text-zinc-900 dark:text-zinc-200 hover:text-violet-600 dark:hover:text-violet-400 cursor-text"
+                            >
+                              {item.quantity}
+                            </span>
+                            <div className="h-1 w-full rounded-full bg-slate-100 dark:bg-zinc-800 mt-1 overflow-hidden">
+                              <div className={`h-full ${barColor}`} style={{ width: `${fillPct}%` }} />
+                            </div>
                           </div>
+                        )}
+                      </td>
+                      <td className="px-4 py-2.5 text-zinc-500 dark:text-zinc-400">
+                        {item.supplier}
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <span className={`inline-flex items-center rounded-full px-2 py-px text-[9px] font-medium ${
+                          item.quantity === 0 ? "bg-red-500/15 text-red-400" :
+                          item.quantity <= item.reorder_threshold ? "bg-amber-500/15 text-amber-400" :
+                          "bg-green-500/15 text-green-400"
+                        }`}>
+                          {item.quantity === 0 ? "Out of Stock" : item.quantity <= item.reorder_threshold ? "Low Stock" : "In Stock"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
+                        <div className="relative inline-block text-left">
+                          <button
+                            onClick={() => { onEdit(item); }}
+                            className="text-zinc-400 hover:text-violet-600 transition-colors mr-3"
+                            title="Edit"
+                          >
+                            <Edit2 className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            onClick={() => setItemToDelete(item)}
+                            className="text-zinc-400 hover:text-red-600 transition-colors"
+                            title="Delete"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
                         </div>
-                      )}
-                    </td>
-                    <td className="px-4 py-2.5 text-zinc-500 dark:text-zinc-400">
-                      {item.supplier}
-                    </td>
-                    <td className="px-4 py-2.5">
-                      <span className={`inline-flex items-center rounded-full px-2 py-px text-[9px] font-medium ${
-                        item.quantity === 0 ? "bg-red-500/15 text-red-400" :
-                        item.quantity <= item.reorder_threshold ? "bg-amber-500/15 text-amber-400" :
-                        "bg-green-500/15 text-green-400"
-                      }`}>
-                        {item.quantity === 0 ? "Out of Stock" : item.quantity <= item.reorder_threshold ? "Low Stock" : "In Stock"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
-                      <div className="relative inline-block text-left">
-                        <button
-                          onClick={() => { onEdit(item); }}
-                          className="text-zinc-400 hover:text-violet-600 transition-colors mr-3"
-                          title="Edit"
-                        >
-                          <Edit2 className="h-3.5 w-3.5" />
-                        </button>
-                        <button
-                          onClick={() => setItemToDelete(item)}
-                          className="text-zinc-400 hover:text-red-600 transition-colors"
-                          title="Delete"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>

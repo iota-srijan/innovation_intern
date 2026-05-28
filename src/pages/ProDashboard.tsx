@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { MoreHorizontal, Sparkles, Package, AlertTriangle, FileText, TrendingUp } from "lucide-react";
 import { AppShell } from "../components/layout/AppShell";
@@ -195,13 +195,20 @@ export default function ProDashboard() {
   const [movementTab, setMovementTab] = useState<"30D" | "90D" | "1Y">("30D");
   const [spendTab, setSpendTab] = useState("Monthly");
   const [invoiceTab, setInvoiceTab] = useState("Yearly");
+  const [filterClicked, setFilterClicked] = useState(false);
 
-  const { data = [] } = useItems();
+  const { data = [], isLoading } = useItems();
   const items = data as any[] as ExtendedItem[];
 
   const totalSKUs = items.length;
   const lowStockItems = items.filter(i => i.quantity <= i.reorder_threshold);
   const lowStockCount = lowStockItems.length;
+
+  const handleLowStockCardClick = useCallback(() => {
+    if (filterClicked || isLoading) return;
+    setFilterClicked(true);
+    navigate('/inventory?lowStockFilter=true');
+  }, [filterClicked, isLoading, navigate]);
   const fulfillmentRate = items.length > 0
     ? ((items.filter(i => i.quantity > 0).length / items.length) * 100).toFixed(1)
     : '0.0';
@@ -252,7 +259,10 @@ export default function ProDashboard() {
           </div>
 
           {/* Card 2: Low Stock (red accent) */}
-          <div className="bg-white dark:bg-zinc-900 border border-red-500/30 rounded-xl p-5 flex flex-col justify-between hover:border-red-500/50 transition-all duration-200 relative overflow-hidden">
+          <div
+            onClick={handleLowStockCardClick}
+            className={`bg-white dark:bg-zinc-900 border border-red-500/30 rounded-xl p-5 flex flex-col justify-between hover:border-red-500/50 transition-all duration-200 relative overflow-hidden cursor-pointer${filterClicked ? ' ring-1 ring-violet-500' : ''}`}
+          >
             <div className="absolute right-0 top-0 w-24 h-24 bg-red-500/5 rounded-full blur-xl pointer-events-none" />
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Low Stock</span>
