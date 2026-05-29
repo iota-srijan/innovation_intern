@@ -146,9 +146,7 @@ export default function SignIn() {
             <p className="text-xs text-red-400 mt-2 text-center">{error}</p>
           )}
 
-          <p className="text-[10px] text-zinc-600 text-center mt-2">
-            Demo: admin@stockpilot.inc / admin123
-          </p>
+
         </div>
 
         {/* Footer */}
