@@ -97,7 +97,7 @@ export default function PurchaseOrders() {
     setNewPOLines([{ id: Date.now(), sku: "", name: "", qty: 1, price: 0 }]);
   };
 
-  const fmt = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
+  const fmt = (n: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(n);
 
   return (
     <AppShell title="Purchase Orders">
@@ -124,7 +124,7 @@ export default function PurchaseOrders() {
             <div className="p-2 bg-violet-500/10 rounded-lg text-violet-500"><DollarSign className="w-4 h-4"/></div>
             <div>
               <p className="text-[10px] uppercase font-bold text-zinc-400">Total PO Value</p>
-              <p className="text-sm font-bold text-zinc-900 dark:text-white">$88,250</p>
+              <p className="text-sm font-bold text-zinc-900 dark:text-white">₹88,250</p>
             </div>
           </div>
           <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl px-4 py-2.5 flex items-center gap-3 shrink-0">

@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Bell, RefreshCw, Download, Share2, Sun, Moon, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
-import { useUserType } from "../../context/UserTypeContext";
 
 interface TopBarProps {
   title: string;
@@ -14,8 +13,6 @@ interface TopBarProps {
 
 export function TopBar({ title, isDark, onToggleDark, isPro, cartCount }: TopBarProps) {
   const [initials, setInitials] = useState("SM");
-  const { setUserType } = useUserType();
-  const navigate = useNavigate();
 
   useEffect(() => {
     const loadInitials = () => {
@@ -44,31 +41,11 @@ export function TopBar({ title, isDark, onToggleDark, isPro, cartCount }: TopBar
 
   return (
     <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center border-b border-zinc-200 bg-white px-5 dark:border-white/8 dark:bg-[#111111]">
-      {/* Left: StockPilot logo + Pro badge if pro, else page title */}
+      {/* Left: page title */}
       <div className="flex items-center gap-2">
-        {isPro ? (
-          <div className="flex items-center gap-2 mr-3">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-700 shadow-md shadow-violet-700/20">
-              <svg viewBox="0 0 32 32" className="h-4 w-4" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <polygon points="16,4 28,11 16,18 4,11" fill="white" opacity="0.95" />
-                <polygon points="4,11 16,18 16,28 4,21" fill="white" opacity="0.65" />
-                <polygon points="28,11 16,18 16,28 28,21" fill="white" opacity="0.45" />
-              </svg>
-            </div>
-            <span className="text-[13px] font-bold tracking-tight text-zinc-900 dark:text-white">StockPilot</span>
-            <span className="bg-violet-700 text-white text-[9px] font-bold px-2 py-px rounded-full ml-1 uppercase tracking-wider">
-              Pro
-            </span>
-            <span className="text-zinc-300 dark:text-zinc-700 mx-2">|</span>
-            <h1 className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-white">
-              {title}
-            </h1>
-          </div>
-        ) : (
-          <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-white">
-            {title}
-          </h1>
-        )}
+        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-white">
+          {title}
+        </h1>
       </div>
 
       {/* Right controls */}
@@ -149,16 +126,6 @@ export function TopBar({ title, isDark, onToggleDark, isPro, cartCount }: TopBar
         >
           <Share2 className="h-3.5 w-3.5" />
         </button>
-
-        {/* Plan Switcher Button */}
-        {isPro && (
-          <button
-            onClick={() => { setUserType('free'); navigate('/dashboard') }}
-            className="flex items-center gap-1.5 px-3 py-1.5 border border-zinc-700 rounded-lg text-xs text-zinc-400 hover:text-white hover:border-zinc-500 transition-all"
-          >
-            Switch to Free view
-          </button>
-        )}
 
         {/* Avatar */}
         <Link

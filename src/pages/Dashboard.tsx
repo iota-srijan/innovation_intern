@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowUpRight, MoreHorizontal, Zap } from "lucide-react";
+import { ArrowUpRight, MoreHorizontal } from "lucide-react";
 import { AppShell } from "../components/layout/AppShell";
 import { useItems } from "../hooks/useItems";
 import {
@@ -131,9 +131,9 @@ const spendData: Record<string, SpendRow[]> = {
 
 // ── Helpers ──────────────────────────────────────────────────
 function fmt(n: number) {
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `$${(n / 1_000).toFixed(0)}K`;
-  return `$${n}`;
+  if (n >= 1_000_000) return `₹${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `₹${(n / 1_000).toFixed(0)}K`;
+  return `₹${n}`;
 }
 
 function ProcSpark({ days }: { days: number }) {
@@ -157,7 +157,7 @@ const InvoiceTooltip = ({ active, payload }: any) => {
         <div key={p.dataKey} className="flex items-center gap-2">
           <span style={{ color: p.color }}>●</span>
           <span className="text-zinc-400">{p.name}:</span>
-          <span>{p.dataKey === "invoice" ? `$${p.value}M` : `${p.value}%`}</span>
+          <span>{p.dataKey === "invoice" ? `₹${p.value}M` : `${p.value}%`}</span>
         </div>
       ))}
     </div>
@@ -179,8 +179,8 @@ export default function Dashboard() {
     : '0.0';
   const totalValue = items.reduce((sum, i) => sum + (i.quantity * (i.unit_price || 0)), 0);
   const totalValueFormatted = totalValue >= 1000000
-    ? `$${(totalValue / 1000000).toFixed(2)}M`
-    : `$${(totalValue / 1000).toFixed(1)}K`;
+    ? `₹${(totalValue / 1000000).toFixed(2)}M`
+    : `₹${(totalValue / 1000).toFixed(1)}K`;
 
   const tabs = ["All", "Daily", "Weekly", "Monthly", "Yearly"];
 
@@ -495,7 +495,7 @@ export default function Dashboard() {
                       tick={{ fontSize: 9, fill: "#71717a" }}
                       axisLine={false}
                       tickLine={false}
-                      tickFormatter={(v) => `$${v}M`}
+                      tickFormatter={(v) => `₹${v}M`}
                     />
                     <YAxis
                       yAxisId="right"
@@ -528,21 +528,6 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
-        </div>
-
-        {/* ── Upgrade banner ───────────────────────────────── */}
-        <div className="flex items-center justify-between rounded-2xl border border-violet-200 bg-gradient-to-r from-zinc-100 to-violet-50 p-4 dark:border-violet-800/40 dark:from-zinc-900 dark:to-violet-950">
-          <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-700">
-              <Zap className="h-4 w-4 text-white" />
-            </div>
-            <span className="text-sm text-zinc-900 dark:text-white">
-              Upgrade to access advanced procurement analytics
-            </span>
-          </div>
-          <button className="rounded-xl bg-violet-700 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-violet-600">
-            Get Pro
-          </button>
         </div>
 
       </div>

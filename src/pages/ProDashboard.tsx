@@ -145,9 +145,9 @@ const spendData: Record<string, SpendRow[]> = {
 
 // ── Helpers ──────────────────────────────────────────────────
 function fmt(n: number) {
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `$${(n / 1_000).toFixed(0)}K`;
-  return `$${n}`;
+  if (n >= 1_000_000) return `₹${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `₹${(n / 1_000).toFixed(0)}K`;
+  return `₹${n}`;
 }
 
 function ProcSpark({ days }: { days: number }) {
@@ -170,7 +170,7 @@ const InvoiceTooltip = ({ active, payload }: any) => {
         <div key={p.dataKey} className="flex items-center gap-2">
           <span style={{ color: p.color }}>●</span>
           <span className="text-zinc-500 dark:text-zinc-400">{p.name}:</span>
-          <span>{p.dataKey === "invoice" ? `$${p.value}M` : `${p.value}%`}</span>
+          <span>{p.dataKey === "invoice" ? `₹${p.value}M` : `${p.value}%`}</span>
         </div>
       ))}
     </div>
@@ -214,8 +214,8 @@ export default function ProDashboard() {
     : '0.0';
   const totalValue = items.reduce((sum, i) => sum + (i.quantity * (i.unit_price || 0)), 0);
   const totalValueFormatted = totalValue >= 1000000
-    ? `$${(totalValue / 1000000).toFixed(2)}M`
-    : `$${(totalValue / 1000).toFixed(1)}K`;
+    ? `₹${(totalValue / 1000000).toFixed(2)}M`
+    : `₹${(totalValue / 1000).toFixed(1)}K`;
 
   const restockItems = items
     .filter(i => i.quantity <= i.reorder_threshold)
@@ -571,7 +571,7 @@ export default function ProDashboard() {
                       tick={{ fontSize: 9, fill: "#71717a" }}
                       axisLine={false}
                       tickLine={false}
-                      tickFormatter={(v) => `$${v}M`}
+                      tickFormatter={(v) => `₹${v}M`}
                     />
                     <YAxis
                       yAxisId="right"

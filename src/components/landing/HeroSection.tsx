@@ -18,7 +18,7 @@ const itemVariants = {
 const statCells = [
   { label: "Total SKUs", value: "12,847", delta: "+3.2%", positive: true },
   { label: "Low Stock", value: "34", delta: "Needs action", positive: false, alert: true },
-  { label: "Open POs", value: "128", delta: "$2.4M value", positive: true },
+  { label: "Open POs", value: "128", delta: "₹2.4M value", positive: true },
   { label: "Fulfillment", value: "98.1%", delta: "+0.4%", positive: true },
 ];
 

@@ -39,38 +39,16 @@ interface IssueRequest {
   returned_at?: string;
 }
 
-// ── Chart mock data ────────────────────
-const areaChartData: Record<string, { date: string; qty: number }[]> = {
-  "30D": [
-    { date: "May 1", qty: 4200 }, { date: "May 5", qty: 4500 },
-    { date: "May 10", qty: 4100 }, { date: "May 15", qty: 4800 },
-    { date: "May 20", qty: 5400 }, { date: "May 25", qty: 5100 },
-    { date: "May 30", qty: 5800 },
-  ],
-  "90D": [
-    { date: "Mar 1", qty: 3200 }, { date: "Mar 15", qty: 3800 },
-    { date: "Apr 1", qty: 3500 }, { date: "Apr 15", qty: 4200 },
-    { date: "May 1", qty: 4600 }, { date: "May 15", qty: 5400 },
-    { date: "May 30", qty: 5800 },
-  ],
-  "1Y": [
-    { date: "Q1 25", qty: 2800 }, { date: "Q2 25", qty: 3500 },
-    { date: "Q3 25", qty: 4200 }, { date: "Q4 25", qty: 5100 },
-    { date: "Q1 26", qty: 5800 },
-  ],
-};
+// ── Chart helpers ────────────────────────────────────────────────
 
-const invoiceChartData: Record<string, { month: string; invoice: number; discount: number }[]> = {
-  Monthly: [
-    { month: "Jan", invoice: 180, discount: 2.1 }, { month: "Feb", invoice: 220, discount: 2.8 },
-    { month: "Mar", invoice: 160, discount: 1.9 }, { month: "Apr", invoice: 280, discount: 3.5 },
-    { month: "May", invoice: 240, discount: 3.1 }, { month: "Jun", invoice: 310, discount: 3.8 },
-  ],
-  Yearly: [
-    { month: "2022", invoice: 1450, discount: 4.2 }, { month: "2023", invoice: 1900, discount: 4.6 },
-    { month: "2024", invoice: 2400, discount: 5.0 }, { month: "2025", invoice: 2800, discount: 5.3 },
-  ],
-};
+/** Format a JS Date as 'MMM D' (e.g. "May 3") */
+function fmtDay(d: Date): string {
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+type MovementRange = "30D" | "90D" | "1Y";
 
 const APPROVAL_REASONS = [
   "Approved for project use",
@@ -163,7 +141,7 @@ export default function FacultyDashboard() {
   const queryClient = useQueryClient();
   const { data: items = [] } = useItems();
 
-  const [movementTab, setMovementTab] = useState<"30D" | "90D" | "1Y">("30D");
+  const [movementTab, setMovementTab] = useState<MovementRange>("30D");
   const [invoiceTab, setInvoiceTab] = useState("Monthly");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("All");
 
@@ -198,9 +176,11 @@ export default function FacultyDashboard() {
       ];
       for (const sql of statements) {
         // supabase.rpc requires a defined function; fallback: attempt and ignore errors
-        await supabase.rpc("exec_sql", { sql }).catch(() => {
+        try {
+          await supabase.rpc("exec_sql", { sql });
+        } catch {
           // exec_sql function may not exist — columns may already exist, that's fine
-        });
+        }
       }
     };
     runMigration();
@@ -220,6 +200,111 @@ export default function FacultyDashboard() {
     },
   });
 
+  // ── Chart query: Inventory Movement ─────────────────────────────
+  const movementDays = movementTab === "30D" ? 30 : movementTab === "90D" ? 90 : 365;
+
+  const { data: movementData, isLoading: movementLoading } = useQuery<{ date: string; qty: number }[]>({
+    queryKey: ["chart_movement", movementTab],
+    queryFn: async () => {
+      const since = new Date();
+      since.setDate(since.getDate() - movementDays);
+      const sinceISO = since.toISOString();
+
+      // Primary: inventory_items created in the window
+      const { data: invData, error: invError } = await supabase
+        .from("inventory_items")
+        .select("created_at, quantity")
+        .gte("created_at", sinceISO)
+        .order("created_at", { ascending: true });
+
+      if (invError) throw invError;
+
+      // Group by date
+      const dayMap = new Map<string, number>();
+      for (const row of (invData ?? [])) {
+        const d = new Date(row.created_at);
+        const key = fmtDay(d);
+        dayMap.set(key, (dayMap.get(key) ?? 0) + (row.quantity ?? 0));
+      }
+
+      // If we have ≥ 3 data points from inventory_items, use them
+      if (dayMap.size >= 3) {
+        return Array.from(dayMap.entries()).map(([date, qty]) => ({ date, qty }));
+      }
+
+      // Fallback: issue_requests grouped by date (count of items issued per day)
+      const { data: issueData, error: issueError } = await supabase
+        .from("issue_requests")
+        .select("created_at, quantity_requested")
+        .gte("created_at", sinceISO)
+        .order("created_at", { ascending: true });
+
+      if (issueError) throw issueError;
+
+      const issueMap = new Map<string, number>();
+      for (const row of (issueData ?? [])) {
+        const d = new Date(row.created_at);
+        const key = fmtDay(d);
+        issueMap.set(key, (issueMap.get(key) ?? 0) + ((row as any).quantity_requested ?? 1));
+      }
+
+      return Array.from(issueMap.entries()).map(([date, qty]) => ({ date, qty }));
+    },
+    staleTime: 60_000,
+  });
+
+  // ── Chart query: Issue Activity ──────────────────────────────────
+  const { data: issueActivityData, isLoading: activityLoading } = useQuery<{ month: string; count: number; trend: number }[]>({
+    queryKey: ["chart_issue_activity", invoiceTab],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("issue_requests")
+        .select("created_at")
+        .order("created_at", { ascending: true });
+
+      if (error) throw error;
+      const rows = (data ?? []) as { created_at: string }[];
+
+      if (invoiceTab === "Monthly") {
+        // Last 12 calendar months
+        const countMap = new Map<string, number>();
+        const now = new Date();
+        for (let i = 11; i >= 0; i--) {
+          const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+          const key = `${MONTH_NAMES[d.getMonth()]} ${String(d.getFullYear()).slice(2)}`;
+          countMap.set(key, 0);
+        }
+        for (const row of rows) {
+          const d = new Date(row.created_at);
+          const key = `${MONTH_NAMES[d.getMonth()]} ${String(d.getFullYear()).slice(2)}`;
+          if (countMap.has(key)) countMap.set(key, (countMap.get(key) ?? 0) + 1);
+        }
+        const entries = Array.from(countMap.entries());
+        const maxCount = Math.max(1, ...entries.map(([, v]) => v));
+        return entries.map(([month, count]) => ({
+          month,
+          count,
+          trend: parseFloat(((count / maxCount) * 10).toFixed(1)),
+        }));
+      } else {
+        // Yearly
+        const countMap = new Map<string, number>();
+        for (const row of rows) {
+          const yr = String(new Date(row.created_at).getFullYear());
+          countMap.set(yr, (countMap.get(yr) ?? 0) + 1);
+        }
+        const entries = Array.from(countMap.entries()).sort(([a], [b]) => Number(a) - Number(b));
+        const maxCount = Math.max(1, ...entries.map(([, v]) => v));
+        return entries.map(([month, count]) => ({
+          month,
+          count,
+          trend: parseFloat(((count / maxCount) * 10).toFixed(1)),
+        }));
+      }
+    },
+    staleTime: 60_000,
+  });
+
   const pendingRequests = allRequests.filter((r) => r.status === "pending");
 
   const extendedItems = items as any[];
@@ -227,8 +312,8 @@ export default function FacultyDashboard() {
   const lowStockCount = extendedItems.filter((i) => i.quantity <= i.reorder_threshold).length;
   const totalValue = extendedItems.reduce((sum, i) => sum + (i.quantity * (i.unit_price || 0)), 0);
   const totalValueFormatted = totalValue >= 1000000
-    ? `$${(totalValue / 1000000).toFixed(2)}M`
-    : `$${(totalValue / 1000).toFixed(1)}K`;
+    ? `₹${(totalValue / 1000000).toFixed(2)}M`
+    : `₹${(totalValue / 1000).toFixed(1)}K`;
   const fulfillmentRate = extendedItems.length > 0
     ? ((extendedItems.filter((i) => i.quantity > 0).length / extendedItems.length) * 100).toFixed(1)
     : "0.0";
@@ -386,7 +471,9 @@ export default function FacultyDashboard() {
     return r.status === statusFilter.toLowerCase();
   });
 
-  const maxQty = extendedItems.length > 0 ? Math.max(1, ...extendedItems.map((i) => i.quantity || 0)) * 10 : 6000;
+  const maxQty = movementData && movementData.length > 0
+    ? Math.max(1, ...movementData.map((d) => d.qty)) * 1.2
+    : 100;
 
   return (
     <AppShell title="IdeaLab — Faculty Portal" isPro={true}>
@@ -459,7 +546,7 @@ export default function FacultyDashboard() {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">Inventory Movement</h3>
-                <p className="text-[10px] text-zinc-500">Stock trajectory over time</p>
+                <p className="text-[10px] text-zinc-500">Items issued / stock added over time</p>
               </div>
               <div className="flex gap-1 bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg p-1">
                 {(["30D", "90D", "1Y"] as const).map((r) => (
@@ -476,29 +563,51 @@ export default function FacultyDashboard() {
               </div>
             </div>
             <div className="h-48">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={areaChartData[movementTab]} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="facultyAreaGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.4} />
-                      <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0.0} />
-                    </linearGradient>
-                  </defs>
-                  <XAxis dataKey="date" tick={{ fontSize: 9, fill: "#71717a" }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 9, fill: "#71717a" }} axisLine={false} tickLine={false} domain={[0, maxQty]} tickFormatter={(v) => `${(v / 1000).toFixed(1)}k`} />
-                  <Tooltip contentStyle={{ backgroundColor: "#18181b", border: "1px solid #27272a", borderRadius: "8px", fontSize: "11px", color: "#fff" }} />
-                  <Area type="monotone" dataKey="qty" stroke="#8b5cf6" strokeWidth={2} fill="url(#facultyAreaGrad)" name="Stock Qty" />
-                </AreaChart>
-              </ResponsiveContainer>
+              {movementLoading ? (
+                <div className="h-full flex flex-col gap-2 justify-end pb-2">
+                  {[40, 55, 35, 70, 60, 80, 65].map((h, i) => (
+                    <div
+                      key={i}
+                      className="w-full rounded animate-pulse bg-zinc-200 dark:bg-zinc-800"
+                      style={{ height: `${h}%`, alignSelf: "flex-end" }}
+                    />
+                  ))}
+                </div>
+              ) : !movementData || movementData.length === 0 ? (
+                <div className="h-full flex items-center justify-center">
+                  <span className="text-xs text-zinc-500">No data available yet</span>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={movementData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="facultyAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.4} />
+                        <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0.0} />
+                      </linearGradient>
+                    </defs>
+                    <XAxis dataKey="date" tick={{ fontSize: 9, fill: "#71717a" }} axisLine={false} tickLine={false} />
+                    <YAxis
+                      tick={{ fontSize: 9, fill: "#71717a" }}
+                      axisLine={false}
+                      tickLine={false}
+                      domain={[0, maxQty]}
+                      tickFormatter={(v: number) => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(v)}
+                    />
+                    <Tooltip contentStyle={{ backgroundColor: "#18181b", border: "1px solid #27272a", borderRadius: "8px", fontSize: "11px", color: "#fff" }} />
+                    <Area type="monotone" dataKey="qty" stroke="#8b5cf6" strokeWidth={2} fill="url(#facultyAreaGrad)" name="Quantity" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              )}
             </div>
           </div>
 
-          {/* Invoice chart */}
+          {/* Issue Activity chart */}
           <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">Issue Activity</h3>
-                <p className="text-[10px] text-zinc-500">Component issuances and trends</p>
+                <p className="text-[10px] text-zinc-500">Requests per period</p>
               </div>
               <div className="flex gap-1 bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 p-1 rounded-lg">
                 {["Monthly", "Yearly"].map((t) => (
@@ -515,16 +624,32 @@ export default function FacultyDashboard() {
               </div>
             </div>
             <div className="h-48">
-              <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={invoiceChartData[invoiceTab]} margin={{ top: 8, right: 0, left: -20, bottom: 0 }}>
-                  <XAxis dataKey="month" tick={{ fontSize: 9, fill: "#71717a" }} axisLine={false} tickLine={false} />
-                  <YAxis yAxisId="left" tick={{ fontSize: 9, fill: "#71717a" }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v}M`} />
-                  <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 9, fill: "#71717a" }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} width={30} />
-                  <Tooltip contentStyle={{ backgroundColor: "#18181b", border: "1px solid #27272a", borderRadius: "8px", fontSize: "11px", color: "#fff" }} />
-                  <Bar yAxisId="left" dataKey="invoice" fill="#3f3f46" radius={[3, 3, 0, 0]} name="Issues" />
-                  <Line yAxisId="right" type="monotone" dataKey="discount" stroke="#8b5cf6" strokeWidth={2} dot={false} name="Trend %" />
-                </ComposedChart>
-              </ResponsiveContainer>
+              {activityLoading ? (
+                <div className="h-full flex items-end gap-1 pb-2">
+                  {[50, 70, 45, 80, 60, 90, 55, 75, 65, 85, 40, 70].map((h, i) => (
+                    <div
+                      key={i}
+                      className="flex-1 rounded animate-pulse bg-zinc-200 dark:bg-zinc-800"
+                      style={{ height: `${h}%` }}
+                    />
+                  ))}
+                </div>
+              ) : !issueActivityData || issueActivityData.length === 0 ? (
+                <div className="h-full flex items-center justify-center">
+                  <span className="text-xs text-zinc-500">No data available yet</span>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart data={issueActivityData} margin={{ top: 8, right: 0, left: -20, bottom: 0 }}>
+                    <XAxis dataKey="month" tick={{ fontSize: 9, fill: "#71717a" }} axisLine={false} tickLine={false} />
+                    <YAxis yAxisId="left" tick={{ fontSize: 9, fill: "#71717a" }} axisLine={false} tickLine={false} tickFormatter={(v: number) => String(v)} />
+                    <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 9, fill: "#71717a" }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `${v}%`} width={30} />
+                    <Tooltip contentStyle={{ backgroundColor: "#18181b", border: "1px solid #27272a", borderRadius: "8px", fontSize: "11px", color: "#fff" }} />
+                    <Bar yAxisId="left" dataKey="count" fill="#3f3f46" radius={[3, 3, 0, 0]} name="Requests" />
+                    <Line yAxisId="right" type="monotone" dataKey="trend" stroke="#8b5cf6" strokeWidth={2} dot={false} name="Trend %" />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              )}
             </div>
           </div>
         </div>

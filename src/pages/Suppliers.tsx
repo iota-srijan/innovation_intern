@@ -277,9 +277,9 @@ export default function Suppliers() {
               <h4 className="text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-4">Recent PO History</h4>
               <div className="space-y-3">
                 {[
-                  { id: "PO-092", date: "May 18, 2026", amt: "$42k", status: "Processing" },
-                  { id: "PO-089", date: "May 12, 2026", amt: "$24.5k", status: "Delayed" },
-                  { id: "PO-074", date: "Apr 02, 2026", amt: "$18k", status: "Completed" },
+                  { id: "PO-092", date: "May 18, 2026", amt: "₹42k", status: "Processing" },
+                  { id: "PO-089", date: "May 12, 2026", amt: "₹24.5k", status: "Delayed" },
+                  { id: "PO-074", date: "Apr 02, 2026", amt: "₹18k", status: "Completed" },
                 ].map((po, idx) => (
                   <div key={idx} className="flex justify-between items-center p-3 rounded-xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-100 dark:border-zinc-800">
                     <div>

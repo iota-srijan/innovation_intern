@@ -5,6 +5,7 @@ import {
   Truck,
   FileText,
   GitBranch,
+  Megaphone,
   Settings,
   Layers,
   LogOut,
@@ -19,6 +20,7 @@ const navItems = [
   { icon: Truck, path: "/suppliers", label: "Suppliers" },
   { icon: FileText, path: "/purchase-orders", label: "Purchase Orders" },
   { icon: GitBranch, path: "/alerts/low-stock", label: "Low Stock Alerts" },
+  { icon: Megaphone, path: "/demands", label: "Demand Board" },
   { icon: Settings, path: "/profile", label: "Settings" },
 ];
 
@@ -83,8 +85,8 @@ export function Sidebar() {
             );
           }
 
-          // Students only see Dashboard and Settings (inventory is read-only via StudentDashboard)
-          if (userRole === 'student' && path !== '/profile') {
+          // Students only see Dashboard, Demand Board, and Settings
+          if (userRole === 'student' && path !== '/profile' && path !== '/demands') {
             return null;
           }
 

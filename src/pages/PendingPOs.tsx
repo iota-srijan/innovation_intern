@@ -10,16 +10,16 @@ const mockPendingPOs = [
     status: "Delayed",
     reason: "Supplier reported 5 day shipping delay due to customs.",
     expectedDelay: "+5 days",
-    amount: "$24,500.00",
+    amount: "₹24,500.00",
     date: "May 12, 2024",
   },
   {
     id: "PO-2024-092",
     supplier: "Apex Manufacturing",
     status: "Pending Approval",
-    reason: "Requires executive approval for orders >$40k.",
+    reason: "Requires executive approval for orders >₹40k.",
     expectedDelay: "Awaiting Auth",
-    amount: "$42,000.00",
+    amount: "₹42,000.00",
     date: "May 18, 2024",
   },
   {
@@ -28,7 +28,7 @@ const mockPendingPOs = [
     status: "Action Required",
     reason: "Payment method failed. Needs manual invoice processing.",
     expectedDelay: "Blocked",
-    amount: "$8,450.00",
+    amount: "₹8,450.00",
     date: "May 18, 2024",
   },
 ];
@@ -85,7 +85,7 @@ export default function PendingPOs() {
         <div className="mb-5 grid grid-cols-3 gap-4">
           <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 dark:border-white/8 dark:bg-[#1a1a1a]">
             <div className="text-xs text-zinc-500 dark:text-zinc-400 mb-1">Total Pending Value</div>
-            <div className="text-2xl font-semibold text-zinc-900 dark:text-white">$74,950</div>
+            <div className="text-2xl font-semibold text-zinc-900 dark:text-white">₹74,950</div>
           </div>
           <div className="rounded-2xl border border-amber-200/40 bg-amber-50/40 p-4 dark:border-amber-700/20 dark:bg-amber-950/20">
             <div className="text-xs text-amber-600 dark:text-amber-500 mb-1">Delayed Shipments</div>
