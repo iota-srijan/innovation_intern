@@ -123,6 +123,7 @@ export default function SignIn() {
             value={email}
             onChange={(e) => { setEmail(e.target.value); setError('') }}
             placeholder="Admin email"
+            autoComplete="off"
             className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white placeholder:text-zinc-600 mb-2 focus:outline-none focus:border-violet-500 transition-colors"
           />
           <input
@@ -130,6 +131,7 @@ export default function SignIn() {
             value={password}
             onChange={(e) => { setPassword(e.target.value); setError('') }}
             placeholder="Password"
+            autoComplete="new-password"
             onKeyDown={(e) => { if (e.key === 'Enter') handleAdminSignIn() }}
             className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-violet-500 transition-colors"
           />
