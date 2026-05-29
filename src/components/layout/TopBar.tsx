@@ -11,7 +11,7 @@ interface TopBarProps {
   cartCount?: number;
 }
 
-export function TopBar({ title, isDark, onToggleDark, isPro, cartCount }: TopBarProps) {
+export function TopBar({ title, isDark, onToggleDark, isPro: _isPro, cartCount }: TopBarProps) {
   const [initials, setInitials] = useState("SM");
 
   useEffect(() => {

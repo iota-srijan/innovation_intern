@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, Mail, Building, Bell, Monitor, Shield, LogOut, CheckCircle2, Sun, Moon, Laptop } from "lucide-react";
+import { User, Mail, Building, Bell, Shield, LogOut, CheckCircle2, Laptop } from "lucide-react";
 import { AppShell } from "../components/layout/AppShell";
 import { toast } from "sonner";
 
@@ -30,7 +30,7 @@ function getDeviceDetails(isDetailed = false) {
   return `${os}, ${browser}`;
 }
 
-type Section = 'account' | 'notifications' | 'appearance' | 'security';
+type Section = 'account' | 'notifications' | 'security';
 
 function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void }) {
   return (
@@ -59,8 +59,6 @@ export default function Profile() {
   const [form, setForm] = useState(savedProfile);
 
   const [notifs, setNotifs] = useState({ master: true, lowStock: true, poDelays: true, weeklyReports: false });
-  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('dark');
-  const [density, setDensity] = useState<'comfortable' | 'compact'>('comfortable');
 
   const handleSave = () => {
     try {
@@ -76,7 +74,6 @@ export default function Profile() {
   const navItems: { icon: typeof User; label: string; key: Section }[] = [
     { icon: User,    label: "Account Details",   key: "account" },
     { icon: Bell,    label: "Notifications",      key: "notifications" },
-    { icon: Monitor, label: "Appearance",         key: "appearance" },
     { icon: Shield,  label: "Security & Activity",key: "security" },
   ];
 
@@ -153,7 +150,7 @@ export default function Profile() {
                           type="text"
                           value={form.firstName}
                           onChange={e => setForm({ ...form, firstName: e.target.value })}
-                          className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition-colors focus:border-violet-600 focus:ring-1 focus:ring-violet-600 dark:border-white/8 dark:bg-white/6 dark:text-zinc-200"
+                          className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition-colors focus:border-violet-600 focus:ring-1 focus:ring-violet-600 dark:border-white/8 dark:bg-white/6 dark:text-zinc-900 dark:placeholder:text-zinc-500"
                         />
                       </div>
                       <div className="space-y-1.5">
@@ -162,7 +159,7 @@ export default function Profile() {
                           type="text"
                           value={form.lastName}
                           onChange={e => setForm({ ...form, lastName: e.target.value })}
-                          className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition-colors focus:border-violet-600 focus:ring-1 focus:ring-violet-600 dark:border-white/8 dark:bg-white/6 dark:text-zinc-200"
+                          className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition-colors focus:border-violet-600 focus:ring-1 focus:ring-violet-600 dark:border-white/8 dark:bg-white/6 dark:text-zinc-900 dark:placeholder:text-zinc-500"
                         />
                       </div>
                       <div className="col-span-2 space-y-1.5">
@@ -171,7 +168,7 @@ export default function Profile() {
                           type="email"
                           value={form.email}
                           onChange={e => setForm({ ...form, email: e.target.value })}
-                          className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition-colors focus:border-violet-600 focus:ring-1 focus:ring-violet-600 dark:border-white/8 dark:bg-white/6 dark:text-zinc-200"
+                          className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition-colors focus:border-violet-600 focus:ring-1 focus:ring-violet-600 dark:border-white/8 dark:bg-white/6 dark:text-zinc-900 dark:placeholder:text-zinc-500"
                         />
                       </div>
                     </div>
@@ -254,58 +251,6 @@ export default function Profile() {
               </div>
             )}
 
-            {/* ── APPEARANCE ── */}
-            {activeSection === 'appearance' && (
-              <div className="flex flex-col gap-5">
-                <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-white/8 dark:bg-[#1a1a1a]">
-                  <div className="border-b border-zinc-100 px-5 py-4 dark:border-white/8">
-                    <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">Theme</h3>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">Select your preferred interface theme.</p>
-                  </div>
-                  <div className="p-5 grid grid-cols-3 gap-3">
-                    {([
-                      { value: 'light',  label: 'Light',  icon: Sun },
-                      { value: 'dark',   label: 'Dark',   icon: Moon },
-                      { value: 'system', label: 'System', icon: Laptop },
-                    ] as { value: typeof theme; label: string; icon: typeof Sun }[]).map(({ value, label, icon: Icon }) => (
-                      <button
-                        key={value}
-                        onClick={() => setTheme(value)}
-                        className={`flex flex-col items-center gap-2 rounded-xl border-2 p-4 text-xs font-medium transition-colors ${
-                          theme === value
-                            ? 'border-violet-600 bg-violet-50 text-violet-700 dark:bg-violet-950/30 dark:text-violet-400'
-                            : 'border-zinc-200 dark:border-white/8 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300'
-                        }`}
-                      >
-                        <Icon className="h-5 w-5" />
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-white/8 dark:bg-[#1a1a1a]">
-                  <div className="border-b border-zinc-100 px-5 py-4 dark:border-white/8">
-                    <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">Density</h3>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">Control how compact the interface appears.</p>
-                  </div>
-                  <div className="p-5 grid grid-cols-2 gap-3">
-                    {(['comfortable', 'compact'] as const).map(d => (
-                      <button
-                        key={d}
-                        onClick={() => setDensity(d)}
-                        className={`rounded-xl border-2 p-4 text-xs font-medium capitalize transition-colors ${
-                          density === d
-                            ? 'border-violet-600 bg-violet-50 text-violet-700 dark:bg-violet-950/30 dark:text-violet-400'
-                            : 'border-zinc-200 dark:border-white/8 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300'
-                        }`}
-                      >
-                        {d}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
 
             {/* ── SECURITY ── */}
             {activeSection === 'security' && (

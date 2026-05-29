@@ -1,208 +1,602 @@
-import { useState } from 'react'
-import { Shield, Users, Activity, AlertCircle, Clock, Zap } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import {
+  Shield, Users, Package, ShoppingCart, GraduationCap,
+  Plus, X, RefreshCw, Clock,
+} from 'lucide-react'
 import { AppShell } from '../components/layout/AppShell'
+import { supabase } from '../lib/supabaseClient'
 import { toast } from 'sonner'
 
-const mockUsers = [
-  {
-    name: 'Shrijan Mishra',
-    email: 'shrijan@gmail.com',
-    provider: 'Google',
-    plan: 'Pro',
-    lastActive: '2 min ago',
-  },
-  {
-    name: 'Shrijan Mishra',
-    email: 'shrijan@outlook.com',
-    provider: 'Microsoft',
-    plan: 'Free',
-    lastActive: '1 hour ago',
-  },
-  {
-    name: 'Admin',
-    email: 'admin@stockpilot.inc',
-    provider: 'Admin',
-    plan: 'Admin',
-    lastActive: 'Just now',
-  },
-]
+// ─── Types ─────────────────────────────────────────────────────────────────────
 
-const auditLog = [
-  { ts: '2026-05-20 14:32', user: 'shrijan', action: 'Added item MacBook Pro M3 Max', type: 'CREATE' },
-  { ts: '2026-05-20 14:28', user: 'shrijan', action: 'Updated QTY for Dell UltraSharp 27', type: 'UPDATE' },
-  { ts: '2026-05-20 13:55', user: 'shrijan', action: 'Created PO-2024-092 — Apex Manufacturing', type: 'CREATE' },
-  { ts: '2026-05-20 12:10', user: 'admin', action: 'Upgraded user shrijan@gmail.com to Pro', type: 'UPDATE' },
-  { ts: '2026-05-19 18:42', user: 'shrijan', action: 'Deleted item Standing Desk 60-inch', type: 'DELETE' },
-  { ts: '2026-05-19 17:30', user: 'admin', action: 'Broadcast alert sent to all users', type: 'UPDATE' },
-]
+type RoleType = 'student' | 'faculty' | 'admin'
+type ActionType = 'CREATE' | 'UPDATE' | 'DELETE'
 
-function PlanBadge({ plan }: { plan: string }) {
-  const styles: Record<string, string> = {
-    Pro: 'bg-violet-500/20 text-violet-300',
-    Free: 'bg-zinc-700 text-zinc-400',
-    Admin: 'bg-red-500/20 text-red-300',
+interface UserRow {
+  user_id: string
+  email: string
+  role: RoleType | null
+  full_name: string | null
+  last_sign_in_at: string | null
+}
+
+interface AuditEntry {
+  id: string
+  actor_email: string | null
+  action: string
+  action_type: ActionType
+  created_at: string
+}
+
+interface Stats {
+  totalUsers: number
+  totalRequests: number
+  totalItems: number
+  activeFaculty: number
+}
+
+// ─── Helpers ───────────────────────────────────────────────────────────────────
+
+function timeAgo(iso: string | null): string {
+  if (!iso) return 'Never'
+  const diff = Date.now() - new Date(iso).getTime()
+  const mins = Math.floor(diff / 60000)
+  if (mins < 1) return 'Just now'
+  if (mins < 60) return `${mins}m ago`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24) return `${hrs}h ago`
+  return `${Math.floor(hrs / 24)}d ago`
+}
+
+function formatTs(iso: string): string {
+  const d = new Date(iso)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+// ─── Badges ────────────────────────────────────────────────────────────────────
+
+function RoleBadge({ role }: { role: RoleType }) {
+  const cls: Record<RoleType, string> = {
+    student:  'text-cyan-400 bg-cyan-400/10 border-cyan-400/20',
+    faculty:  'text-violet-400 bg-violet-400/10 border-violet-400/20',
+    admin:    'text-amber-400 bg-amber-400/10 border-amber-400/20',
+  }
+  const label: Record<RoleType, string> = {
+    student: 'Student',
+    faculty: 'Faculty',
+    admin:   'Admin',
   }
   return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-semibold ${styles[plan] ?? styles.Free}`}>
-      {plan}
+    <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${cls[role]}`}>
+      {label[role]}
     </span>
   )
 }
 
-function AuditBadge({ type }: { type: string }) {
-  const styles: Record<string, string> = {
-    CREATE: 'bg-green-500/15 text-green-400',
-    UPDATE: 'bg-blue-500/15 text-blue-400',
-    DELETE: 'bg-red-500/15 text-red-400',
+function AuditBadge({ type }: { type: ActionType }) {
+  const cls: Record<ActionType, string> = {
+    CREATE: 'text-green-400 bg-green-400/10 border-green-400/20',
+    UPDATE: 'text-blue-400 bg-blue-400/10 border-blue-400/20',
+    DELETE: 'text-red-400 bg-red-400/10 border-red-400/20',
   }
   return (
-    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-bold tracking-wide ${styles[type] ?? ''}`}>
+    <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[9px] font-bold tracking-wider ${cls[type]}`}>
       {type}
     </span>
   )
 }
 
+// ─── Modal ──────────────────────────────────────────────────────────────────────
+
+function Modal({ onClose, children }: { onClose: () => void; children: React.ReactNode }) {
+  return (
+    <div
+      className="fixed inset-0 z-50 grid place-items-center bg-[rgba(5,5,7,0.75)] p-6 backdrop-blur-[6px]"
+      onMouseDown={e => { if (e.target === e.currentTarget) onClose() }}
+    >
+      {children}
+    </div>
+  )
+}
+
+// ─── Main Component ─────────────────────────────────────────────────────────────
+
 export default function AdminDashboard() {
-  const [broadcast, setBroadcast] = useState('')
+  const [users, setUsers]           = useState<UserRow[]>([])
+  const [usersLoading, setUsersLoading] = useState(true)
+  const [usersError, setUsersError] = useState<string | null>(null)
+
+  const [auditLog, setAuditLog]   = useState<AuditEntry[]>([])
+  const [auditExists, setAuditExists] = useState(true)
+
+  const [stats, setStats]           = useState<Stats>({ totalUsers: 0, totalRequests: 0, totalItems: 0, activeFaculty: 0 })
+  const [statsLoading, setStatsLoading] = useState(true)
+
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [addEmail, setAddEmail]     = useState('')
+  const [addSubmitting, setAddSubmitting] = useState(false)
+
+  const [updatingId, setUpdatingId] = useState<string | null>(null)
+
+  const initRef = useRef(false)
+
+  // ── Fetch users ──────────────────────────────────────────────────────────────
+
+  const fetchUsers = useCallback(async () => {
+    setUsersLoading(true)
+    try {
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        if ((error as { code?: string }).code === '42P01') {
+          setUsersError('user_roles table not found. Run the database migration to enable this feature.')
+        } else {
+          setUsersError(error.message)
+        }
+        setUsers([])
+      } else {
+        setUsers((data ?? []) as UserRow[])
+        setUsersError(null)
+      }
+    } catch {
+      setUsersError('Failed to load users')
+    } finally {
+      setUsersLoading(false)
+    }
+  }, [])
+
+  // ── Fetch audit log ──────────────────────────────────────────────────────────
+
+  const fetchAuditLog = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('audit_log')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(20)
+
+      if (error) {
+        if ((error as { code?: string }).code === '42P01') {
+          setAuditExists(false)
+        }
+        return
+      }
+      setAuditLog((data ?? []) as AuditEntry[])
+      setAuditExists(true)
+    } catch {
+      // silently ignore — audit log is optional
+    }
+  }, [])
+
+  // ── Fetch stats ──────────────────────────────────────────────────────────────
+
+  const fetchStats = useCallback(async () => {
+    setStatsLoading(true)
+    try {
+      const [usersRes, requestsRes, itemsRes, facultyRes] = await Promise.all([
+        supabase.from('user_roles').select('*', { count: 'exact', head: true }),
+        supabase.from('issue_requests').select('*', { count: 'exact', head: true }),
+        supabase.from('inventory_items').select('*', { count: 'exact', head: true }),
+        supabase.from('user_roles').select('*', { count: 'exact', head: true }).eq('role', 'faculty'),
+      ])
+      setStats({
+        totalUsers:     usersRes.count    ?? 0,
+        totalRequests:  requestsRes.count ?? 0,
+        totalItems:     itemsRes.count    ?? 0,
+        activeFaculty:  facultyRes.count  ?? 0,
+      })
+    } catch {
+      // keep zero defaults
+    } finally {
+      setStatsLoading(false)
+    }
+  }, [])
+
+  // ── Initial load ─────────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    if (initRef.current) return
+    initRef.current = true
+    fetchUsers()
+    fetchAuditLog()
+    fetchStats()
+  }, [fetchUsers, fetchAuditLog, fetchStats])
+
+  // ── Grant faculty ─────────────────────────────────────────────────────────────
+
+  const handleGrantFaculty = async (row: UserRow) => {
+    if (updatingId) return
+    setUpdatingId(row.user_id)
+    try {
+      const { error } = await supabase
+        .from('user_roles')
+        .update({ role: 'faculty' })
+        .eq('user_id', row.user_id)
+
+      if (error) {
+        toast.error(error.message)
+      } else {
+        toast.success(`${row.email} granted faculty access`)
+        await fetchUsers()
+        await fetchStats()
+      }
+    } catch {
+      toast.error('Failed to update role')
+    } finally {
+      setUpdatingId(null)
+    }
+  }
+
+  // ── Revoke faculty ────────────────────────────────────────────────────────────
+
+  const handleRevokeFaculty = async (row: UserRow) => {
+    if (updatingId) return
+    setUpdatingId(row.user_id)
+    try {
+      const { error } = await supabase
+        .from('user_roles')
+        .update({ role: 'student' })
+        .eq('user_id', row.user_id)
+
+      if (error) {
+        toast.error(error.message)
+      } else {
+        toast.success(`${row.email} revoked to student`)
+        await fetchUsers()
+        await fetchStats()
+      }
+    } catch {
+      toast.error('Failed to update role')
+    } finally {
+      setUpdatingId(null)
+    }
+  }
+
+  // ── Add faculty by email ──────────────────────────────────────────────────────
+
+  const handleAddFaculty = async () => {
+    if (!addEmail.trim() || addSubmitting) return
+    setAddSubmitting(true)
+    try {
+      // Check if a row already exists for this email
+      const { data: existing, error: fetchErr } = await supabase
+        .from('user_roles')
+        .select('user_id, role')
+        .eq('email', addEmail.trim())
+        .maybeSingle()
+
+      if (fetchErr && (fetchErr as { code?: string }).code !== 'PGRST116') {
+        throw new Error(fetchErr.message)
+      }
+
+      if (existing) {
+        const { error } = await supabase
+          .from('user_roles')
+          .update({ role: 'faculty' })
+          .eq('email', addEmail.trim())
+        if (error) throw new Error(error.message)
+      } else {
+        const { error } = await supabase
+          .from('user_roles')
+          .insert({ email: addEmail.trim(), role: 'faculty' })
+        if (error) {
+          const msg = error.message.toLowerCase()
+          if (msg.includes('foreign key') || msg.includes('violates')) {
+            toast.error('User must sign up first before being granted faculty access')
+            return
+          }
+          throw new Error(error.message)
+        }
+      }
+
+      toast.success(`${addEmail.trim()} granted faculty access`)
+      setAddEmail('')
+      setShowAddModal(false)
+      await fetchUsers()
+      await fetchStats()
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to add faculty'
+      if (msg.toLowerCase().includes('foreign key') || msg.toLowerCase().includes('violates')) {
+        toast.error('User must sign up first before being granted faculty access')
+      } else {
+        toast.error(msg)
+      }
+    } finally {
+      setAddSubmitting(false)
+    }
+  }
+
+  // ── Refresh all ───────────────────────────────────────────────────────────────
+
+  const handleRefresh = () => {
+    fetchUsers()
+    fetchAuditLog()
+    fetchStats()
+  }
+
+  // ── Stats card config ─────────────────────────────────────────────────────────
+
+  const statCards = [
+    {
+      label: 'Total Users',
+      value: stats.totalUsers,
+      icon: Users,
+      numCls:  'text-white',
+      dotCls:  'bg-violet-400',
+      bgCls:   'bg-violet-500/10',
+      iconCls: 'text-violet-400',
+    },
+    {
+      label: 'Total Requests',
+      value: stats.totalRequests,
+      icon: ShoppingCart,
+      numCls:  'text-cyan-400',
+      dotCls:  'bg-cyan-400',
+      bgCls:   'bg-cyan-500/10',
+      iconCls: 'text-cyan-400',
+    },
+    {
+      label: 'Total Items',
+      value: stats.totalItems,
+      icon: Package,
+      numCls:  'text-orange-400',
+      dotCls:  'bg-orange-400',
+      bgCls:   'bg-orange-500/10',
+      iconCls: 'text-orange-400',
+    },
+    {
+      label: 'Active Faculty',
+      value: stats.activeFaculty,
+      icon: GraduationCap,
+      numCls:  'text-green-400',
+      dotCls:  'bg-green-400',
+      bgCls:   'bg-green-500/10',
+      iconCls: 'text-green-400',
+    },
+  ] as const
+
+  // ── Render ────────────────────────────────────────────────────────────────────
 
   return (
     <AppShell title="Admin Panel">
-      <div className="p-6 max-w-6xl">
+      <div className="mx-auto max-w-[1100px] px-6 pb-24 pt-6">
 
-        {/* Admin Badge */}
-        <div className="bg-violet-900/20 border border-violet-800/40 rounded-xl px-4 py-2 text-xs text-violet-300 font-medium mb-6 inline-flex items-center gap-2">
-          <Shield className="w-3.5 h-3.5" />
-          Admin access — StockPilot Inc.
+        {/* ── Header ── */}
+        <div className="mb-8 flex items-start justify-between gap-4">
+          <div>
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-violet-500/30 bg-violet-500/[0.12] px-3 py-1.5 text-xs font-semibold text-violet-400">
+              <Shield className="h-3.5 w-3.5" />
+              Admin access — OPJU IdeaLab
+            </div>
+            <h1 className="text-[28px] font-extrabold tracking-[-0.02em] text-white">Admin Panel</h1>
+            <p className="mt-1 text-sm text-[#9a9aa6]">
+              Manage users, view activity, and monitor system health
+            </p>
+          </div>
+
+          <button
+            onClick={handleRefresh}
+            className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/[0.07]"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            Refresh
+          </button>
         </div>
 
-        {/* Section 1 — System Health */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-          {[
-            { label: 'Uptime', value: '99.9%', icon: Activity, color: 'text-green-400', bg: 'bg-green-500/10' },
-            { label: 'API Latency', value: '<80ms', icon: Zap, color: 'text-green-400', bg: 'bg-green-500/10' },
-            { label: 'Active Users', value: '3', icon: Users, color: 'text-violet-400', bg: 'bg-violet-500/10' },
-            { label: 'Errors (24h)', value: '0', icon: AlertCircle, color: 'text-green-400', bg: 'bg-green-500/10' },
-          ].map(({ label, value, icon: Icon, color, bg }) => (
-            <div key={label} className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">{label}</span>
-                <div className={`p-1.5 rounded-lg ${bg}`}>
-                  <Icon className={`w-3.5 h-3.5 ${color}`} />
+        {/* ── Stats Row ── */}
+        <div className="mb-8 grid grid-cols-2 gap-3 md:grid-cols-4">
+          {statCards.map(({ label, value, icon: Icon, numCls, dotCls, bgCls, iconCls }) => (
+            <div key={label} className="rounded-[13px] border border-white/10 bg-[#111114] px-4 py-4">
+              <div className="mb-3 flex items-center justify-between">
+                <span className="text-[10px] font-semibold uppercase tracking-widest text-[#6e6e78]">
+                  {label}
+                </span>
+                <div className={`rounded-lg p-1.5 ${bgCls}`}>
+                  <Icon className={`h-3.5 w-3.5 ${iconCls}`} />
                 </div>
               </div>
-              <span className={`text-2xl font-bold tracking-tight ${color}`}>{value}</span>
+              <div className={`text-[26px] font-extrabold tabular-nums leading-none ${numCls}`}>
+                {statsLoading ? '—' : value}
+              </div>
+              <div className="mt-2 flex items-center gap-1.5 text-[11px] text-[#6e6e78]">
+                <span className={`h-[7px] w-[7px] rounded-full ${dotCls}`} />
+                {label}
+              </div>
             </div>
           ))}
         </div>
 
-        {/* Section 2 — User Management */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 mb-6">
-          <div className="flex items-center justify-between mb-5">
-            <h2 className="text-sm font-bold text-white">User Management</h2>
-            <span className="text-[10px] font-semibold bg-zinc-800 text-zinc-400 px-2.5 py-0.5 rounded-full border border-zinc-700">
-              3 accounts
-            </span>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="border-b border-zinc-800">
-                <tr>
-                  {['User', 'Email', 'Provider', 'Plan', 'Last Active', 'Actions'].map(h => (
-                    <th key={h} className="pb-3 px-2 text-[9px] font-semibold uppercase tracking-widest text-zinc-500 first:pl-0">
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-800/60">
-                {mockUsers.map((u, i) => (
-                  <tr key={i} className="group hover:bg-white/[0.02] transition-colors">
-                    <td className="py-3 px-2 first:pl-0 font-semibold text-zinc-200 whitespace-nowrap">{u.name}</td>
-                    <td className="py-3 px-2 text-zinc-400 whitespace-nowrap font-mono text-[10px]">{u.email}</td>
-                    <td className="py-3 px-2 text-zinc-400">{u.provider}</td>
-                    <td className="py-3 px-2">
-                      <PlanBadge plan={u.plan} />
-                    </td>
-                    <td className="py-3 px-2 text-zinc-500 flex items-center gap-1.5">
-                      <Clock className="w-3 h-3 shrink-0" /> {u.lastActive}
-                    </td>
-                    <td className="py-3 px-2">
-                      {u.plan === 'Pro' && (
-                        <button
-                          onClick={() => toast.success(`${u.name} demoted to Free`)}
-                          className="text-xs px-2.5 py-1 rounded-md border border-zinc-700 text-zinc-400 hover:border-violet-500 hover:text-violet-400 transition-colors whitespace-nowrap"
-                        >
-                          Demote to Free
-                        </button>
-                      )}
-                      {u.plan === 'Free' && (
-                        <button
-                          onClick={() => toast.success(`${u.name} upgraded to Pro`)}
-                          className="text-xs px-2.5 py-1 rounded-md border border-zinc-700 text-zinc-400 hover:border-violet-500 hover:text-violet-400 transition-colors whitespace-nowrap"
-                        >
-                          Upgrade to Pro
-                        </button>
-                      )}
-                      {u.plan === 'Admin' && (
-                        <span className="text-zinc-700 text-xs">—</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Section 3 — Audit Log */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 mb-6">
-          <div className="flex items-center justify-between mb-5">
-            <h2 className="text-sm font-bold text-white">Audit Log</h2>
-            <span className="text-[10px] text-zinc-500 font-medium">Recent activity</span>
-          </div>
-
-          <div>
-            {auditLog.map((entry, i) => (
-              <div key={i} className="flex items-start gap-3 py-2.5 border-b border-zinc-800 last:border-0">
-                <span className="text-[10px] text-zinc-600 w-32 shrink-0 font-mono pt-px leading-tight">
-                  {entry.ts}
+        {/* ── User Management ── */}
+        <div className="mb-6 rounded-2xl border border-white/10 bg-[#111114] p-5">
+          <div className="mb-5 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <h2 className="text-sm font-bold text-white">User Management</h2>
+              {!usersLoading && !usersError && (
+                <span className="rounded-full border border-white/[0.08] bg-white/[0.04] px-2.5 py-0.5 text-[10px] font-semibold text-[#6e6e78]">
+                  {users.length} account{users.length !== 1 ? 's' : ''}
                 </span>
-                <span className="text-xs text-zinc-400 w-16 shrink-0 font-medium">{entry.user}</span>
-                <span className="text-xs text-zinc-300 flex-1">{entry.action}</span>
-                <AuditBadge type={entry.type} />
+              )}
+            </div>
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-gradient-to-b from-violet-500 to-violet-700 px-3.5 py-2 text-[13px] font-semibold text-white shadow-[0_1px_0_rgba(255,255,255,0.14)_inset,0_8px_20px_-10px_rgba(124,58,237,0.6)] transition-transform hover:-translate-y-px active:translate-y-px"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Add Faculty by Email
+            </button>
+          </div>
+
+          {usersLoading ? (
+            <div className="flex justify-center py-12">
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
+            </div>
+          ) : usersError ? (
+            <div className="rounded-xl border border-amber-400/20 bg-amber-400/[0.07] px-4 py-3 text-sm text-amber-300">
+              {usersError}
+            </div>
+          ) : users.length === 0 ? (
+            <p className="py-10 text-center text-sm text-[#6e6e78]">No users found in user_roles table.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b border-white/[0.08]">
+                    {['Name / Email', 'Role', 'Last Active', 'Actions'].map(h => (
+                      <th
+                        key={h}
+                        className="px-2 pb-3 text-[10px] font-semibold uppercase tracking-widest text-[#6e6e78] first:pl-0"
+                      >
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/[0.05]">
+                  {users.map(row => {
+                    const role: RoleType = row.role ?? 'student'
+                    return (
+                      <tr key={row.user_id} className="transition-colors hover:bg-white/[0.02]">
+                        <td className="py-3.5 px-2 first:pl-0">
+                          <div className="text-sm font-semibold text-[#f4f4f6]">
+                            {row.full_name || row.email.split('@')[0]}
+                          </div>
+                          <div className="mt-0.5 font-mono text-[11px] text-[#6e6e78]">{row.email}</div>
+                        </td>
+                        <td className="py-3.5 px-2">
+                          <RoleBadge role={role} />
+                        </td>
+                        <td className="py-3.5 px-2">
+                          <div className="flex items-center gap-1.5 text-xs text-[#6e6e78]">
+                            <Clock className="h-3 w-3 shrink-0" />
+                            {timeAgo(row.last_sign_in_at)}
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-2">
+                          {role === 'admin' ? (
+                            <span className="text-[#4b4b57]">—</span>
+                          ) : role === 'student' ? (
+                            <button
+                              onClick={() => handleGrantFaculty(row)}
+                              disabled={updatingId === row.user_id}
+                              className="inline-flex cursor-pointer items-center gap-1.5 rounded-[9px] border border-violet-500/40 bg-violet-500/[0.08] px-3 py-1.5 text-[12px] font-semibold text-violet-400 transition hover:bg-violet-500/[0.16] disabled:opacity-50"
+                            >
+                              {updatingId === row.user_id && (
+                                <span className="h-3 w-3 animate-spin rounded-full border border-violet-400 border-t-transparent" />
+                              )}
+                              Grant Faculty
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleRevokeFaculty(row)}
+                              disabled={updatingId === row.user_id}
+                              className="inline-flex cursor-pointer items-center gap-1.5 rounded-[9px] border border-red-400/30 bg-red-400/[0.07] px-3 py-1.5 text-[12px] font-semibold text-red-400 transition hover:bg-red-400/[0.14] disabled:opacity-50"
+                            >
+                              {updatingId === row.user_id && (
+                                <span className="h-3 w-3 animate-spin rounded-full border border-red-400 border-t-transparent" />
+                              )}
+                              Revoke Faculty
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* ── Audit Log ── */}
+        {auditExists && (
+          <div className="rounded-2xl border border-white/10 bg-[#111114] p-5">
+            <div className="mb-5 flex items-center justify-between">
+              <h2 className="text-sm font-bold text-white">Audit Log</h2>
+              <span className="text-[10px] font-medium text-[#6e6e78]">Last 20 entries</span>
+            </div>
+
+            {auditLog.length === 0 ? (
+              <p className="py-8 text-center text-sm text-[#6e6e78]">No audit entries yet.</p>
+            ) : (
+              <div>
+                {auditLog.map(entry => (
+                  <div
+                    key={entry.id}
+                    className="flex items-start gap-3 border-b border-white/[0.06] py-3 last:border-0"
+                  >
+                    <span className="w-36 shrink-0 pt-px font-mono text-[10px] leading-tight text-[#4b4b57]">
+                      {formatTs(entry.created_at)}
+                    </span>
+                    <span className="w-36 shrink-0 truncate text-[12px] font-medium text-[#9a9aa6]">
+                      {entry.actor_email ?? '—'}
+                    </span>
+                    <span className="flex-1 text-[12px] text-[#f4f4f6]">{entry.action}</span>
+                    <AuditBadge type={entry.action_type} />
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
           </div>
-        </div>
-
-        {/* Section 4 — Broadcast Alert */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
-          <div className="mb-4">
-            <h2 className="text-sm font-bold text-white">Broadcast Alert</h2>
-            <p className="text-xs text-zinc-500 mt-0.5">Send a notification banner to all users</p>
-          </div>
-
-          <textarea
-            value={broadcast}
-            onChange={(e) => setBroadcast(e.target.value)}
-            placeholder="Type your announcement…"
-            className="bg-zinc-800 border border-zinc-700 rounded-xl w-full h-20 px-4 py-3 text-sm text-white placeholder:text-zinc-500 resize-none focus:outline-none focus:border-violet-500 transition-colors"
-          />
-
-          <button
-            onClick={() => {
-              if (!broadcast.trim()) return
-              toast.success('Alert broadcast to all users')
-              setBroadcast('')
-            }}
-            className="mt-3 px-5 py-2 bg-violet-700 hover:bg-violet-600 text-white text-sm font-semibold rounded-xl transition-colors"
-          >
-            Send Broadcast
-          </button>
-        </div>
+        )}
 
       </div>
+
+      {/* ── Add Faculty Modal ── */}
+      {showAddModal && (
+        <Modal onClose={() => { setShowAddModal(false); setAddEmail('') }}>
+          <div className="w-full max-w-[420px] rounded-[18px] border border-white/10 bg-[#16161b] p-6 shadow-[0_40px_90px_-30px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.04)]">
+            <div className="mb-1 flex items-center justify-between">
+              <h2 className="text-[17px] font-bold tracking-[-0.01em] text-white">Add Faculty by Email</h2>
+              <button
+                onClick={() => { setShowAddModal(false); setAddEmail('') }}
+                className="grid h-8 w-8 cursor-pointer place-items-center rounded-[9px] border border-white/10 bg-white/[0.04] text-[#9a9aa6] transition hover:bg-white/[0.08] hover:text-white"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <p className="mb-5 text-[13px] text-[#9a9aa6]">
+              Grant faculty access to a user by their email. If the user doesn't exist yet, they must sign up first.
+            </p>
+
+            <div className="mb-5">
+              <label className="mb-1.5 block text-[12.5px] font-semibold text-[#f4f4f6]">
+                Email address <span className="text-violet-400">*</span>
+              </label>
+              <input
+                type="email"
+                value={addEmail}
+                onChange={e => setAddEmail(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') void handleAddFaculty() }}
+                placeholder="faculty@opju.ac.in"
+                className="w-full rounded-[11px] border border-white/10 bg-[#0a0a0b] px-3 py-[11px] text-[14px] text-white placeholder-[#6e6e78] outline-none transition focus:border-violet-500 focus:shadow-[0_0_0_3px_rgba(124,58,237,0.16)]"
+              />
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => { setShowAddModal(false); setAddEmail('') }}
+                className="cursor-pointer rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-[14px] font-semibold text-white transition hover:bg-white/[0.06]"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => void handleAddFaculty()}
+                disabled={!addEmail.trim() || addSubmitting}
+                className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-gradient-to-b from-violet-500 to-violet-700 px-4 py-2.5 text-[14px] font-semibold text-white transition-opacity disabled:opacity-50"
+              >
+                {addSubmitting && (
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                )}
+                Grant Faculty Access
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </AppShell>
   )
 }

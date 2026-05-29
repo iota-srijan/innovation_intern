@@ -9,7 +9,6 @@ import {
   Settings,
   Layers,
   LogOut,
-  Shield,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../../context/AuthContext";
@@ -90,6 +89,11 @@ export function Sidebar() {
             return null;
           }
 
+          // Admin only sees Settings (Dashboard handled above, Sign Out always shown)
+          if (userRole === 'admin' && path !== '/profile') {
+            return null;
+          }
+
           return (
             <Link
               key={path}
@@ -109,21 +113,6 @@ export function Sidebar() {
 
       {/* Bottom actions */}
       <div className="flex flex-col items-center gap-1 mt-auto">
-        {/* Admin shield icon — only visible to admin users */}
-        {userRole === 'admin' && (
-          <Link
-            to="/admin"
-            title="Admin Panel"
-            className={`flex h-9 w-9 items-center justify-center rounded-lg transition-all duration-150 ${
-              location.pathname === '/admin'
-                ? 'bg-violet-700/30 text-violet-400'
-                : 'text-violet-500 hover:bg-violet-700/20 hover:text-violet-300'
-            }`}
-          >
-            <Shield className="h-4 w-4" />
-          </Link>
-        )}
-
         {/* Logout */}
         <button
           onClick={async () => {
