@@ -1,11 +1,18 @@
 import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
-import { useUserType } from '../context/UserTypeContext'
+
+// Mirrors the fallback logic in AuthContext — used only when user_roles has no row
+function getDefaultRole(email: string): 'student' | 'faculty' | 'blocked' {
+  if (email === 'srijanmishra1669@gmail.com') return 'student'
+  if (email === 'mishrasrijan2305@gmail.com') return 'faculty'
+  if (email.endsWith('@opju.ac.in')) return 'faculty'
+  if (email.endsWith('@opju.edu.in')) return 'student'
+  return 'blocked'
+}
 
 export default function AuthCallback() {
   const navigate = useNavigate()
-  const { setUserType } = useUserType()
   const handled = useRef(false)
 
   useEffect(() => {
@@ -17,70 +24,73 @@ export default function AuthCallback() {
 
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession()
+
       if (session) {
         const email = session.user.email ?? ''
 
-        // Test student account — checked before domain rules
-        if (email === 'srijanmishra1669@gmail.com') {
-          setUserType('student' as any)
-          localStorage.setItem('sp-user-type', 'student')
-          navigate('/student-dashboard', { replace: true })
-          return
-        }
+        // Block emails that don't match any allowed domain or known address
+        const isAllowed =
+          email.endsWith('@opju.edu.in') ||
+          email.endsWith('@opju.ac.in') ||
+          email === 'srijanmishra1669@gmail.com' ||
+          email === 'mishrasrijan2305@gmail.com'
 
-        // Test faculty account — checked before domain rules
-        if (email === 'mishrasrijan2305@gmail.com') {
-          setUserType('faculty' as any)
-          localStorage.setItem('sp-user-type', 'faculty')
-          navigate('/faculty-dashboard', { replace: true })
-          return
-        }
-
-        // Block non-OPJU emails
-        if (
-          !email.endsWith('@opju.edu.in') &&
-          !email.endsWith('@opju.ac.in') &&
-          email !== 'admin@stockpilot.inc'
-        ) {
+        if (!isAllowed) {
           await supabase.auth.signOut()
           navigate('/signin?error=blocked', { replace: true })
           return
         }
 
-        if (email.endsWith('@opju.ac.in')) {
-          setUserType('faculty' as any)
-          localStorage.setItem('sp-user-type', 'faculty')
+        // Consult user_roles table first — this respects admin grant/revoke
+        let role: 'student' | 'faculty' = 'student'
+        try {
+          const { data } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('email', email)
+            .maybeSingle()
+
+          if (data?.role === 'faculty') {
+            role = 'faculty'
+          } else if (data?.role === 'student') {
+            role = 'student'
+          } else {
+            // No DB row yet — fall back to domain rules
+            const defaultRole = getDefaultRole(email)
+            role = defaultRole === 'blocked' ? 'student' : defaultRole
+          }
+        } catch {
+          // DB unreachable — fall back to domain rules
+          const defaultRole = getDefaultRole(email)
+          role = defaultRole === 'blocked' ? 'student' : defaultRole
+        }
+
+        localStorage.setItem('sp-user-type', role)
+
+        if (role === 'faculty') {
           navigate('/faculty-dashboard', { replace: true })
-          return
-        }
-
-        if (email.endsWith('@opju.edu.in')) {
-          setUserType('student' as any)
-          localStorage.setItem('sp-user-type', 'student')
+        } else {
           navigate('/student-dashboard', { replace: true })
-          return
         }
-
-        // admin@stockpilot.inc falls through to /admin (handled by admin login not OAuth)
-        navigate('/dashboard', { replace: true })
         return
       }
+
       attempts++
       if (attempts < maxAttempts) {
-        setTimeout(checkSession, 500)
+        setTimeout(() => { void checkSession() }, 500)
       } else {
         navigate('/signin', { replace: true })
       }
     }
 
-    checkSession()
-  }, [])
+    void checkSession()
+  }, [navigate])
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
       <div className="text-center">
-        <div className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-        <p className="text-zinc-400 text-sm">Signing you in...</p>
+        <div className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+        <p className="text-zinc-400 text-sm">Signing you in…</p>
       </div>
     </div>
   )

@@ -52,7 +52,7 @@ export default function StudentDashboard() {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All");
   const [modalItem, setModalItem] = useState<any>(null);
-  const [requestQty, setRequestQty] = useState(1);
+  const [requestQty, setRequestQty] = useState<number | "">(1);
   const [purpose, setPurpose] = useState("");
 
   const studentEmail = user?.email ?? "";
@@ -356,11 +356,19 @@ export default function StudentDashboard() {
                   min={1}
                   max={modalItem.quantity}
                   value={requestQty}
-                  onChange={(e) =>
-                    setRequestQty(
-                      Math.min(modalItem.quantity, Math.max(1, Number(e.target.value)))
-                    )
-                  }
+                  onChange={(e) => {
+                    if (e.target.value === "") {
+                      setRequestQty("");
+                    } else {
+                      setRequestQty(Number(e.target.value));
+                    }
+                  }}
+                  onBlur={() => {
+                    let val = Number(requestQty);
+                    if (isNaN(val) || val < 1) val = 1;
+                    if (val > modalItem.quantity) val = modalItem.quantity;
+                    setRequestQty(val);
+                  }}
                   className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500 transition-colors"
                 />
               </div>
@@ -385,7 +393,7 @@ export default function StudentDashboard() {
                     item_id: modalItem.id,
                     item_name: modalItem.name,
                     sku: modalItem.sku ?? '',
-                    quantity_requested: requestQty,
+                    quantity_requested: Math.min(modalItem.quantity, Math.max(1, Number(requestQty) || 1)),
                     available_quantity: modalItem.quantity,
                     purpose,
                   });

@@ -25,7 +25,7 @@ interface AddEditItemModalProps {
 }
 
 const inputCls =
-  "w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-violet-600 focus:ring-1 focus:ring-violet-600 disabled:opacity-50 dark:border-white/8 dark:bg-white/6 dark:text-zinc-200 dark:placeholder:text-zinc-600 dark:focus:border-violet-500";
+  "w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-violet-600 focus:ring-1 focus:ring-violet-600 disabled:opacity-50 dark:border-white/8 dark:bg-white/6 dark:text-zinc-900 dark:placeholder:text-zinc-500 dark:focus:border-violet-500";
 
 const labelCls = "text-xs font-medium text-zinc-700 dark:text-zinc-400";
 

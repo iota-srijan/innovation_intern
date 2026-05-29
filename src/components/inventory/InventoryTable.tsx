@@ -230,14 +230,14 @@ export function InventoryTable({ onEdit, lowStockFilter = false }: InventoryTabl
               placeholder="Search name or SKU..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="h-8 w-full rounded-lg border border-zinc-200 bg-white py-0 pl-9 pr-4 text-xs text-zinc-700 outline-none focus:border-violet-600 dark:border-white/8 dark:bg-white/6 dark:text-zinc-300"
+              className="h-8 w-full rounded-lg border border-zinc-200 bg-white py-0 pl-9 pr-4 text-xs text-zinc-700 outline-none focus:border-violet-600 dark:border-white/8 dark:bg-white/6 dark:text-zinc-900 dark:placeholder:text-zinc-500"
             />
           </div>
           <div className="relative w-full sm:w-52">
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="h-8 w-full appearance-none rounded-lg border border-zinc-200 bg-white py-0 pl-3 pr-8 text-xs text-zinc-700 outline-none focus:border-violet-600 dark:border-white/8 dark:bg-white/6 dark:text-zinc-300"
+              className="h-8 w-full appearance-none rounded-lg border border-zinc-200 bg-white py-0 pl-3 pr-8 text-xs text-zinc-700 outline-none focus:border-violet-600 dark:border-white/8 dark:bg-white/6 dark:text-zinc-900"
             >
               <option value="all">All Categories</option>
               {categories?.map((cat) => (
@@ -348,7 +348,7 @@ export function InventoryTable({ onEdit, lowStockFilter = false }: InventoryTabl
                             onChange={(e) => setTempQty(e.target.value)}
                             onBlur={() => saveQty(item.id)}
                             onKeyDown={(e) => { if (e.key === 'Enter') saveQty(item.id); }}
-                            className="w-16 bg-transparent border-b border-violet-500 text-sm focus:outline-none dark:text-white"
+                            className="w-16 bg-transparent border-b border-violet-500 text-sm focus:outline-none dark:text-zinc-900"
                           />
                         ) : (
                           <div className="flex flex-col w-16">

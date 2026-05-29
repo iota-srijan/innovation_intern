@@ -212,10 +212,11 @@ export default function AdminDashboard() {
     if (updatingId) return
     setUpdatingId(row.user_id)
     try {
+      // Always update by email — matches how AuthContext reads the role
       const { error } = await supabase
         .from('user_roles')
         .update({ role: 'faculty' })
-        .eq('user_id', row.user_id)
+        .eq('email', row.email)
 
       if (error) {
         toast.error(error.message)
@@ -237,10 +238,11 @@ export default function AdminDashboard() {
     if (updatingId) return
     setUpdatingId(row.user_id)
     try {
+      // Always update by email — matches how AuthContext reads the role
       const { error } = await supabase
         .from('user_roles')
         .update({ role: 'student' })
-        .eq('user_id', row.user_id)
+        .eq('email', row.email)
 
       if (error) {
         toast.error(error.message)

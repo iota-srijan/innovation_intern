@@ -1,36 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, Mail, Building, Bell, Shield, LogOut, CheckCircle2, Laptop } from "lucide-react";
+import { User, Mail, Building, Bell, LogOut, Lock } from "lucide-react";
 import { AppShell } from "../components/layout/AppShell";
 import { toast } from "sonner";
+import { supabase } from "../lib/supabaseClient";
 
-function getDeviceDetails(isDetailed = false) {
-  const ua = navigator.userAgent;
-  let os = "Windows";
-  if (ua.indexOf("Win") !== -1) os = "Windows";
-  else if (ua.indexOf("Mac") !== -1) os = "macOS";
-  else if (ua.indexOf("X11") !== -1) os = "UNIX";
-  else if (ua.indexOf("Linux") !== -1) os = "Linux";
 
-  let browser = "Chrome";
-  if (ua.indexOf("Chrome") !== -1 && ua.indexOf("Edg") === -1) browser = "Chrome";
-  else if (ua.indexOf("Safari") !== -1 && ua.indexOf("Chrome") === -1) browser = "Safari";
-  else if (ua.indexOf("Firefox") !== -1) browser = "Firefox";
-  else if (ua.indexOf("Edg") !== -1) browser = "Edge";
-
-  if (isDetailed) {
-    let version = "";
-    const match = ua.match(/(Chrome|Firefox|Safari|Edg)\/([\d.]+)/);
-    if (match && match[2]) {
-      version = " " + match[2].split(".")[0];
-    }
-    return `${os} — ${browser}${version}`;
-  }
-
-  return `${os}, ${browser}`;
-}
-
-type Section = 'account' | 'notifications' | 'security';
+type Section = 'account' | 'notifications';
 
 function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void }) {
   return (
@@ -57,6 +33,13 @@ export default function Profile() {
   });
 
   const [form, setForm] = useState(savedProfile);
+  const [authEmail, setAuthEmail] = useState<string>('');
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user?.email) setAuthEmail(data.user.email);
+    });
+  }, []);
 
   const [notifs, setNotifs] = useState({ master: true, lowStock: true, poDelays: true, weeklyReports: false });
 
@@ -74,7 +57,6 @@ export default function Profile() {
   const navItems: { icon: typeof User; label: string; key: Section }[] = [
     { icon: User,    label: "Account Details",   key: "account" },
     { icon: Bell,    label: "Notifications",      key: "notifications" },
-    { icon: Shield,  label: "Security & Activity",key: "security" },
   ];
 
   return (
@@ -103,11 +85,11 @@ export default function Profile() {
               <div className="w-full space-y-2 text-xs text-left text-zinc-600 border-t border-zinc-100 dark:border-white/8 pt-4">
                 <div className="flex items-center gap-2.5 dark:text-zinc-400">
                   <Mail className="h-3.5 w-3.5 text-zinc-400 dark:text-zinc-600" />
-                  <span className="break-all">{savedProfile.email}</span>
+                  <span className="break-all">{authEmail || savedProfile.email}</span>
                 </div>
                 <div className="flex items-center gap-2.5 dark:text-zinc-400">
                   <Building className="h-3.5 w-3.5 text-zinc-400 dark:text-zinc-600" />
-                  <span>StockPilot Inc.</span>
+                   <span>OPJU IdeaLab</span>
                 </div>
               </div>
             </div>
@@ -164,12 +146,17 @@ export default function Profile() {
                       </div>
                       <div className="col-span-2 space-y-1.5">
                         <label className="text-xs font-medium text-zinc-700 dark:text-zinc-400">Email Address</label>
-                        <input
-                          type="email"
-                          value={form.email}
-                          onChange={e => setForm({ ...form, email: e.target.value })}
-                          className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition-colors focus:border-violet-600 focus:ring-1 focus:ring-violet-600 dark:border-white/8 dark:bg-white/6 dark:text-zinc-900 dark:placeholder:text-zinc-500"
-                        />
+                        <div className="relative">
+                          <input
+                            type="email"
+                            value={authEmail || form.email}
+                            readOnly
+                            disabled
+                            className="w-full rounded-lg border border-zinc-200 bg-zinc-100 px-3 py-2 pr-8 text-sm text-zinc-500 outline-none cursor-not-allowed opacity-70 dark:border-white/8 dark:bg-white/4 dark:text-zinc-500"
+                          />
+                          <Lock className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400 dark:text-zinc-600" />
+                        </div>
+                        <p className="text-[10px] text-zinc-400 dark:text-zinc-500">Managed by your OPJU Google account</p>
                       </div>
                     </div>
                     <div className="flex justify-end">
@@ -179,32 +166,6 @@ export default function Profile() {
                       >
                         Save Changes
                       </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Recent activity */}
-                <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-white/8 dark:bg-[#1a1a1a]">
-                  <div className="border-b border-zinc-100 px-5 py-4 dark:border-white/8">
-                    <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">Recent Activity</h3>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">Your recent actions across the workspace.</p>
-                  </div>
-                  <div className="p-5">
-                    <div className="relative border-l border-zinc-200 dark:border-white/8 ml-3 space-y-5">
-                      <div className="relative pl-6">
-                        <span className="absolute -left-[9px] top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-white dark:bg-[#1a1a1a] ring-2 ring-zinc-200 dark:ring-white/10">
-                          <CheckCircle2 className="h-2.5 w-2.5 text-green-500" />
-                        </span>
-                        <div className="text-xs font-medium text-zinc-900 dark:text-zinc-200">Approved PO-2024-085</div>
-                        <div className="text-[10px] text-zinc-500 mt-0.5">Today at 10:42 AM</div>
-                      </div>
-                      <div className="relative pl-6">
-                        <span className="absolute -left-[9px] top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-white dark:bg-[#1a1a1a] ring-2 ring-zinc-200 dark:ring-white/10">
-                          <div className="h-1.5 w-1.5 rounded-full bg-zinc-400" />
-                        </span>
-                        <div className="text-xs font-medium text-zinc-900 dark:text-zinc-200">Logged in from New Device</div>
-                        <div className="text-[10px] text-zinc-500 mt-0.5">Yesterday at 4:15 PM · {getDeviceDetails()}</div>
-                      </div>
                     </div>
                   </div>
                   <div className="border-t border-zinc-100 dark:border-white/8 px-5 py-3 flex items-center justify-between bg-zinc-50 dark:bg-white/4">
@@ -252,47 +213,6 @@ export default function Profile() {
             )}
 
 
-            {/* ── SECURITY ── */}
-            {activeSection === 'security' && (
-              <div className="flex flex-col gap-5">
-                <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-white/8 dark:bg-[#1a1a1a]">
-                  <div className="border-b border-zinc-100 px-5 py-4 dark:border-white/8">
-                    <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">Change Password</h3>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">Update your password to keep your account secure.</p>
-                  </div>
-                  <div className="p-5 flex items-center justify-between">
-                    <span className="text-xs text-zinc-500 dark:text-zinc-400">Last changed 3 months ago</span>
-                    <button
-                      onClick={() => toast.info('Password reset email sent')}
-                      className="px-4 py-2 rounded-lg border border-zinc-200 dark:border-white/10 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-white/6 transition-colors"
-                    >
-                      Change Password
-                    </button>
-                  </div>
-                </div>
-
-                <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-white/8 dark:bg-[#1a1a1a]">
-                  <div className="border-b border-zinc-100 px-5 py-4 dark:border-white/8">
-                    <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">Active Sessions</h3>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">Devices currently logged into your account.</p>
-                  </div>
-                  <div className="p-5">
-                    <div className="flex items-center justify-between rounded-xl border border-zinc-100 dark:border-white/8 p-4">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-zinc-100 dark:bg-white/8">
-                          <Laptop className="h-4 w-4 text-zinc-500 dark:text-zinc-400" />
-                        </div>
-                        <div>
-                          <div className="text-xs font-medium text-zinc-900 dark:text-zinc-200">{getDeviceDetails(true)}</div>
-                          <div className="text-[10px] text-zinc-500 mt-0.5">IP 192.168.1.42 · Last active 2 hours ago</div>
-                        </div>
-                      </div>
-                      <span className="text-[10px] font-medium text-green-500 bg-green-500/10 px-2 py-0.5 rounded-full">Current</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
 
           </div>
         </div>

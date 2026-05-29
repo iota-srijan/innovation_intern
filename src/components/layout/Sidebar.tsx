@@ -14,13 +14,14 @@ import { toast } from "sonner";
 import { useAuth } from "../../context/AuthContext";
 
 const navItems = [
-  { icon: LayoutDashboard, path: "/dashboard", label: "Dashboard" },
-  { icon: Package, path: "/inventory", label: "Inventory" },
-  { icon: Truck, path: "/suppliers", label: "Suppliers" },
-  { icon: FileText, path: "/purchase-orders", label: "Purchase Orders" },
-  { icon: GitBranch, path: "/alerts/low-stock", label: "Low Stock Alerts" },
-  { icon: Megaphone, path: "/demands", label: "Demand Board" },
-  { icon: Settings, path: "/profile", label: "Settings" },
+  { icon: LayoutDashboard,  path: "/dashboard",        label: "Dashboard" },
+  { icon: Package,          path: "/admin/inventory",  label: "Inventory" },   // admin only
+  { icon: Package,          path: "/inventory",        label: "Inventory" },
+  { icon: Truck,            path: "/suppliers",        label: "Suppliers" },
+  { icon: FileText,         path: "/purchase-orders",  label: "Purchase Orders" },
+  { icon: GitBranch,        path: "/alerts/low-stock", label: "Low Stock Alerts" },
+  { icon: Megaphone,        path: "/demands",          label: "Demand Board" },
+  { icon: Settings,         path: "/profile",          label: "Settings" },
 ];
 
 export function Sidebar() {
@@ -50,7 +51,8 @@ export function Sidebar() {
     if (path === "/dashboard" && (
       location.pathname === "/pro-dashboard" ||
       location.pathname === "/student-dashboard" ||
-      location.pathname === "/faculty-dashboard"
+      location.pathname === "/faculty-dashboard" ||
+      location.pathname === "/admin"
     )) {
       return true;
     }
@@ -84,13 +86,18 @@ export function Sidebar() {
             );
           }
 
+          // /admin/inventory is admin-only — hide for everyone else
+          if (path === '/admin/inventory' && userRole !== 'admin') {
+            return null;
+          }
+
           // Students only see Dashboard, Demand Board, and Settings
           if (userRole === 'student' && path !== '/profile' && path !== '/demands') {
             return null;
           }
 
-          // Admin only sees Settings (Dashboard handled above, Sign Out always shown)
-          if (userRole === 'admin' && path !== '/profile') {
+          // Admin only sees /admin/inventory and Settings (Dashboard handled above, Sign Out always shown)
+          if (userRole === 'admin' && path !== '/profile' && path !== '/admin/inventory') {
             return null;
           }
 

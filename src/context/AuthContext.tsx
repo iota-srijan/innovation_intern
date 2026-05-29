@@ -7,13 +7,30 @@ const ADMIN_EMAIL = 'admin@stockpilot.inc'
 
 type UserRole = 'student' | 'faculty' | 'admin' | 'blocked' | null
 
-const getUserRole = (email: string): UserRole => {
+// Fallback rules when user_roles table has no row for this email
+function getDefaultRole(email: string): UserRole {
   if (email === ADMIN_EMAIL) return 'admin'
   if (email === 'srijanmishra1669@gmail.com') return 'student'
   if (email === 'mishrasrijan2305@gmail.com') return 'faculty'
   if (email.endsWith('@opju.ac.in')) return 'faculty'
   if (email.endsWith('@opju.edu.in')) return 'student'
   return 'blocked'
+}
+
+// Primary source of truth: user_roles table. Falls back to domain rules.
+async function fetchUserRole(email: string): Promise<UserRole> {
+  if (email === ADMIN_EMAIL) return 'admin'
+  try {
+    const { data } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('email', email)
+      .maybeSingle()
+    if (data?.role) return data.role as UserRole
+  } catch {
+    // table missing or network error — fall through to defaults
+  }
+  return getDefaultRole(email)
 }
 
 interface AuthContextValue {
@@ -35,7 +52,7 @@ const AuthContext = createContext<AuthContextValue>({
   signInWithGoogle: async () => {},
   signInAsAdmin: async () => false,
   signOut: async () => {},
-  userRole: null
+  userRole: null,
 })
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -45,12 +62,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [userRole, setUserRole] = useState<UserRole>(null)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        const email = session.user.email ?? ''
-        const role = getUserRole(email)
+    let cancelled = false
+
+    const resolveSession = async (s: Session | null) => {
+      if (cancelled) return
+
+      setSession(s)
+      setUser(s?.user ?? null)
+
+      if (s?.user) {
+        const email = s.user.email ?? ''
+        const role = await fetchUserRole(email)
+        if (cancelled) return
+
         if (role === 'blocked') {
           void supabase.auth.signOut()
           setUser(null)
@@ -61,44 +85,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUserRole(role)
         }
       } else {
-        // Check for admin session stored in localStorage
+        // No Supabase session — check for admin localStorage token
         const stored = localStorage.getItem('sp-user-type') as UserRole
-        if (stored === 'admin') {
-          setUserRole('admin')
-        } else {
-          setUserRole(null)
-        }
+        setUserRole(stored === 'admin' ? 'admin' : null)
       }
-      setIsLoading(false)
+
+      if (!cancelled) setIsLoading(false)
+    }
+
+    void supabase.auth.getSession().then(({ data: { session: s } }) => resolveSession(s))
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
+      void resolveSession(s)
     })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        const email = session.user.email ?? ''
-        const role = getUserRole(email)
-        if (role === 'blocked') {
-          void supabase.auth.signOut()
-          setUser(null)
-          setSession(null)
-          setUserRole(null)
-        } else {
-          localStorage.setItem('sp-user-type', role as string)
-          setUserRole(role)
-        }
-      } else {
-        const stored = localStorage.getItem('sp-user-type') as UserRole
-        if (stored === 'admin') {
-          setUserRole('admin')
-        } else {
-          setUserRole(null)
-        }
-      }
-      setIsLoading(false)
-    })
-
-    return () => subscription.unsubscribe()
+    return () => {
+      cancelled = true
+      subscription.unsubscribe()
+    }
   }, [])
 
   const signInWithGoogle = async () => {
@@ -106,11 +110,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
-        queryParams: {
-          access_type: 'offline',
-          prompt: 'consent'
-        }
-      }
+        queryParams: { access_type: 'offline', prompt: 'consent' },
+      },
     })
   }
 
@@ -132,16 +133,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{
-      user,
-      session,
-      isAuthenticated: !!user || userRole === 'admin',
-      isLoading,
-      signInWithGoogle,
-      signInAsAdmin,
-      signOut,
-      userRole
-    }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        session,
+        isAuthenticated: !!user || userRole === 'admin',
+        isLoading,
+        signInWithGoogle,
+        signInAsAdmin,
+        signOut,
+        userRole,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   )

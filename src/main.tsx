@@ -34,6 +34,7 @@ import FacultyDashboard from "./pages/FacultyDashboard";
 import CartPage from "./pages/CartPage";
 import StudentRequestsPage from "./pages/StudentRequestsPage";
 import DemandsPage from "./pages/DemandsPage";
+import AdminInventoryPage from "./pages/AdminInventoryPage";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <QueryClientProvider client={queryClient}>
@@ -65,8 +66,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               <Route path="/faculty-dashboard" element={<FacultyRoute><FacultyDashboard /></FacultyRoute>} />
               <Route path="/demands" element={<ProtectedRoute><DemandsPage /></ProtectedRoute>} />
 
-              {/* Admin-only route */}
+              {/* Admin-only routes */}
               <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+              <Route path="/admin/inventory" element={<AdminRoute><AdminInventoryPage /></AdminRoute>} />
 
               {/* Catch-all */}
               <Route path="*" element={<Navigate to="/" replace />} />
