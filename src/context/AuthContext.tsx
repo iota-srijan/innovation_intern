@@ -72,6 +72,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (s?.user) {
         const email = s.user.email ?? ''
+
+        // Upsert user into user_roles with default role 'student'.
+        // ignoreDuplicates: true → ON CONFLICT DO NOTHING, so existing roles are preserved.
+        if (email && email !== ADMIN_EMAIL) {
+          await supabase
+            .from('user_roles')
+            .upsert(
+              { user_id: s.user.id, email, role: 'student' },
+              { onConflict: 'user_id', ignoreDuplicates: true }
+            )
+        }
+
         const role = await fetchUserRole(email)
         if (cancelled) return
 

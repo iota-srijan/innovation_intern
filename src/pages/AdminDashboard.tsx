@@ -6,6 +6,7 @@ import {
 import { AppShell } from '../components/layout/AppShell'
 import { supabase } from '../lib/supabaseClient'
 import { toast } from 'sonner'
+import { useAuth } from '../context/AuthContext'
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -103,6 +104,8 @@ function Modal({ onClose, children }: { onClose: () => void; children: React.Rea
 // ─── Main Component ─────────────────────────────────────────────────────────────
 
 export default function AdminDashboard() {
+  const { user } = useAuth()
+
   const [users, setUsers]           = useState<UserRow[]>([])
   const [usersLoading, setUsersLoading] = useState(true)
   const [usersError, setUsersError] = useState<string | null>(null)
@@ -206,6 +209,19 @@ export default function AdminDashboard() {
     fetchStats()
   }, [fetchUsers, fetchAuditLog, fetchStats])
 
+  // ── Audit log helper ──────────────────────────────────────────────────────────
+
+  const logAudit = useCallback(async (action: string, actionType: ActionType) => {
+    try {
+      await supabase
+        .from('audit_log')
+        .insert({ actor_email: user?.email ?? null, action, action_type: actionType })
+      await fetchAuditLog()
+    } catch {
+      // audit failures are non-fatal
+    }
+  }, [user?.email, fetchAuditLog])
+
   // ── Grant faculty ─────────────────────────────────────────────────────────────
 
   const handleGrantFaculty = async (row: UserRow) => {
@@ -224,6 +240,7 @@ export default function AdminDashboard() {
         toast.success(`${row.email} granted faculty access`)
         await fetchUsers()
         await fetchStats()
+        await logAudit(`Granted faculty access to ${row.email}`, 'UPDATE')
       }
     } catch {
       toast.error('Failed to update role')
@@ -250,6 +267,7 @@ export default function AdminDashboard() {
         toast.success(`${row.email} revoked to student`)
         await fetchUsers()
         await fetchStats()
+        await logAudit(`Revoked faculty access from ${row.email}`, 'UPDATE')
       }
     } catch {
       toast.error('Failed to update role')
@@ -296,6 +314,7 @@ export default function AdminDashboard() {
       }
 
       toast.success(`${addEmail.trim()} granted faculty access`)
+      await logAudit(`Added faculty by email: ${addEmail.trim()}`, 'CREATE')
       setAddEmail('')
       setShowAddModal(false)
       await fetchUsers()

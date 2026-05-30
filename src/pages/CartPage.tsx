@@ -114,6 +114,18 @@ export default function CartPage() {
 
       if (insertError) throw insertError;
 
+      // Audit: one log entry per submitted item
+      const auditRows = itemsToSubmit.map((c: CartItem) => ({
+        actor_email: studentEmail || null,
+        action: `Submitted request for ${c.item_name} x${c.quantity_requested}`,
+        action_type: 'CREATE',
+      }));
+      try {
+        await supabase.from('audit_log').insert(auditRows);
+      } catch {
+        // audit failures are non-fatal
+      }
+
       clearCart();
       toast.success(
         `${itemsToSubmit.length} request${itemsToSubmit.length > 1 ? 's' : ''} submitted! Awaiting faculty approval.`

@@ -477,6 +477,13 @@ export default function DemandsPage() {
         toast.error("Failed to submit demand");
       } else {
         toast.success("Demand submitted!");
+        try {
+          await supabase.from('audit_log').insert({
+            actor_email: user?.email ?? null,
+            action: `Raised new demand: ${formTitle.trim()}`,
+            action_type: 'CREATE',
+          });
+        } catch { /* non-fatal */ }
         setShowRaise(false);
         setFormTitle("");
         setFormDesc("");
@@ -502,6 +509,13 @@ export default function DemandsPage() {
         toast.error("Failed to update status");
       } else {
         toast.success("Marked as Under Review");
+        try {
+          await supabase.from('audit_log').insert({
+            actor_email: user?.email ?? null,
+            action: `Marked demand under review: ${demand.title}`,
+            action_type: 'UPDATE',
+          });
+        } catch { /* non-fatal */ }
         fetchDemands();
       }
     } catch {
@@ -530,6 +544,16 @@ export default function DemandsPage() {
         toast.error("Failed to update demand");
       } else {
         toast.success(actionModal.type === "approve" ? "Demand approved" : "Demand rejected");
+        try {
+          const auditAction = actionModal.type === "approve"
+            ? `Approved demand: ${actionModal.demand.title}`
+            : `Rejected demand: ${actionModal.demand.title}`;
+          await supabase.from('audit_log').insert({
+            actor_email: user?.email ?? null,
+            action: auditAction,
+            action_type: 'UPDATE',
+          });
+        } catch { /* non-fatal */ }
         setActionModal(null);
         setFacultyNote("");
         fetchDemands();

@@ -3,6 +3,7 @@ import { Package, Plus, Search, Pencil, Trash2, Upload, X, FolderPlus } from 'lu
 import { AppShell } from '../components/layout/AppShell'
 import { supabase } from '../lib/supabaseClient'
 import { toast } from 'sonner'
+import { useAuth } from '../context/AuthContext'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -267,6 +268,7 @@ function ItemFormModal({ title, form, categories, submitting, onChange, onSubmit
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function AdminInventoryPage() {
+  const { user } = useAuth()
   const [items, setItems] = useState<InventoryItem[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
@@ -291,6 +293,18 @@ export default function AdminInventoryPage() {
   // CSV import
   const csvRef = useRef<HTMLInputElement>(null)
   const initRef = useRef(false)
+
+  // ── Audit log helper ──────────────────────────────────────────────────────
+
+  const logAudit = async (action: string, actionType: 'CREATE' | 'UPDATE' | 'DELETE') => {
+    try {
+      await supabase
+        .from('audit_log')
+        .insert({ actor_email: user?.email ?? null, action, action_type: actionType })
+    } catch {
+      // audit failures are non-fatal
+    }
+  }
 
   // ── Data fetching ─────────────────────────────────────────────────────────
 
@@ -390,10 +404,12 @@ export default function AdminInventoryPage() {
         const { error } = await supabase.from('inventory_items').update(payload).eq('id', editItem.id)
         if (error) throw new Error(error.message)
         toast.success('Item updated')
+        await logAudit(`Updated item ${payload.name} (SKU: ${payload.sku})`, 'UPDATE')
       } else {
         const { error } = await supabase.from('inventory_items').insert(payload)
         if (error) throw new Error(error.message)
         toast.success('Item added')
+        await logAudit(`Added item ${payload.name} (SKU: ${payload.sku}) to inventory`, 'CREATE')
       }
       setShowForm(false)
       await fetchItems()
@@ -420,6 +436,7 @@ export default function AdminInventoryPage() {
         }
       } else {
         toast.success(`"${deleteTarget.name}" deleted`)
+        await logAudit(`Deleted item ${deleteTarget.name} (SKU: ${deleteTarget.sku ?? ''}) from inventory`, 'DELETE')
         setDeleteTarget(null)
         await fetchItems()
       }
@@ -516,6 +533,7 @@ export default function AdminInventoryPage() {
     if (imported > 0) {
       const msg = `Imported ${imported} item${imported !== 1 ? 's' : ''} successfully`
       toast.success(skipped ? `${msg} (${skipped} skipped)` : msg)
+      await logAudit(`Bulk imported ${imported} items via CSV`, 'CREATE')
       await fetchItems()
     } else {
       toast.error(`All rows failed to import${skipped ? ` (${skipped} skipped)` : ''}`)

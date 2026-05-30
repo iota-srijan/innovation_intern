@@ -6,7 +6,7 @@ import { AppShell } from "../components/layout/AppShell";
 const initialPOs = [
   {
     id: "PO-2024-089",
-    supplier: "TechCorp Electronics",
+    supplier: "Robocraze",
     date: "May 12, 2026",
     amount: 24500.00,
     status: "Delayed",
@@ -15,7 +15,7 @@ const initialPOs = [
   },
   {
     id: "PO-2024-090",
-    supplier: "Global Logistics Ltd",
+    supplier: "ThinkRobotics",
     date: "May 14, 2026",
     amount: 12850.50,
     status: "In Transit",
@@ -24,7 +24,7 @@ const initialPOs = [
   },
   {
     id: "PO-2024-091",
-    supplier: "Apex Manufacturing",
+    supplier: "eSUN India",
     date: "May 15, 2026",
     amount: 8900.00,
     status: "Processing",
@@ -33,7 +33,7 @@ const initialPOs = [
   },
   {
     id: "PO-2024-092",
-    supplier: "Apex Manufacturing",
+    supplier: "Evelta Electronics",
     date: "May 18, 2026",
     amount: 42000.00,
     status: "Pending Approval",
@@ -69,7 +69,7 @@ export default function PurchaseOrders() {
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [newPO, setNewPO] = useState({ supplier: "TechCorp Electronics", eta: "" });
+  const [newPO, setNewPO] = useState({ supplier: "Robocraze", eta: "" });
   const [newPOLines, setNewPOLines] = useState([{ id: 1, sku: "", name: "", qty: 1, price: 0 }]);
 
   const filtered = pos.filter((po) => {
@@ -306,10 +306,10 @@ export default function PurchaseOrders() {
                     onChange={e => setNewPO({...newPO, supplier: e.target.value})} 
                     className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-zinc-900 outline-none focus:border-violet-600 focus:bg-white dark:border-zinc-700 dark:bg-zinc-900 dark:text-white font-medium"
                   >
-                    <option value="TechCorp Electronics">TechCorp Electronics</option>
-                    <option value="Global Logistics Ltd">Global Logistics Ltd</option>
-                    <option value="Apex Manufacturing">Apex Manufacturing</option>
-                    <option value="Prime Packaging">Prime Packaging</option>
+                    <option value="Robocraze">Robocraze</option>
+                    <option value="ThinkRobotics">ThinkRobotics</option>
+                    <option value="eSUN India">eSUN India</option>
+                    <option value="Evelta Electronics">Evelta Electronics</option>
                   </select>
                 </div>
                 <div>

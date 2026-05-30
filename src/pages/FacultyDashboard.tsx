@@ -357,6 +357,13 @@ export default function FacultyDashboard() {
       queryClient.invalidateQueries({ queryKey: ["issue_requests"] });
       queryClient.invalidateQueries({ queryKey: ["items"] });
       toast.success("Request approved");
+      if (approveTarget) {
+        void supabase.from('audit_log').insert({
+          actor_email: user?.email ?? null,
+          action: `Approved request for ${approveTarget.item_name} by ${approveTarget.student_name}`,
+          action_type: 'UPDATE',
+        });
+      }
       setApproveTarget(null);
     },
     onError: () => toast.error("Failed to approve request"),
@@ -379,6 +386,13 @@ export default function FacultyDashboard() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["issue_requests"] });
       toast.success("Request rejected");
+      if (rejectTarget) {
+        void supabase.from('audit_log').insert({
+          actor_email: user?.email ?? null,
+          action: `Rejected request for ${rejectTarget.item_name} by ${rejectTarget.student_name}`,
+          action_type: 'UPDATE',
+        });
+      }
       setRejectTarget(null);
     },
     onError: () => toast.error("Failed to reject request"),
@@ -400,6 +414,11 @@ export default function FacultyDashboard() {
       return;
     }
     toast.success("Item marked as issued");
+    void supabase.from('audit_log').insert({
+      actor_email: user?.email ?? null,
+      action: `Marked ${req.item_name} as issued to ${req.student_name}`,
+      action_type: 'UPDATE',
+    });
     queryClient.invalidateQueries({ queryKey: ["issue_requests"] });
   }
 
@@ -462,6 +481,11 @@ export default function FacultyDashboard() {
     setLoadingRow(null);
     setConfirmOpen(null);
     toast.success("Item returned and inventory updated");
+    void supabase.from('audit_log').insert({
+      actor_email: user?.email ?? null,
+      action: `Marked ${req.item_name} as returned by ${req.student_name}`,
+      action_type: 'UPDATE',
+    });
     queryClient.invalidateQueries({ queryKey: ["issue_requests"] });
     queryClient.invalidateQueries({ queryKey: ["items"] });
   }

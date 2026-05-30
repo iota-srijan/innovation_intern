@@ -6,7 +6,7 @@ import { AppShell } from "../components/layout/AppShell";
 const mockPendingPOs = [
   {
     id: "PO-2024-089",
-    supplier: "TechCorp Electronics",
+    supplier: "Robocraze",
     status: "Delayed",
     reason: "Supplier reported 5 day shipping delay due to customs.",
     expectedDelay: "+5 days",
@@ -15,7 +15,7 @@ const mockPendingPOs = [
   },
   {
     id: "PO-2024-092",
-    supplier: "Apex Manufacturing",
+    supplier: "Evelta Electronics",
     status: "Pending Approval",
     reason: "Requires executive approval for orders >₹40k.",
     expectedDelay: "Awaiting Auth",
@@ -24,7 +24,7 @@ const mockPendingPOs = [
   },
   {
     id: "PO-2024-095",
-    supplier: "Global Logistics Ltd",
+    supplier: "ThinkRobotics",
     status: "Action Required",
     reason: "Payment method failed. Needs manual invoice processing.",
     expectedDelay: "Blocked",
