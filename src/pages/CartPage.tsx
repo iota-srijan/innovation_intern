@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { ShoppingCart, Trash2, ArrowLeft, PackageCheck, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
@@ -28,35 +28,6 @@ export default function CartPage() {
 
   const studentEmail = user?.email ?? '';
   const studentName = user?.user_metadata?.full_name ?? user?.email ?? 'Student';
-
-  // On mount: silently remove any cart items that already have a pending or
-  // approved request so stale localStorage entries don't confuse the student.
-  const staleCleanedRef = useRef(false);
-  useEffect(() => {
-    if (staleCleanedRef.current || !user?.id) return;
-    staleCleanedRef.current = true;
-
-    const clean = async () => {
-      const ids = cart.map((c) => c.item_id);
-      if (ids.length === 0) return;
-      try {
-        const { data } = await supabase
-          .from('issue_requests')
-          .select('item_id')
-          .eq('student_id', user.id)
-          .in('status', ['pending', 'approved'])
-          .in('item_id', ids);
-
-        const stale = new Set((data ?? []).map((r: { item_id: string }) => r.item_id));
-        ids.forEach((id) => { if (stale.has(id)) removeFromCart(id); });
-      } catch {
-        // non-fatal — stale items will be caught by the duplicate guard at submit
-      }
-    };
-
-    void clean();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
 
   // Validate: all purposes filled
   const emptyPurposeIds = cart
