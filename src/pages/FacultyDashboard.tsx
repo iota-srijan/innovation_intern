@@ -202,14 +202,14 @@ export default function FacultyDashboard() {
 
   // ── Realtime subscription: refetch all requests on any change ────
   useEffect(() => {
-    const channel = supabase
-      .channel('faculty-requests-rt')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'issue_requests' }, () => {
-        queryClient.invalidateQueries({ queryKey: ['issue_requests', 'all'] });
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [queryClient]);
+  const channel = supabase
+    .channel('faculty-requests-rt')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'issue_requests' }, () => {
+      queryClient.invalidateQueries({ queryKey: ['issue_requests', 'all'] });
+    })
+    .subscribe();
+  return () => { supabase.removeChannel(channel); };
+}, [queryClient]);
 
   // ── Chart query: Inventory Movement ─────────────────────────────
   const movementDays = movementTab === "30D" ? 30 : movementTab === "90D" ? 90 : 365;
@@ -365,15 +365,16 @@ export default function FacultyDashboard() {
       }
     },
     onSuccess: async () => {
+      const target = approveTarget;
       setApproveTarget(null);
       await queryClient.invalidateQueries({ queryKey: ["issue_requests", "all"] });
       await queryClient.refetchQueries({ queryKey: ["issue_requests", "all"] });
       queryClient.invalidateQueries({ queryKey: ["items"] });
       toast.success("Request approved");
-      if (approveTarget) {
+      if (target) {
         void supabase.from('audit_log').insert({
           actor_email: user?.email ?? null,
-          action: `Approved request for ${approveTarget.item_name} by ${approveTarget.student_name}`,
+          action: `Approved request for ${target.item_name} by ${target.student_name}`,
           action_type: 'UPDATE',
         });
       }
@@ -396,14 +397,15 @@ export default function FacultyDashboard() {
       if (error) throw error;
     },
     onSuccess: async () => {
+      const target = rejectTarget;
       setRejectTarget(null);
       await queryClient.invalidateQueries({ queryKey: ["issue_requests", "all"] });
       await queryClient.refetchQueries({ queryKey: ["issue_requests", "all"] });
       toast.success("Request rejected");
-      if (rejectTarget) {
+      if (target) {
         void supabase.from('audit_log').insert({
           actor_email: user?.email ?? null,
-          action: `Rejected request for ${rejectTarget.item_name} by ${rejectTarget.student_name}`,
+          action: `Rejected request for ${target.item_name} by ${target.student_name}`,
           action_type: 'UPDATE',
         });
       }
