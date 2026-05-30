@@ -107,6 +107,8 @@ export default function StudentDashboard() {
       return data ?? [];
     },
     enabled: !!studentEmail,
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   const pendingCount  = myRequests.filter((r) => r.status === "pending").length;

@@ -6,6 +6,7 @@ import { AppShell } from '../components/layout/AppShell';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabaseClient';
+import { useQueryClient } from '@tanstack/react-query';
 import type { CartItem } from '../types';
 
 interface StockConflict {
@@ -19,6 +20,7 @@ export default function CartPage() {
   const navigate = useNavigate();
   const { cart, removeFromCart, updateQuantity, updatePurpose, clearCart } = useCart();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   const [submitting, setSubmitting] = useState(false);
   const [stockConflicts, setStockConflicts] = useState<StockConflict[]>([]);
@@ -130,7 +132,9 @@ export default function CartPage() {
       toast.success(
         `${itemsToSubmit.length} request${itemsToSubmit.length > 1 ? 's' : ''} submitted! Awaiting faculty approval.`
       );
-      navigate('/student/requests');
+      // Invalidate the student's requests query so StudentDashboard shows fresh data on mount
+      await queryClient.invalidateQueries({ queryKey: ['issue_requests', 'mine', studentEmail] });
+      navigate('/student-dashboard');
     } catch (err) {
       console.error(err);
       toast.error('Submission failed. Please try again.');
