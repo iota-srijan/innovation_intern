@@ -365,8 +365,7 @@ export default function FacultyDashboard() {
       }
     },
     onSuccess: async () => {
-  console.log('Faculty email:', user?.email, 'User object:', user);
-  const target = approveTarget;
+      const target = approveTarget;
   setApproveTarget(null);
   await queryClient.invalidateQueries({ queryKey: ["issue_requests", "all"] });
   await queryClient.refetchQueries({ queryKey: ["issue_requests", "all"] });
@@ -406,7 +405,7 @@ export default function FacultyDashboard() {
       if (target) {
         void supabase.from('audit_log').insert({
           actor_email: user?.email ?? null,
-          action: `Rejected request for ${rejectTarget.item_name} by ${rejectTarget.student_name}`,
+          action: `Rejected request for ${target.item_name} by ${target.student_name}`,
           action_type: 'UPDATE',
         });
       }
