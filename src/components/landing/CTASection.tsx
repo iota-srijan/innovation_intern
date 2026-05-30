@@ -1,7 +1,5 @@
 import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
-import { Link } from "react-router-dom";
-import { ArrowRight, MoveRight } from "lucide-react";
 
 const stats = [
   { value: "99.9%", label: "Uptime SLA" },
@@ -41,39 +39,7 @@ export function CTASection() {
           ))}
         </motion.div>
 
-        {/* Main CTA block */}
-        <div className="relative overflow-hidden rounded-3xl border border-white/8 bg-[#0e0e10]">
-          {/* Subtle indigo accent in corner */}
-          <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-indigo-600/15 blur-[80px]" />
 
-          <div className="relative flex flex-col items-start gap-8 p-10 md:flex-row md:items-center md:justify-between md:p-14">
-            <div className="max-w-lg">
-              <h2 className="mb-4 text-3xl font-bold tracking-tight text-white md:text-4xl">
-                Ready to see your inventory clearly?
-              </h2>
-              <p className="text-[15px] leading-relaxed text-white/40">
-                Start your 30-day free trial. No credit card required. No sales calls. Just access your dashboard and start managing inventory the right way.
-              </p>
-            </div>
-
-            <div className="flex flex-col gap-3 sm:flex-row md:shrink-0 md:flex-col">
-              <Link
-                to="/dashboard"
-                className="group inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-indigo-600 px-6 py-3.5 text-sm font-semibold text-white shadow-lg shadow-indigo-600/20 transition-all hover:bg-indigo-500 active:scale-[0.98]"
-              >
-                Start free trial
-                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-              </Link>
-              <Link
-                to="/dashboard"
-                className="group inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-white/10 px-6 py-3.5 text-sm font-semibold text-white/60 transition-all hover:border-white/20 hover:text-white"
-              >
-                Explore demo
-                <MoveRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-              </Link>
-            </div>
-          </div>
-        </div>
       </div>
     </section>
   );

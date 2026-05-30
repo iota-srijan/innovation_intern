@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, TrendingUp, AlertTriangle, Package } from "lucide-react";
+import { TrendingUp, AlertTriangle, Package } from "lucide-react";
 
 const containerVariants = {
   hidden: {},
@@ -265,13 +265,6 @@ export function HeroSection() {
             variants={itemVariants}
             className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center"
           >
-            <button
-              onClick={() => navigate('/signin?plan=free')}
-              className="group inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-600/25 transition-all hover:bg-indigo-500 hover:shadow-indigo-500/30 active:scale-[0.98]"
-            >
-              Start for free
-              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-            </button>
             <button
               onClick={() => navigate('/signin?plan=free')}
               className="inline-flex items-center gap-2 rounded-xl border border-white/10 px-6 py-3 text-sm font-semibold text-white/70 transition-all hover:border-white/20 hover:text-white"
