@@ -353,8 +353,9 @@ export default function FacultyDashboard() {
           .eq("id", approveTarget.item_id);
       }
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["issue_requests"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["issue_requests", "all"] });
+      await queryClient.refetchQueries({ queryKey: ["issue_requests", "all"] });
       queryClient.invalidateQueries({ queryKey: ["items"] });
       toast.success("Request approved");
       if (approveTarget) {
@@ -383,8 +384,9 @@ export default function FacultyDashboard() {
         .eq("id", rejectTarget.id);
       if (error) throw error;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["issue_requests"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["issue_requests", "all"] });
+      await queryClient.refetchQueries({ queryKey: ["issue_requests", "all"] });
       toast.success("Request rejected");
       if (rejectTarget) {
         void supabase.from('audit_log').insert({
