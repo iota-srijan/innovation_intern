@@ -200,6 +200,17 @@ export default function FacultyDashboard() {
     },
   });
 
+  // ── Realtime subscription: refetch all requests on any change ────
+  useEffect(() => {
+    const channel = supabase
+      .channel('faculty-requests-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'issue_requests' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['issue_requests', 'all'] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [queryClient]);
+
   // ── Chart query: Inventory Movement ─────────────────────────────
   const movementDays = movementTab === "30D" ? 30 : movementTab === "90D" ? 90 : 365;
 
@@ -354,6 +365,7 @@ export default function FacultyDashboard() {
       }
     },
     onSuccess: async () => {
+      setApproveTarget(null);
       await queryClient.invalidateQueries({ queryKey: ["issue_requests", "all"] });
       await queryClient.refetchQueries({ queryKey: ["issue_requests", "all"] });
       queryClient.invalidateQueries({ queryKey: ["items"] });
@@ -365,7 +377,6 @@ export default function FacultyDashboard() {
           action_type: 'UPDATE',
         });
       }
-      setApproveTarget(null);
     },
     onError: () => toast.error("Failed to approve request"),
   });
@@ -385,6 +396,7 @@ export default function FacultyDashboard() {
       if (error) throw error;
     },
     onSuccess: async () => {
+      setRejectTarget(null);
       await queryClient.invalidateQueries({ queryKey: ["issue_requests", "all"] });
       await queryClient.refetchQueries({ queryKey: ["issue_requests", "all"] });
       toast.success("Request rejected");
@@ -395,7 +407,6 @@ export default function FacultyDashboard() {
           action_type: 'UPDATE',
         });
       }
-      setRejectTarget(null);
     },
     onError: () => toast.error("Failed to reject request"),
   });
