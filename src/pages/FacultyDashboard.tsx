@@ -363,22 +363,19 @@ export default function FacultyDashboard() {
           })
           .eq("id", approveTarget.item_id);
       }
+      await supabase.from('audit_log').insert({
+        actor_email: user?.email ?? null,
+        action: `Approved request for ${approveTarget.item_name} by ${approveTarget.student_name}`,
+        action_type: 'UPDATE',
+      });
     },
     onSuccess: async () => {
-      const target = approveTarget;
-  setApproveTarget(null);
-  await queryClient.invalidateQueries({ queryKey: ["issue_requests", "all"] });
-  await queryClient.refetchQueries({ queryKey: ["issue_requests", "all"] });
-  queryClient.invalidateQueries({ queryKey: ["items"] });
-  toast.success("Request approved");
-  if (target) {
-    void supabase.from('audit_log').insert({
-      actor_email: user?.email ?? null,
-      action: `Approved request for ${target.item_name} by ${target.student_name}`,
-      action_type: 'UPDATE',
-    });
-  }
-},
+      setApproveTarget(null);
+      await queryClient.invalidateQueries({ queryKey: ["issue_requests", "all"] });
+      await queryClient.refetchQueries({ queryKey: ["issue_requests", "all"] });
+      queryClient.invalidateQueries({ queryKey: ["items"] });
+      toast.success("Request approved");
+    },
     onError: () => toast.error("Failed to approve request"),
   });
 
@@ -395,20 +392,17 @@ export default function FacultyDashboard() {
         })
         .eq("id", rejectTarget.id);
       if (error) throw error;
+      await supabase.from('audit_log').insert({
+        actor_email: user?.email ?? null,
+        action: `Rejected request for ${rejectTarget.item_name} by ${rejectTarget.student_name}`,
+        action_type: 'UPDATE',
+      });
     },
     onSuccess: async () => {
-      const target = rejectTarget;
       setRejectTarget(null);
       await queryClient.invalidateQueries({ queryKey: ["issue_requests", "all"] });
       await queryClient.refetchQueries({ queryKey: ["issue_requests", "all"] });
       toast.success("Request rejected");
-      if (target) {
-        void supabase.from('audit_log').insert({
-          actor_email: user?.email ?? null,
-          action: `Rejected request for ${target.item_name} by ${target.student_name}`,
-          action_type: 'UPDATE',
-        });
-      }
     },
     onError: () => toast.error("Failed to reject request"),
   });
