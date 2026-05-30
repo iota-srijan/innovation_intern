@@ -213,9 +213,11 @@ export default function AdminDashboard() {
 
   const logAudit = useCallback(async (action: string, actionType: ActionType) => {
     try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const actorEmail = user?.email ?? session?.user?.email ?? null
       await supabase
         .from('audit_log')
-        .insert({ actor_email: user?.email ?? null, action, action_type: actionType })
+        .insert({ actor_email: actorEmail, action, action_type: actionType })
       await fetchAuditLog()
     } catch {
       // audit failures are non-fatal
