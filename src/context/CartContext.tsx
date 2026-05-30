@@ -53,9 +53,13 @@ function saveCart(cart: CartItem[]): void {
 export function CartProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>(loadCart);
 
-  // Sync to localStorage on every change
+  // Sync to localStorage on every change; remove key entirely when empty
   useEffect(() => {
-    saveCart(cart);
+    if (cart.length === 0) {
+      try { localStorage.removeItem(CART_KEY); } catch {}
+    } else {
+      saveCart(cart);
+    }
   }, [cart]);
 
   const clearCart = useCallback(() => {

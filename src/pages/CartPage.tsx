@@ -128,7 +128,9 @@ export default function CartPage() {
         // audit failures are non-fatal
       }
 
+      // Clear cart: reset state and ensure localStorage key is fully removed
       clearCart();
+      localStorage.removeItem('sp-cart');
       toast.success(
         `${itemsToSubmit.length} request${itemsToSubmit.length > 1 ? 's' : ''} submitted! Awaiting faculty approval.`
       );

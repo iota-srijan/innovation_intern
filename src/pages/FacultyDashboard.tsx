@@ -436,6 +436,11 @@ export default function FacultyDashboard() {
       return;
     }
     toast.success("Item marked as consumed");
+    void supabase.from('audit_log').insert({
+      actor_email: user?.email ?? null,
+      action: `Marked ${req.item_name} as consumed by ${req.student_name}`,
+      action_type: 'UPDATE',
+    });
     queryClient.invalidateQueries({ queryKey: ["issue_requests"] });
   }
 
