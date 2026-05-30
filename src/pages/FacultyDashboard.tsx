@@ -365,20 +365,21 @@ export default function FacultyDashboard() {
       }
     },
     onSuccess: async () => {
-      const target = approveTarget;
-      setApproveTarget(null);
-      await queryClient.invalidateQueries({ queryKey: ["issue_requests", "all"] });
-      await queryClient.refetchQueries({ queryKey: ["issue_requests", "all"] });
-      queryClient.invalidateQueries({ queryKey: ["items"] });
-      toast.success("Request approved");
-      if (target) {
-        void supabase.from('audit_log').insert({
-          actor_email: user?.email ?? null,
-          action: `Approved request for ${target.item_name} by ${target.student_name}`,
-          action_type: 'UPDATE',
-        });
-      }
-    },
+  console.log('Faculty email:', user?.email, 'User object:', user);
+  const target = approveTarget;
+  setApproveTarget(null);
+  await queryClient.invalidateQueries({ queryKey: ["issue_requests", "all"] });
+  await queryClient.refetchQueries({ queryKey: ["issue_requests", "all"] });
+  queryClient.invalidateQueries({ queryKey: ["items"] });
+  toast.success("Request approved");
+  if (target) {
+    void supabase.from('audit_log').insert({
+      actor_email: user?.email ?? null,
+      action: `Approved request for ${target.item_name} by ${target.student_name}`,
+      action_type: 'UPDATE',
+    });
+  }
+},
     onError: () => toast.error("Failed to approve request"),
   });
 
@@ -405,7 +406,7 @@ export default function FacultyDashboard() {
       if (target) {
         void supabase.from('audit_log').insert({
           actor_email: user?.email ?? null,
-          action: `Rejected request for ${target.item_name} by ${target.student_name}`,
+          action: `Rejected request for ${rejectTarget.item_name} by ${rejectTarget.student_name}`,
           action_type: 'UPDATE',
         });
       }
