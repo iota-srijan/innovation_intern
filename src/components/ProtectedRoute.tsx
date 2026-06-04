@@ -29,6 +29,7 @@ export function StudentRoute({ children }: { children: React.ReactNode }) {
 
   if (isLoading) return <Spinner />
   if (!userRole) return <Navigate to="/signin" replace />
+  if (userRole === 'banned') return <Navigate to="/signin" replace />
   if (userRole === 'faculty') return <Navigate to="/faculty-dashboard" replace />
   if (userRole === 'admin') return <Navigate to="/admin" replace />
   return <>{children}</>
@@ -40,6 +41,15 @@ export function FacultyRoute({ children }: { children: React.ReactNode }) {
   if (isLoading) return <Spinner />
   if (!userRole) return <Navigate to="/signin" replace />
   if (userRole === 'student') return <Navigate to="/student-dashboard" replace />
+  if (userRole === 'admin') return <Navigate to="/admin" replace />
+  return <>{children}</>
+}
+
+export function StudentOrFacultyRoute({ children }: { children: React.ReactNode }) {
+  const { userRole, isLoading } = useAuth()
+
+  if (isLoading) return <Spinner />
+  if (!userRole) return <Navigate to="/signin" replace />
   if (userRole === 'admin') return <Navigate to="/admin" replace />
   return <>{children}</>
 }

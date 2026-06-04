@@ -5,12 +5,7 @@ import { AppShell } from "../components/layout/AppShell";
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip as RechartsTooltip, CartesianGrid } from 'recharts';
 import { useItems } from "../hooks/useItems";
 
-const forecastData = Array.from({ length: 14 }).map((_, i) => ({
-  day: `Day ${i + 1}`,
-  macbook: Math.max(12 - (4.5 * i), 0),
-  dell: Math.max(45 - (12.2 * i), 0),
-  logi: Math.max(89 - (8.4 * i), 0),
-}));
+const forecastData: { day: string; qty: number }[] = [];
 
 function UrgencyBadge({ urgency }: { urgency: string }) {
   const map: Record<string, string> = {
@@ -51,9 +46,6 @@ export default function LowStockAlerts() {
         : i.quantity <= i.reorder_threshold * 0.6 ? 'High'
         : 'Medium',
       suggestedOrder: Math.max(i.reorder_threshold * 3 - i.quantity, 50),
-      // Use fake data for the spark line to maintain UI
-      dailyVelocity: Math.floor(Math.random() * 10) + 1,
-      sparkData: [{v:3},{v:4},{v:3.5},{v:5},{v:6},{v:7},{v:8}],
     }))
 
   const filtered = lowStockItems.filter((item) => {

@@ -2,50 +2,13 @@ import React, { useState } from "react";
 import { Plus, Search, FileText, ArrowUpRight, Clock, DollarSign, AlertCircle, Truck, AlertTriangle, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "../components/layout/AppShell";
+import { useAuth } from "../context/AuthContext";
+import { Navigate } from "react-router-dom";
 
-const initialPOs = [
-  {
-    id: "PO-2024-089",
-    supplier: "Robocraze",
-    date: "May 12, 2026",
-    amount: 24500.00,
-    status: "Delayed",
-    eta: "May 20, 2026 (Revised)",
-    items: 45,
-  },
-  {
-    id: "PO-2024-090",
-    supplier: "ThinkRobotics",
-    date: "May 14, 2026",
-    amount: 12850.50,
-    status: "In Transit",
-    eta: "May 19, 2026",
-    items: 120,
-  },
-  {
-    id: "PO-2024-091",
-    supplier: "eSUN India",
-    date: "May 15, 2026",
-    amount: 8900.00,
-    status: "Processing",
-    eta: "May 22, 2026",
-    items: 32,
-  },
-  {
-    id: "PO-2024-092",
-    supplier: "Evelta Electronics",
-    date: "May 18, 2026",
-    amount: 42000.00,
-    status: "Pending Approval",
-    eta: "TBD",
-    items: 215,
-  },
-];
-
-const mockLineItems = [
-  { sku: "SKU-992", name: "MacBook Pro M3 Max", qty: 10, price: 2100 },
-  { sku: "SKU-104", name: 'Dell UltraSharp 32"', qty: 4, price: 875 },
-];
+const initialPOs: {
+  id: string; supplier: string; date: string; amount: number;
+  status: string; eta: string; items: number;
+}[] = [];
 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, string> = {
@@ -71,6 +34,11 @@ export default function PurchaseOrders() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newPO, setNewPO] = useState({ supplier: "Robocraze", eta: "" });
   const [newPOLines, setNewPOLines] = useState([{ id: 1, sku: "", name: "", qty: 1, price: 0 }]);
+  const { userRole } = useAuth();
+
+  if (userRole === "faculty") {
+    return <Navigate to="/faculty-dashboard" replace />;
+  }
 
   const filtered = pos.filter((po) => {
     const matchesSearch = po.id.toLowerCase().includes(search.toLowerCase()) || po.supplier.toLowerCase().includes(search.toLowerCase());
@@ -260,15 +228,11 @@ export default function PurchaseOrders() {
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-slate-100 dark:divide-zinc-800">
-                                {mockLineItems.map(li => (
-                                  <tr key={li.sku}>
-                                    <td className="px-4 py-2.5 font-mono text-zinc-500">{li.sku}</td>
-                                    <td className="px-4 py-2.5 font-semibold text-zinc-900 dark:text-zinc-200">{li.name}</td>
-                                    <td className="px-4 py-2.5 font-medium text-zinc-700 dark:text-zinc-400">{li.qty}</td>
-                                    <td className="px-4 py-2.5 font-medium text-zinc-700 dark:text-zinc-400">{fmt(li.price)}</td>
-                                    <td className="px-4 py-2.5 font-bold text-zinc-900 dark:text-zinc-200 text-right">{fmt(li.qty * li.price)}</td>
-                                  </tr>
-                                ))}
+                                <tr>
+                                  <td colSpan={5} className="px-4 py-6 text-center text-xs text-zinc-400">
+                                    No line items.
+                                  </td>
+                                </tr>
                               </tbody>
                             </table>
                           </div>

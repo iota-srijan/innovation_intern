@@ -29,36 +29,6 @@ interface IssueRequest {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-GB", {
-    day: "2-digit", month: "short", year: "numeric",
-  });
-}
-
-// ─── Badges ───────────────────────────────────────────────────────────────────
-
-function StatusBadge({ status }: { status: string }) {
-  if (status === "pending")
-    return (
-      <span className="inline-flex items-center rounded-full border border-amber-400/20 bg-amber-400/10 px-2.5 py-0.5 text-[11px] font-semibold text-amber-400">
-        Pending
-      </span>
-    );
-  if (status === "approved")
-    return (
-      <span className="inline-flex items-center rounded-full border border-green-400/20 bg-green-400/10 px-2.5 py-0.5 text-[11px] font-semibold text-green-400">
-        Approved
-      </span>
-    );
-  if (status === "rejected")
-    return (
-      <span className="inline-flex items-center rounded-full border border-red-400/20 bg-red-400/10 px-2.5 py-0.5 text-[11px] font-semibold text-red-400">
-        Rejected
-      </span>
-    );
-  return null;
-}
-
 function AvailBadge({ qty, threshold }: { qty: number; threshold: number }) {
   if (qty === 0)
     return (
@@ -368,65 +338,6 @@ export default function StudentDashboard() {
                       </tr>
                     );
                   })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-
-        {/* ── My Requests ── */}
-        <div className="rounded-2xl border border-white/10 bg-[#111114]">
-          <div className="flex items-center gap-3 border-b border-white/[0.08] px-5 py-4">
-            <h2 className="text-sm font-bold text-white">My Requests</h2>
-            {myRequests.length > 0 && (
-              <span className="rounded-full border border-violet-400/20 bg-violet-400/10 px-2.5 py-0.5 text-[10px] font-semibold text-violet-400">
-                {myRequests.length}
-              </span>
-            )}
-          </div>
-
-          {myRequests.length === 0 ? (
-            <div className="py-14 text-center text-sm text-[#6e6e78]">
-              No requests yet. Browse inventory above and add items to cart.
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-[13px]">
-                <thead>
-                  <tr className="border-b border-white/[0.06]">
-                    {["Item", "Qty", "Purpose", "Status", "Submitted", "Return By"].map((h) => (
-                      <th
-                        key={h}
-                        className="px-5 py-3.5 text-[10px] font-semibold uppercase tracking-widest text-[#6e6e78]"
-                      >
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/[0.05]">
-                  {myRequests.map((req) => (
-                    <tr key={req.id} className="transition-colors hover:bg-white/[0.02]">
-                      <td className="px-5 py-3.5 font-semibold text-[#f4f4f6]">
-                        {req.item_name}
-                      </td>
-                      <td className="px-5 py-3.5 tabular-nums text-[#9a9aa6]">
-                        {req.quantity_requested}
-                      </td>
-                      <td className="max-w-[200px] truncate px-5 py-3.5 text-[#9a9aa6]">
-                        {req.purpose || "—"}
-                      </td>
-                      <td className="px-5 py-3.5">
-                        <StatusBadge status={req.status} />
-                      </td>
-                      <td className="px-5 py-3.5 text-[#6e6e78]">
-                        {fmtDate(req.created_at)}
-                      </td>
-                      <td className="px-5 py-3.5 text-[#6e6e78]">
-                        {req.return_deadline ? fmtDate(req.return_deadline) : "—"}
-                      </td>
-                    </tr>
-                  ))}
                 </tbody>
               </table>
             </div>

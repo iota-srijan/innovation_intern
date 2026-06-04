@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Bell, RefreshCw, Download, Share2, Sun, Moon, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "../../context/AuthContext";
 
 interface TopBarProps {
   title: string;
@@ -12,32 +12,16 @@ interface TopBarProps {
 }
 
 export function TopBar({ title, isDark, onToggleDark, isPro: _isPro, cartCount }: TopBarProps) {
-  const [initials, setInitials] = useState("SM");
+  const { displayName, userRole } = useAuth();
 
-  useEffect(() => {
-    const loadInitials = () => {
-      try {
-        const saved = localStorage.getItem("stockpilot-profile");
-        if (saved) {
-          const profile = JSON.parse(saved);
-          const first = profile.firstName || "Shrijan";
-          const last = profile.lastName || "Mishra";
-          setInitials(((first[0] || "") + (last[0] || "")).toUpperCase() || "SM");
-        } else {
-          setInitials("SM");
-        }
-      } catch {
-        setInitials("SM");
-      }
-    };
+  const initials = displayName
+    .split(' ')
+    .filter(Boolean)
+    .map(w => w[0].toUpperCase())
+    .join('')
+    .slice(0, 2) || 'U'
 
-    loadInitials();
-
-    window.addEventListener("profile-updated", loadInitials);
-    return () => {
-      window.removeEventListener("profile-updated", loadInitials);
-    };
-  }, []);
+  const profileHref = userRole === 'admin' ? '/admin/settings' : '/profile'
 
   return (
     <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center border-b border-zinc-200 bg-white px-5 dark:border-white/8 dark:bg-[#111111]">
@@ -129,7 +113,7 @@ export function TopBar({ title, isDark, onToggleDark, isPro: _isPro, cartCount }
 
         {/* Avatar */}
         <Link
-          to="/profile"
+          to={profileHref}
           title="Profile Settings"
           className="flex h-8 w-8 items-center justify-center rounded-full bg-violet-700 text-[10px] font-semibold text-white uppercase hover:bg-violet-600 transition-colors cursor-pointer"
         >

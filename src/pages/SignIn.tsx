@@ -11,7 +11,7 @@ export default function SignIn() {
   const params = new URLSearchParams(location.search)
   const errorParam = params.get('error')
 
-  const { signInWithGoogle, signInAsAdmin } = useAuth()
+  const { signInWithGoogle, signInAsAdmin, authError, clearAuthError } = useAuth()
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -22,26 +22,27 @@ export default function SignIn() {
   useEffect(() => {
     if (errorParam === 'blocked') {
       setShowBlockedError(true)
-      // Clear the query parameter so the error does not persist on page refresh/load
       navigate('/signin', { replace: true })
     }
   }, [errorParam, navigate])
 
   const handleGoogleSignIn = async () => {
+    clearAuthError()
     await signInWithGoogle()
     // Page will redirect to Google — no navigate() needed here
   }
 
   const handleAdminSignIn = async () => {
+    clearAuthError()
     setError('')
     setIsLoading(true)
     const success = await signInAsAdmin(email, password)
     setIsLoading(false)
     if (success) {
       setUserType('admin' as any)
-      navigate('/admin')
+      window.location.href = '/admin'
     } else {
-      setError('Invalid credentials')
+      setError('Invalid admin credentials')
     }
   }
 
@@ -69,6 +70,13 @@ export default function SignIn() {
           </p>
         )}
 
+        {/* Suspended/banned error from auth context */}
+        {authError && (
+          <p className="text-xs text-red-400 text-center mb-4">
+            {authError}
+          </p>
+        )}
+
         {/* Google Button */}
         <button
           onClick={handleGoogleSignIn}
@@ -86,7 +94,7 @@ export default function SignIn() {
 
         {/* Domain hint */}
         <p className="text-[10px] text-zinc-500 text-center mt-2 mb-4">
-          Only @opju.edu.in and @opju.ac.in emails are permitted
+          Only @opju.ac.in emails are permitted
         </p>
 
         {/* Microsoft Button — disabled (coming soon) */}

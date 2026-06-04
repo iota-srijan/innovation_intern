@@ -1,17 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+
 import {
   Shield, Users, Package, ShoppingCart, GraduationCap,
-  Plus, X, RefreshCw, Clock,
+  Plus, X, RefreshCw, Clock, Search,
 } from 'lucide-react'
 import { AppShell } from '../components/layout/AppShell'
 import { supabase } from '../lib/supabaseClient'
 import { toast } from 'sonner'
 import { useAuth } from '../context/AuthContext'
 
+
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
-type RoleType = 'student' | 'faculty' | 'admin'
-type ActionType = 'CREATE' | 'UPDATE' | 'DELETE'
+type RoleType = 'student' | 'faculty' | 'admin' | 'banned'
+type ActionType = 'CREATE' | 'UPDATE' | 'DELETE' | 'admin_action'
 
 interface UserRow {
   user_id: string
@@ -19,14 +21,6 @@ interface UserRow {
   role: RoleType | null
   full_name: string | null
   last_sign_in_at: string | null
-}
-
-interface AuditEntry {
-  id: string
-  actor_email: string | null
-  action: string
-  action_type: ActionType
-  created_at: string
 }
 
 interface Stats {
@@ -49,12 +43,6 @@ function timeAgo(iso: string | null): string {
   return `${Math.floor(hrs / 24)}d ago`
 }
 
-function formatTs(iso: string): string {
-  const d = new Date(iso)
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
-}
-
 // ─── Badges ────────────────────────────────────────────────────────────────────
 
 function RoleBadge({ role }: { role: RoleType }) {
@@ -62,11 +50,13 @@ function RoleBadge({ role }: { role: RoleType }) {
     student:  'text-cyan-400 bg-cyan-400/10 border-cyan-400/20',
     faculty:  'text-violet-400 bg-violet-400/10 border-violet-400/20',
     admin:    'text-amber-400 bg-amber-400/10 border-amber-400/20',
+    banned:   'text-red-400 bg-red-400/10 border-red-400/20',
   }
   const label: Record<RoleType, string> = {
     student: 'Student',
     faculty: 'Faculty',
     admin:   'Admin',
+    banned:  'Banned',
   }
   return (
     <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${cls[role]}`}>
@@ -75,18 +65,7 @@ function RoleBadge({ role }: { role: RoleType }) {
   )
 }
 
-function AuditBadge({ type }: { type: ActionType }) {
-  const cls: Record<ActionType, string> = {
-    CREATE: 'text-green-400 bg-green-400/10 border-green-400/20',
-    UPDATE: 'text-blue-400 bg-blue-400/10 border-blue-400/20',
-    DELETE: 'text-red-400 bg-red-400/10 border-red-400/20',
-  }
-  return (
-    <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[9px] font-bold tracking-wider ${cls[type]}`}>
-      {type}
-    </span>
-  )
-}
+
 
 // ─── Modal ──────────────────────────────────────────────────────────────────────
 
@@ -110,9 +89,6 @@ export default function AdminDashboard() {
   const [usersLoading, setUsersLoading] = useState(true)
   const [usersError, setUsersError] = useState<string | null>(null)
 
-  const [auditLog, setAuditLog]   = useState<AuditEntry[]>([])
-  const [auditExists, setAuditExists] = useState(true)
-
   const [stats, setStats]           = useState<Stats>({ totalUsers: 0, totalRequests: 0, totalItems: 0, activeFaculty: 0 })
   const [statsLoading, setStatsLoading] = useState(true)
 
@@ -121,6 +97,7 @@ export default function AdminDashboard() {
   const [addSubmitting, setAddSubmitting] = useState(false)
 
   const [updatingId, setUpdatingId] = useState<string | null>(null)
+  const [userSearch, setUserSearch] = useState('')
 
   const initRef = useRef(false)
 
@@ -149,29 +126,6 @@ export default function AdminDashboard() {
       setUsersError('Failed to load users')
     } finally {
       setUsersLoading(false)
-    }
-  }, [])
-
-  // ── Fetch audit log ──────────────────────────────────────────────────────────
-
-  const fetchAuditLog = useCallback(async () => {
-    try {
-      const { data, error } = await supabase
-        .from('audit_log')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(20)
-
-      if (error) {
-        if ((error as { code?: string }).code === '42P01') {
-          setAuditExists(false)
-        }
-        return
-      }
-      setAuditLog((data ?? []) as AuditEntry[])
-      setAuditExists(true)
-    } catch {
-      // silently ignore — audit log is optional
     }
   }, [])
 
@@ -205,9 +159,8 @@ export default function AdminDashboard() {
     if (initRef.current) return
     initRef.current = true
     fetchUsers()
-    fetchAuditLog()
     fetchStats()
-  }, [fetchUsers, fetchAuditLog, fetchStats])
+  }, [fetchUsers, fetchStats])
 
   // ── Audit log helper ──────────────────────────────────────────────────────────
 
@@ -218,11 +171,10 @@ export default function AdminDashboard() {
       await supabase
         .from('audit_log')
         .insert({ actor_email: actorEmail, action, action_type: actionType })
-      await fetchAuditLog()
     } catch {
       // audit failures are non-fatal
     }
-  }, [user?.email, fetchAuditLog])
+  }, [user?.email])
 
   // ── Grant faculty ─────────────────────────────────────────────────────────────
 
@@ -273,6 +225,54 @@ export default function AdminDashboard() {
       }
     } catch {
       toast.error('Failed to update role')
+    } finally {
+      setUpdatingId(null)
+    }
+  }
+
+  // ── Ban student ───────────────────────────────────────────────────────────────
+
+  const handleBanUser = async (row: UserRow) => {
+    if (updatingId) return
+    setUpdatingId(row.user_id)
+    try {
+      const { error } = await supabase
+        .from('user_roles')
+        .update({ role: 'banned' })
+        .eq('email', row.email)
+      if (error) {
+        toast.error(error.message)
+      } else {
+        toast.success(`${row.email} has been banned`)
+        await fetchUsers()
+        await logAudit(`Banned student ${row.email}`, 'admin_action')
+      }
+    } catch {
+      toast.error('Failed to ban user')
+    } finally {
+      setUpdatingId(null)
+    }
+  }
+
+  // ── Unban student ─────────────────────────────────────────────────────────────
+
+  const handleUnbanUser = async (row: UserRow) => {
+    if (updatingId) return
+    setUpdatingId(row.user_id)
+    try {
+      const { error } = await supabase
+        .from('user_roles')
+        .update({ role: 'student' })
+        .eq('email', row.email)
+      if (error) {
+        toast.error(error.message)
+      } else {
+        toast.success(`${row.email} has been unbanned`)
+        await fetchUsers()
+        await logAudit(`Unbanned student ${row.email}`, 'admin_action')
+      }
+    } catch {
+      toast.error('Failed to unban user')
     } finally {
       setUpdatingId(null)
     }
@@ -337,7 +337,6 @@ export default function AdminDashboard() {
 
   const handleRefresh = () => {
     fetchUsers()
-    fetchAuditLog()
     fetchStats()
   }
 
@@ -453,6 +452,20 @@ export default function AdminDashboard() {
             </button>
           </div>
 
+          {/* Search input */}
+          {!usersLoading && !usersError && users.length > 0 && (
+            <div className="relative mb-4">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#6e6e78]" />
+              <input
+                type="text"
+                value={userSearch}
+                onChange={e => setUserSearch(e.target.value)}
+                placeholder="Search by name or email…"
+                className="w-full rounded-[10px] border border-white/10 bg-white/[0.03] py-2 pl-8 pr-3 text-[13px] text-white placeholder-[#6e6e78] outline-none transition focus:border-violet-500/60 focus:bg-white/[0.05]"
+              />
+            </div>
+          )}
+
           {usersLoading ? (
             <div className="flex justify-center py-12">
               <div className="h-5 w-5 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
@@ -463,108 +476,119 @@ export default function AdminDashboard() {
             </div>
           ) : users.length === 0 ? (
             <p className="py-10 text-center text-sm text-[#6e6e78]">No users found in user_roles table.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="border-b border-white/[0.08]">
-                    {['Name / Email', 'Role', 'Last Active', 'Actions'].map(h => (
-                      <th
-                        key={h}
-                        className="px-2 pb-3 text-[10px] font-semibold uppercase tracking-widest text-[#6e6e78] first:pl-0"
-                      >
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/[0.05]">
-                  {users.map(row => {
-                    const role: RoleType = row.role ?? 'student'
-                    return (
-                      <tr key={row.user_id} className="transition-colors hover:bg-white/[0.02]">
-                        <td className="py-3.5 px-2 first:pl-0">
-                          <div className="text-sm font-semibold text-[#f4f4f6]">
-                            {row.full_name || row.email.split('@')[0]}
-                          </div>
-                          <div className="mt-0.5 font-mono text-[11px] text-[#6e6e78]">{row.email}</div>
-                        </td>
-                        <td className="py-3.5 px-2">
-                          <RoleBadge role={role} />
-                        </td>
-                        <td className="py-3.5 px-2">
-                          <div className="flex items-center gap-1.5 text-xs text-[#6e6e78]">
-                            <Clock className="h-3 w-3 shrink-0" />
-                            {timeAgo(row.last_sign_in_at)}
-                          </div>
-                        </td>
-                        <td className="py-3.5 px-2">
-                          {role === 'admin' ? (
-                            <span className="text-[#4b4b57]">—</span>
-                          ) : role === 'student' ? (
-                            <button
-                              onClick={() => handleGrantFaculty(row)}
-                              disabled={updatingId === row.user_id}
-                              className="inline-flex cursor-pointer items-center gap-1.5 rounded-[9px] border border-violet-500/40 bg-violet-500/[0.08] px-3 py-1.5 text-[12px] font-semibold text-violet-400 transition hover:bg-violet-500/[0.16] disabled:opacity-50"
-                            >
-                              {updatingId === row.user_id && (
-                                <span className="h-3 w-3 animate-spin rounded-full border border-violet-400 border-t-transparent" />
-                              )}
-                              Grant Faculty
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => handleRevokeFaculty(row)}
-                              disabled={updatingId === row.user_id}
-                              className="inline-flex cursor-pointer items-center gap-1.5 rounded-[9px] border border-red-400/30 bg-red-400/[0.07] px-3 py-1.5 text-[12px] font-semibold text-red-400 transition hover:bg-red-400/[0.14] disabled:opacity-50"
-                            >
-                              {updatingId === row.user_id && (
-                                <span className="h-3 w-3 animate-spin rounded-full border border-red-400 border-t-transparent" />
-                              )}
-                              Revoke Faculty
-                            </button>
-                          )}
-                        </td>
+          ) : (() => {
+            const q = userSearch.trim().toLowerCase()
+            const filteredUsers = q
+              ? users.filter(u =>
+                  u.email.toLowerCase().includes(q) ||
+                  (u.full_name?.toLowerCase() ?? '').includes(q)
+                )
+              : users
+            return (
+              <div className="overflow-x-auto">
+                {filteredUsers.length === 0 ? (
+                  <p className="py-6 text-center text-sm text-[#6e6e78]">No users match "{userSearch}".</p>
+                ) : (
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="border-b border-white/[0.08]">
+                        {['Name / Email', 'Role', 'Last Active', 'Actions'].map(h => (
+                          <th
+                            key={h}
+                            className="px-2 pb-3 text-[10px] font-semibold uppercase tracking-widest text-[#6e6e78] first:pl-0"
+                          >
+                            {h}
+                          </th>
+                        ))}
                       </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-
-        {/* ── Audit Log ── */}
-        {auditExists && (
-          <div className="rounded-2xl border border-white/10 bg-[#111114] p-5">
-            <div className="mb-5 flex items-center justify-between">
-              <h2 className="text-sm font-bold text-white">Audit Log</h2>
-              <span className="text-[10px] font-medium text-[#6e6e78]">Last 20 entries</span>
-            </div>
-
-            {auditLog.length === 0 ? (
-              <p className="py-8 text-center text-sm text-[#6e6e78]">No audit entries yet.</p>
-            ) : (
-              <div>
-                {auditLog.map(entry => (
-                  <div
-                    key={entry.id}
-                    className="flex items-start gap-3 border-b border-white/[0.06] py-3 last:border-0"
-                  >
-                    <span className="w-36 shrink-0 pt-px font-mono text-[10px] leading-tight text-[#4b4b57]">
-                      {formatTs(entry.created_at)}
-                    </span>
-                    <span className="w-36 shrink-0 truncate text-[12px] font-medium text-[#9a9aa6]">
-                      {entry.actor_email ?? '—'}
-                    </span>
-                    <span className="flex-1 text-[12px] text-[#f4f4f6]">{entry.action}</span>
-                    <AuditBadge type={entry.action_type} />
-                  </div>
-                ))}
+                    </thead>
+                    <tbody className="divide-y divide-white/[0.05]">
+                      {filteredUsers.map(row => {
+                        const role: RoleType = (row.role as RoleType) ?? 'student'
+                        return (
+                          <tr key={row.user_id} className="transition-colors hover:bg-white/[0.02]">
+                            <td className="py-3.5 px-2 first:pl-0">
+                              <div className="text-sm font-semibold text-[#f4f4f6]">
+                                {row.full_name || row.email.split('@')[0]}
+                              </div>
+                              <div className="mt-0.5 flex items-center gap-2">
+                                <span className="font-mono text-[11px] text-[#6e6e78]">{row.email}</span>
+                                {role === 'banned' && (
+                                  <span className="inline-flex items-center rounded-full border border-red-400/25 bg-red-400/10 px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-red-400">
+                                    BANNED
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="py-3.5 px-2">
+                              <RoleBadge role={role} />
+                            </td>
+                            <td className="py-3.5 px-2">
+                              <div className="flex items-center gap-1.5 text-xs text-[#6e6e78]">
+                                <Clock className="h-3 w-3 shrink-0" />
+                                {timeAgo(row.last_sign_in_at)}
+                              </div>
+                            </td>
+                            <td className="py-3.5 px-2">
+                              {role === 'admin' ? (
+                                <span className="text-[#4b4b57]">—</span>
+                              ) : role === 'banned' ? (
+                                <button
+                                  onClick={() => handleUnbanUser(row)}
+                                  disabled={updatingId === row.user_id}
+                                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-[9px] border border-green-400/30 bg-green-400/[0.07] px-3 py-1.5 text-[12px] font-semibold text-green-400 transition hover:bg-green-400/[0.16] disabled:opacity-50"
+                                >
+                                  {updatingId === row.user_id && (
+                                    <span className="h-3 w-3 animate-spin rounded-full border border-green-400 border-t-transparent" />
+                                  )}
+                                  Unban
+                                </button>
+                              ) : role === 'student' ? (
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={() => handleGrantFaculty(row)}
+                                    disabled={updatingId === row.user_id}
+                                    className="inline-flex cursor-pointer items-center gap-1.5 rounded-[9px] border border-violet-500/40 bg-violet-500/[0.08] px-3 py-1.5 text-[12px] font-semibold text-violet-400 transition hover:bg-violet-500/[0.16] disabled:opacity-50"
+                                  >
+                                    {updatingId === row.user_id && (
+                                      <span className="h-3 w-3 animate-spin rounded-full border border-violet-400 border-t-transparent" />
+                                    )}
+                                    Grant Faculty
+                                  </button>
+                                  <button
+                                    onClick={() => handleBanUser(row)}
+                                    disabled={updatingId === row.user_id}
+                                    className="inline-flex cursor-pointer items-center gap-1.5 rounded-[9px] border border-red-400/30 bg-red-400/[0.07] px-3 py-1.5 text-[12px] font-semibold text-red-400 transition hover:bg-red-400/[0.14] disabled:opacity-50"
+                                  >
+                                    {updatingId === row.user_id && (
+                                      <span className="h-3 w-3 animate-spin rounded-full border border-red-400 border-t-transparent" />
+                                    )}
+                                    Ban
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => handleRevokeFaculty(row)}
+                                  disabled={updatingId === row.user_id}
+                                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-[9px] border border-red-400/30 bg-red-400/[0.07] px-3 py-1.5 text-[12px] font-semibold text-red-400 transition hover:bg-red-400/[0.14] disabled:opacity-50"
+                                >
+                                  {updatingId === row.user_id && (
+                                    <span className="h-3 w-3 animate-spin rounded-full border border-red-400 border-t-transparent" />
+                                  )}
+                                  Revoke Faculty
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                )}
               </div>
-            )}
-          </div>
-        )}
+            )
+          })()}
+        </div>
 
       </div>
 
@@ -620,6 +644,7 @@ export default function AdminDashboard() {
           </div>
         </Modal>
       )}
+
     </AppShell>
   )
 }

@@ -9,24 +9,38 @@ import {
   Settings,
   Layers,
   LogOut,
+  ListOrdered,
+  BarChart2,
+  Clock,
+  ClipboardList,
+  ScrollText,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../../context/AuthContext";
 
 const navItems = [
-  { icon: LayoutDashboard,  path: "/dashboard",        label: "Dashboard" },
-  { icon: Package,          path: "/admin/inventory",  label: "Inventory" },   // admin only
-  { icon: Package,          path: "/inventory",        label: "Inventory" },
-  { icon: Truck,            path: "/suppliers",        label: "Suppliers" },
-  { icon: FileText,         path: "/purchase-orders",  label: "Purchase Orders" },
-  { icon: GitBranch,        path: "/alerts/low-stock", label: "Low Stock Alerts" },
-  { icon: Megaphone,        path: "/demands",          label: "Demand Board" },
-  { icon: Settings,         path: "/profile",          label: "Settings" },
+  { icon: LayoutDashboard,  path: "/dashboard",               label: "Dashboard" },
+  { icon: BarChart2,        path: "/admin/logistics",         label: "Logistics" },
+  { icon: Package,          path: "/admin/inventory",         label: "Inventory" },   // admin only
+  { icon: Megaphone,        path: "/admin/demands",           label: "Demand Board" }, // admin only
+  { icon: Package,          path: "/inventory",               label: "Inventory" },
+  { icon: Truck,            path: "/suppliers",               label: "Suppliers" },
+  { icon: FileText,         path: "/purchase-orders",         label: "Purchase Orders" },
+  { icon: GitBranch,        path: "/alerts/low-stock",        label: "Low Stock Alerts" },
+  { icon: Megaphone,        path: "/demands",                 label: "Demand Board" },
+  { icon: FileText,         path: "/student/requests",        label: "My Requests" },
+  { icon: ListOrdered,      path: "/faculty-requests",        label: "My Requests" },  // faculty
+  { icon: Package,          path: "/cart",                    label: "Request Item" },
+  { icon: Clock,            path: "/admin/pending",           label: "Pending Requests" }, // admin only
+  { icon: ClipboardList,    path: "/admin/requests",          label: "All Requests" },     // admin only
+  { icon: ScrollText,       path: "/admin/audit-log",         label: "Audit Log" },        // admin only
+  { icon: Settings,         path: "/profile",                 label: "Settings" },
+  { icon: Settings,         path: "/admin/settings",          label: "Settings" },
 ];
 
 export function Sidebar() {
   const location = useLocation();
-  const { userRole, signOut } = useAuth();
+  const { userRole, signOut, isRoleLoading } = useAuth();
   const navigate = useNavigate();
 
   const goToDashboard = () => {
@@ -59,6 +73,9 @@ export function Sidebar() {
     return location.pathname === path || location.pathname.startsWith(path + "/");
   };
 
+  if (isRoleLoading) return null;
+  if (!userRole) return null;
+
   return (
     <aside className="fixed inset-y-0 left-0 z-20 flex w-14 flex-col items-center border-r border-white/8 bg-[#111111] py-4 gap-1">
       {/* Logo mark */}
@@ -86,18 +103,29 @@ export function Sidebar() {
             );
           }
 
-          // /admin/inventory is admin-only — hide for everyone else
-          if (path === '/admin/inventory' && userRole !== 'admin') {
+          // /admin/ routes are admin-only — hide for everyone else
+          if (path.startsWith('/admin/') && userRole !== 'admin') {
             return null;
           }
 
-          // Students only see Dashboard, Demand Board, and Settings
-          if (userRole === 'student' && path !== '/profile' && path !== '/demands') {
+          // Students only see Dashboard, Demand Board, My Requests, Request Item, and Settings
+          if (userRole === 'student' && !['/dashboard', '/demands', '/student/requests', '/cart', '/profile'].includes(path)) {
             return null;
           }
 
-          // Admin only sees /admin/inventory and Settings (Dashboard handled above, Sign Out always shown)
-          if (userRole === 'admin' && path !== '/profile' && path !== '/admin/inventory') {
+          // Faculty sees Dashboard, Demand Board, My Requests, and Settings
+          if (userRole === 'faculty' && !['/dashboard', '/demands', '/faculty-requests', '/profile'].includes(path)) {
+            return null;
+          }
+
+          // Admin only sees /admin/* routes (Dashboard handled above, Sign Out always shown)
+          if (userRole === 'admin' && path === '/profile') return null;
+          if (userRole === 'admin' && !path.startsWith('/admin/')) {
+            return null;
+          }
+
+          // Hide student/faculty specific routes from others
+          if (userRole !== 'student' && userRole !== 'faculty' && (path === '/student/requests' || path === '/cart' || path === '/faculty-requests')) {
             return null;
           }
 

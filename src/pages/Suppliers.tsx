@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Plus, Search, Building2, Mail, Phone, MapPin, MoreVertical, X, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "../components/layout/AppShell";
+import { useAuth } from "../context/AuthContext";
+import { Navigate } from "react-router-dom";
 
 const initialSuppliers = [
   {
@@ -68,6 +70,11 @@ export default function Suppliers() {
   // Add Modal State
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newSup, setNewSup] = useState({ name: "", contactName: "", email: "", phone: "", location: "", leadTime: "", status: "Active" });
+  const { userRole } = useAuth();
+
+  if (userRole === "faculty") {
+    return <Navigate to="/faculty-dashboard" replace />;
+  }
 
   const filtered = suppliers.filter((s) => {
     const matchesSearch = s.name.toLowerCase().includes(search.toLowerCase()) || s.id.toLowerCase().includes(search.toLowerCase());

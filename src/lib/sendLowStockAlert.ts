@@ -28,7 +28,7 @@ export async function sendLowStockAlert(item: {
     if (error) throw error
     return { success: true }
   } catch (error) {
-    console.error('Failed to send low stock alert:', error)
+    console.error('Failed to send low stock alert')
     return { success: false }
   }
 }

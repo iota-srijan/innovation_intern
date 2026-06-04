@@ -6,6 +6,7 @@ import { useCategories } from "../../hooks/useCategories";
 import type { InventoryItem } from "../../types";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "../../context/AuthContext";
 
 type SortField = "name" | "sku" | "category" | "quantity" | "supplier";
 type SortOrder = "asc" | "desc";
@@ -21,6 +22,7 @@ export function InventoryTable({ onEdit, lowStockFilter = false }: InventoryTabl
   const { data: categories } = useCategories();
   const deleteMutation = useDeleteItem();
   const queryClient = useQueryClient();
+  const { userRole } = useAuth();
 
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -249,7 +251,7 @@ export function InventoryTable({ onEdit, lowStockFilter = false }: InventoryTabl
         </div>
 
         {/* Bulk action bar */}
-        {selectedRows.length > 0 && (
+        {selectedRows.length > 0 && userRole === 'admin' && (
           <div className="flex items-center gap-3 px-4 py-1.5 bg-violet-50 dark:bg-violet-950/30 border border-violet-200 dark:border-violet-800 rounded-xl">
             <span className="text-xs font-semibold text-violet-700 dark:text-violet-400">
               {selectedRows.length} items selected
@@ -299,7 +301,9 @@ export function InventoryTable({ onEdit, lowStockFilter = false }: InventoryTabl
                 <SortHeader field="quantity" label="Qty" />
                 <SortHeader field="supplier" label="Supplier" />
                 <th className="px-4 py-3 text-[9px] font-semibold uppercase tracking-wide text-zinc-400">Status</th>
-                <th className="px-4 py-3 text-right text-[9px] font-semibold uppercase tracking-wide text-zinc-400">Actions</th>
+                {userRole === 'admin' && (
+                  <th className="px-4 py-3 text-right text-[9px] font-semibold uppercase tracking-wide text-zinc-400">Actions</th>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-100 dark:divide-white/6">
@@ -376,24 +380,26 @@ export function InventoryTable({ onEdit, lowStockFilter = false }: InventoryTabl
                           {item.quantity === 0 ? "Out of Stock" : item.quantity <= item.reorder_threshold ? "Low Stock" : "In Stock"}
                         </span>
                       </td>
-                      <td className="px-4 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
-                        <div className="relative inline-block text-left">
-                          <button
-                            onClick={() => { onEdit(item); }}
-                            className="text-zinc-400 hover:text-violet-600 transition-colors mr-3"
-                            title="Edit"
-                          >
-                            <Edit2 className="h-3.5 w-3.5" />
-                          </button>
-                          <button
-                            onClick={() => setItemToDelete(item)}
-                            className="text-zinc-400 hover:text-red-600 transition-colors"
-                            title="Delete"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-                      </td>
+                      {userRole === 'admin' && (
+                        <td className="px-4 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
+                          <div className="relative inline-block text-left">
+                            <button
+                              onClick={() => { onEdit(item); }}
+                              className="text-zinc-400 hover:text-violet-600 transition-colors mr-3"
+                              title="Edit"
+                            >
+                              <Edit2 className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              onClick={() => setItemToDelete(item)}
+                              className="text-zinc-400 hover:text-red-600 transition-colors"
+                              title="Delete"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   );
                 })

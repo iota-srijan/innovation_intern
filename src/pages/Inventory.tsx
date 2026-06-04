@@ -4,6 +4,7 @@ import { Plus, AlertCircle } from "lucide-react";
 import { AppShell } from "../components/layout/AppShell";
 import { InventoryTable } from "../components/inventory/InventoryTable";
 import { AddEditItemModal } from "../components/inventory/AddEditItemModal";
+import { useAuth } from "../context/AuthContext";
 import { useItems } from "../hooks/useItems";
 import type { InventoryItem } from "../types";
 
@@ -12,6 +13,7 @@ export default function Inventory() {
   const [itemToEdit, setItemToEdit] = useState<InventoryItem | null>(null);
   const { isLoading, error } = useItems();
   const [searchParams] = useSearchParams();
+  const { userRole } = useAuth();
 
   const handleOpenAddModal = () => {
     setItemToEdit(null);
@@ -34,13 +36,15 @@ export default function Inventory() {
               Search, filter, and modify your inventory stock.
             </p>
           </div>
-          <button
-            onClick={handleOpenAddModal}
-            className="flex items-center gap-1.5 rounded-lg bg-violet-700 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-violet-600"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            Add Item
-          </button>
+          {userRole === 'admin' && (
+            <button
+              onClick={handleOpenAddModal}
+              className="flex items-center gap-1.5 rounded-lg bg-violet-700 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-violet-600"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Add Item
+            </button>
+          )}
         </div>
 
         {/* Loading skeleton */}

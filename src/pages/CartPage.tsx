@@ -19,15 +19,20 @@ interface StockConflict {
 export default function CartPage() {
   const navigate = useNavigate();
   const { cart, removeFromCart, updateQuantity, updatePurpose, clearCart } = useCart();
-  const { user } = useAuth();
+  const { user, userRole } = useAuth();
   const queryClient = useQueryClient();
 
   const [submitting, setSubmitting] = useState(false);
+  const [submitCooldown, setSubmitCooldown] = useState(false);
   const [stockConflicts, setStockConflicts] = useState<StockConflict[]>([]);
   const [showPurposeError, setShowPurposeError] = useState(false);
 
+  const isFaculty = userRole === 'faculty';
+  const backUrl    = isFaculty ? '/faculty-dashboard' : '/student-dashboard';
+  const requestsUrl = isFaculty ? '/faculty-requests' : '/student-dashboard';
+
   const studentEmail = user?.email ?? '';
-  const studentName = user?.user_metadata?.full_name ?? user?.email ?? 'Student';
+  const studentName  = user?.user_metadata?.full_name ?? user?.email ?? (isFaculty ? 'Faculty' : 'Student');
 
   // Validate: all purposes filled
   const emptyPurposeIds = cart
@@ -41,6 +46,7 @@ export default function CartPage() {
       setShowPurposeError(true);
       return;
     }
+    if (submitting || submitCooldown) return;
     setShowPurposeError(false);
     setStockConflicts([]);
     setSubmitting(true);
@@ -102,8 +108,8 @@ export default function CartPage() {
       const rows = itemsToSubmit.map((c: CartItem) => ({
         item_id: c.item_id,
         item_name: c.item_name,
-        quantity_requested: c.quantity_requested,
-        purpose: c.purpose,
+        quantity_requested: Math.min(Math.max(1, c.quantity_requested), 100),
+        purpose: c.purpose.trim().slice(0, 500),
         status: 'pending',
         student_id: user?.id,
         student_email: studentEmail,
@@ -132,16 +138,19 @@ export default function CartPage() {
       clearCart();
       localStorage.removeItem('sp-cart');
       toast.success(
-        `${itemsToSubmit.length} request${itemsToSubmit.length > 1 ? 's' : ''} submitted! Awaiting faculty approval.`
+        `${itemsToSubmit.length} request${itemsToSubmit.length > 1 ? 's' : ''} submitted! Awaiting approval.`
       );
-      // Invalidate the student's requests query so StudentDashboard shows fresh data on mount
+      // Invalidate appropriate queries
+      await queryClient.invalidateQueries({ queryKey: ['issue_requests'] });
       await queryClient.invalidateQueries({ queryKey: ['issue_requests', 'mine', studentEmail] });
-      navigate('/student-dashboard');
-    } catch (err) {
-      console.error(err);
+      await queryClient.invalidateQueries({ queryKey: ['issue_requests', 'faculty-mine', studentEmail] });
+      navigate(isFaculty ? '/faculty-requests' : '/student-dashboard');
+    } catch {
       toast.error('Submission failed. Please try again.');
     } finally {
       setSubmitting(false);
+      setSubmitCooldown(true);
+      setTimeout(() => setSubmitCooldown(false), 3000);
     }
   }
 
@@ -158,7 +167,7 @@ export default function CartPage() {
             Browse the IdeaLab inventory and add components you need to your cart.
           </p>
           <Link
-            to="/student-dashboard"
+            to={backUrl}
             className="mt-2 inline-flex items-center gap-2 rounded-xl bg-violet-700 hover:bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -177,7 +186,7 @@ export default function CartPage() {
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
             <Link
-              to="/student-dashboard"
+              to={backUrl}
               className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white transition-colors"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
@@ -291,6 +300,7 @@ export default function CartPage() {
                     </label>
                     <textarea
                       value={item.purpose}
+                      maxLength={500}
                       onChange={(e) => updatePurpose(item.item_id, e.target.value)}
                       placeholder="Describe your project or reason for this component…"
                       rows={2}
@@ -320,23 +330,24 @@ export default function CartPage() {
               {cart.length} item{cart.length !== 1 ? 's' : ''} ready to request
             </div>
             <div className="text-xs text-zinc-400 mt-0.5">
-              All requests go to faculty for approval
+              All requests go to admin for approval
             </div>
           </div>
           <button
             onClick={handleSubmit}
-            disabled={submitting || cart.length === 0}
+            disabled={submitting || submitCooldown || cart.length === 0}
             className="inline-flex items-center gap-2 rounded-xl bg-violet-700 hover:bg-violet-600 disabled:opacity-50 disabled:cursor-not-allowed px-6 py-2.5 text-sm font-semibold text-white transition-colors cursor-pointer"
           >
+            {submitting && <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />}
             <PackageCheck className="h-4 w-4" />
-            {submitting ? 'Submitting…' : 'Submit All Requests'}
+            {submitting ? 'Submitting…' : submitCooldown ? 'Submitted' : 'Submit All Requests'}
           </button>
         </div>
 
         {/* Link to existing requests */}
         <div className="text-center">
           <Link
-            to="/student-dashboard"
+            to={requestsUrl}
             className="text-xs text-zinc-500 hover:text-violet-400 transition-colors"
           >
             View my previous requests →

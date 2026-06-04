@@ -6,8 +6,14 @@ import { supabase } from '../lib/supabaseClient'
 function getDefaultRole(email: string): 'student' | 'faculty' | 'blocked' {
   if (email === 'srijanmishra1669@gmail.com') return 'student'
   if (email === 'mishrasrijan2305@gmail.com') return 'faculty'
-  if (email.endsWith('@opju.ac.in')) return 'faculty'
-  if (email.endsWith('@opju.edu.in')) return 'student'
+  if (email.endsWith('@opju.ac.in')) {
+    const local = email.split('@')[0]
+    const dotIndex = local.indexOf('.')
+    if (dotIndex !== -1 && /^[a-zA-Z]{2}\d{2}/.test(local.slice(dotIndex + 1))) {
+      return 'student'
+    }
+    return 'faculty'
+  }
   return 'blocked'
 }
 
@@ -30,7 +36,6 @@ export default function AuthCallback() {
 
         // Block emails that don't match any allowed domain or known address
         const isAllowed =
-          email.endsWith('@opju.edu.in') ||
           email.endsWith('@opju.ac.in') ||
           email === 'srijanmishra1669@gmail.com' ||
           email === 'mishrasrijan2305@gmail.com'

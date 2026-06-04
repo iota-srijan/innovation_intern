@@ -25,109 +25,10 @@ interface ExtendedItem {
   created_at: string;
 }
 
-// ── Mini spark data ──────────────────────────────────────────
-const poData = [
-  { v: 3420 }, { v: 3180 }, { v: 3500 }, { v: 3050 },
-  { v: 2900 }, { v: 3320 }, { v: 3209 },
-];
-const prData = [
-  { v: 2400 }, { v: 2550 }, { v: 2480 }, { v: 2700 },
-  { v: 2820 }, { v: 2900 }, { v: 2956 },
-];
-
-// ── Key suppliers bar data ───────────────────────────────────
-const suppliersData = [
-  { country: "DE", pct: 23 },
-  { country: "FR", pct: 19 },
-  { country: "LU", pct: 13 },
-  { country: "Others", pct: 45 },
-];
-
-// ── Invoice / Discount chart — per tab ───────────────────────
-const invoiceChartData: Record<string, { month: string; invoice: number; discount: number }[]> = {
-  Daily: [
-    { month: "Mon", invoice: 12, discount: 1.1 },
-    { month: "Tue", invoice: 18, discount: 1.4 },
-    { month: "Wed", invoice: 10, discount: 1.0 },
-    { month: "Thu", invoice: 22, discount: 1.6 },
-    { month: "Fri", invoice: 35, discount: 1.9 },
-    { month: "Sat", invoice: 28, discount: 1.7 },
-    { month: "Sun", invoice: 15, discount: 1.2 },
-  ],
-  Weekly: [
-    { month: "W1", invoice: 55, discount: 2.1 },
-    { month: "W2", invoice: 80, discount: 2.4 },
-    { month: "W3", invoice: 70, discount: 2.2 },
-    { month: "W4", invoice: 110, discount: 2.8 },
-    { month: "W5", invoice: 95, discount: 2.6 },
-    { month: "W6", invoice: 120, discount: 3.0 },
-  ],
-  Monthly: [
-    { month: "Jan", invoice: 180, discount: 2.1 },
-    { month: "Feb", invoice: 220, discount: 2.8 },
-    { month: "Mar", invoice: 160, discount: 1.9 },
-    { month: "Apr", invoice: 280, discount: 3.5 },
-    { month: "May", invoice: 240, discount: 3.1 },
-    { month: "Jun", invoice: 310, discount: 3.8 },
-    { month: "Jul", invoice: 290, discount: 4.0 },
-    { month: "Aug", invoice: 320, discount: 4.1 },
-  ],
-  Yearly: [
-    { month: "2020", invoice: 820, discount: 3.5 },
-    { month: "2021", invoice: 1100, discount: 3.8 },
-    { month: "2022", invoice: 1450, discount: 4.2 },
-    { month: "2023", invoice: 1900, discount: 4.6 },
-    { month: "2024", invoice: 2400, discount: 5.0 },
-  ],
-  All: [
-    { month: "2019", invoice: 600, discount: 3.1 },
-    { month: "2020", invoice: 820, discount: 3.5 },
-    { month: "2021", invoice: 1100, discount: 3.8 },
-    { month: "2022", invoice: 1450, discount: 4.2 },
-    { month: "2023", invoice: 1900, discount: 4.6 },
-    { month: "2024", invoice: 2400, discount: 5.0 },
-  ],
-};
-
-// ── Spend by category — per tab ──────────────────────────────
+// Chart data is not yet connected to a live data source.
+const invoiceChartData: Record<string, { month: string; invoice: number; discount: number }[]> = {};
 type SpendRow = { category: string; spend: number; transactions: number; suppliers: number; supplierPct: number; days: number };
-const spendData: Record<string, SpendRow[]> = {
-  Daily: [
-    { category: "Electronics",    spend: 2100000, transactions: 48,  suppliers: 8,  supplierPct: 62, days: 1 },
-    { category: "Office Supplies",spend: 800000,  transactions: 210, suppliers: 15, supplierPct: 88, days: 1 },
-    { category: "Furniture",      spend: 1500000, transactions: 32,  suppliers: 6,  supplierPct: 45, days: 2 },
-    { category: "Janitorial",     spend: 350000,  transactions: 90,  suppliers: 12, supplierPct: 78, days: 1 },
-    { category: "Networking",     spend: 920000,  transactions: 41,  suppliers: 4,  supplierPct: 56, days: 3 },
-  ],
-  Weekly: [
-    { category: "Electronics",    spend: 14000000, transactions: 320,  suppliers: 8,  supplierPct: 62, days: 4 },
-    { category: "Office Supplies",spend: 4200000,  transactions: 1100, suppliers: 15, supplierPct: 88, days: 3 },
-    { category: "Furniture",      spend: 9100000,  transactions: 210,  suppliers: 6,  supplierPct: 45, days: 6 },
-    { category: "Janitorial",     spend: 2400000,  transactions: 580,  suppliers: 12, supplierPct: 78, days: 3 },
-    { category: "Networking",     spend: 6100000,  transactions: 260,  suppliers: 4,  supplierPct: 56, days: 7 },
-  ],
-  Monthly: [
-    { category: "Electronics",    spend: 45200000, transactions: 1240, suppliers: 8,  supplierPct: 62, days: 12 },
-    { category: "Office Supplies",spend: 12800000, transactions: 3420, suppliers: 15, supplierPct: 88, days: 4 },
-    { category: "Furniture",      spend: 28500000, transactions: 840,  suppliers: 6,  supplierPct: 45, days: 18 },
-    { category: "Janitorial",     spend: 8200000,  transactions: 2100, suppliers: 12, supplierPct: 78, days: 3 },
-    { category: "Networking",     spend: 19400000, transactions: 960,  suppliers: 4,  supplierPct: 56, days: 8 },
-  ],
-  Yearly: [
-    { category: "Electronics",    spend: 542000000,  transactions: 14800, suppliers: 8,  supplierPct: 62, days: 45 },
-    { category: "Office Supplies",spend: 154000000,  transactions: 41000, suppliers: 15, supplierPct: 88, days: 30 },
-    { category: "Furniture",      spend: 342000000,  transactions: 10100, suppliers: 6,  supplierPct: 45, days: 90 },
-    { category: "Janitorial",     spend: 98400000,   transactions: 25200, suppliers: 12, supplierPct: 78, days: 32 },
-    { category: "Networking",     spend: 233000000,  transactions: 11500, suppliers: 4,  supplierPct: 56, days: 60 },
-  ],
-  All: [
-    { category: "Electronics",    spend: 1200000000, transactions: 38000, suppliers: 8,  supplierPct: 62, days: 60 },
-    { category: "Office Supplies",spend: 420000000,  transactions: 98000, suppliers: 15, supplierPct: 88, days: 45 },
-    { category: "Furniture",      spend: 890000000,  transactions: 28000, suppliers: 6,  supplierPct: 45, days: 90 },
-    { category: "Janitorial",     spend: 260000000,  transactions: 62000, suppliers: 12, supplierPct: 78, days: 50 },
-    { category: "Networking",     spend: 610000000,  transactions: 31000, suppliers: 4,  supplierPct: 56, days: 75 },
-  ],
-};
+const spendData: Record<string, SpendRow[]> = {};
 
 // ── Helpers ──────────────────────────────────────────────────
 function fmt(n: number) {
@@ -216,167 +117,43 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Card 2: PO Count */}
+          {/* Card 2: PO Count — no live data */}
           <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5 dark:border-white/8 dark:bg-[#1a1a1a] flex flex-col">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-zinc-900 dark:text-white">PO Count</span>
-              <button className="flex h-6 w-6 items-center justify-center rounded-md bg-zinc-200 text-zinc-500 hover:bg-zinc-300 dark:bg-white/8 dark:text-zinc-400 dark:hover:bg-white/12 transition-colors">
-                <ArrowUpRight className="h-3.5 w-3.5" />
-              </button>
+              <ArrowUpRight className="h-3.5 w-3.5 text-zinc-400" />
             </div>
-            <div className="flex items-baseline gap-1.5 mt-1">
-              <span className="text-3xl font-semibold text-zinc-900 dark:text-white">3,209</span>
-              <span className="text-[9px] font-bold px-1.5 py-px rounded bg-red-500/15 text-red-400">-0.281</span>
-            </div>
-            <div className="mt-auto pt-3 h-16">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={poData}>
-                  <Line
-                    type="monotone"
-                    dataKey="v"
-                    stroke="#ef4444"
-                    strokeWidth={1.5}
-                    dot={false}
-                    isAnimationActive={false}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+            <div className="flex flex-1 items-center justify-center text-xs text-zinc-400">
+              No data
             </div>
           </div>
 
-          {/* Card 3: PR Count */}
+          {/* Card 3: PR Count — no live data */}
           <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5 dark:border-white/8 dark:bg-[#1a1a1a] flex flex-col">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-zinc-900 dark:text-white">PR Count</span>
-              <button className="flex h-6 w-6 items-center justify-center rounded-md bg-zinc-200 text-zinc-500 hover:bg-zinc-300 dark:bg-white/8 dark:text-zinc-400 dark:hover:bg-white/12 transition-colors">
-                <ArrowUpRight className="h-3.5 w-3.5" />
-              </button>
+              <ArrowUpRight className="h-3.5 w-3.5 text-zinc-400" />
             </div>
-            <div className="flex items-baseline gap-1.5 mt-1">
-              <span className="text-3xl font-semibold text-zinc-900 dark:text-white">2,956</span>
-              <span className="text-[9px] font-bold px-1.5 py-px rounded bg-green-500/15 text-green-400">+0.118</span>
-            </div>
-            <div className="mt-auto pt-3 h-16">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={prData}>
-                  <Line
-                    type="monotone"
-                    dataKey="v"
-                    stroke="#22c55e"
-                    strokeWidth={1.5}
-                    dot={false}
-                    isAnimationActive={false}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+            <div className="flex flex-1 items-center justify-center text-xs text-zinc-400">
+              No data
             </div>
           </div>
 
-          {/* Card 4: Supplier Distribution Map */}
-          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5 dark:border-white/8 dark:bg-[#1a1a1a] relative overflow-hidden flex flex-col justify-between">
-            <div className="text-sm font-medium text-zinc-900 dark:text-white mb-4 z-10 relative">Supplier Distribution</div>
-            <div className="relative h-[160px] w-full flex items-center justify-center">
-              {/* Map background using mask */}
-              <div 
-                className="absolute inset-0 w-full h-full bg-zinc-300 dark:bg-zinc-700 opacity-60"
-                style={{
-                  maskImage: 'url(/world-map.svg)',
-                  maskSize: 'contain',
-                  maskRepeat: 'no-repeat',
-                  maskPosition: 'center',
-                  WebkitMaskImage: 'url(/world-map.svg)',
-                  WebkitMaskSize: 'contain',
-                  WebkitMaskRepeat: 'no-repeat',
-                  WebkitMaskPosition: 'center',
-                }}
-              />
-              
-              {/* Pins and Labels */}
-              <div className="absolute top-[30%] left-[51%] group">
-                <div className="relative flex h-3 w-3 z-20">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-3 w-3 bg-violet-500 border-[1.5px] border-zinc-50 dark:border-[#1a1a1a]"></span>
-                </div>
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-white/10 shadow-sm rounded-md px-2 py-1 text-[9px] font-medium text-zinc-700 dark:text-zinc-200 whitespace-nowrap z-10 transition-transform group-hover:translate-x-0.5">
-                  217 - Germany
-                </div>
-              </div>
-
-              <div className="absolute top-[33%] left-[49%] group">
-                <div className="relative flex h-2.5 w-2.5 z-20">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-indigo-500 border-[1.5px] border-zinc-50 dark:border-[#1a1a1a]"></span>
-                </div>
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-white/10 shadow-sm rounded-md px-2 py-1 text-[9px] font-medium text-zinc-700 dark:text-zinc-200 whitespace-nowrap z-10 transition-transform group-hover:-translate-x-0.5">
-                  185 - France
-                </div>
-              </div>
-
-              <div className="absolute top-[52%] right-[18%] group">
-                <div className="relative flex h-2.5 w-2.5 z-20">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 border-[1.5px] border-zinc-50 dark:border-[#1a1a1a]"></span>
-                </div>
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-white/10 shadow-sm rounded-md px-2 py-1 text-[9px] font-medium text-zinc-700 dark:text-zinc-200 whitespace-nowrap z-10 transition-transform group-hover:-translate-x-0.5">
-                  92 - APAC
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-3 flex items-center justify-between border-t border-zinc-200 dark:border-white/10 pt-3">
-              <div className="flex flex-col">
-                <span className="text-lg font-semibold text-zinc-900 dark:text-white">1,248</span>
-                <span className="text-[9px] text-zinc-500">Total Suppliers</span>
-              </div>
-              <div className="flex flex-col text-right">
-                <span className="text-lg font-semibold text-violet-500">12</span>
-                <span className="text-[9px] text-zinc-500">Countries Active</span>
-              </div>
-            </div>
+          {/* Card 4: Supplier Distribution — no live data */}
+          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5 dark:border-white/8 dark:bg-[#1a1a1a] flex flex-col justify-center items-center">
+            <span className="text-sm font-medium text-zinc-900 dark:text-white mb-2">Supplier Distribution</span>
+            <span className="text-xs text-zinc-400">No data</span>
           </div>
 
-          {/* Card 5: Key Suppliers */}
-          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5 dark:border-white/8 dark:bg-[#1a1a1a] flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-sm font-medium text-zinc-900 dark:text-white">Key Suppliers</span>
-                <span className="text-xs text-violet-600 dark:text-violet-400 font-medium bg-violet-100 dark:bg-violet-500/10 px-2 py-0.5 rounded-full">1,248</span>
-              </div>
-              <div className="text-[10px] text-zinc-500 dark:text-zinc-500 mb-6">Total Suppliers by Region</div>
-            </div>
-            <div className="h-32 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={suppliersData} barSize={24} margin={{ top: 0, right: 0, left: -28, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#8b5cf6" stopOpacity={1} />
-                      <stop offset="100%" stopColor="#6d28d9" stopOpacity={0.8} />
-                    </linearGradient>
-                  </defs>
-                  <Tooltip 
-                    cursor={{ fill: 'transparent' }} 
-                    contentStyle={{ borderRadius: '8px', border: '1px solid #e4e4e7', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', fontSize: '12px' }}
-                  />
-                  <XAxis
-                    dataKey="country"
-                    tick={{ fontSize: 10, fill: "#a1a1aa" }}
-                    axisLine={false}
-                    tickLine={false}
-                    dy={10}
-                  />
-                  <Bar 
-                    dataKey="pct" 
-                    fill="url(#barGrad)" 
-                    radius={[4, 4, 0, 0]} 
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+          {/* Card 5: Key Suppliers — no live data */}
+          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5 dark:border-white/8 dark:bg-[#1a1a1a] flex flex-col justify-center items-center">
+            <span className="text-sm font-medium text-zinc-900 dark:text-white mb-2">Key Suppliers</span>
+            <span className="text-xs text-zinc-400">No data</span>
           </div>
         </div>
 
         {/* ── Row 2: tables + invoice chart ───────────────── */}
-        <div className="grid grid-cols-[1.1fr_1fr] gap-4">
+        <div className="grid grid-cols-[1.1fr_1fr] gap-4" style={{ display: Object.keys(spendData).length === 0 ? 'none' : undefined }}>
 
           {/* Spend by Category */}
           <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5 dark:border-white/8 dark:bg-[#1a1a1a]">

@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { User, Mail, Building, Bell, LogOut, Lock } from "lucide-react";
 import { AppShell } from "../components/layout/AppShell";
 import { toast } from "sonner";
 import { supabase } from "../lib/supabaseClient";
-
+import { useAuth } from "../context/AuthContext";
 
 type Section = 'account' | 'notifications';
 
@@ -19,39 +19,71 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void 
   );
 }
 
+function splitName(full: string): { firstName: string; lastName: string } {
+  const parts = full.trim().split(' ')
+  return { firstName: parts[0] ?? '', lastName: parts.slice(1).join(' ') }
+}
+
 export default function Profile() {
   const navigate = useNavigate();
-  const [activeSection, setActiveSection] = useState<Section>('account');
-  
-  const [savedProfile, setSavedProfile] = useState(() => {
-    try {
-      const saved = localStorage.getItem("stockpilot-profile");
-      return saved ? JSON.parse(saved) : { firstName: 'Shrijan', lastName: 'Mishra', email: 'shrijan@stockpilot.inc' };
-    } catch {
-      return { firstName: 'Shrijan', lastName: 'Mishra', email: 'shrijan@stockpilot.inc' };
-    }
-  });
+  const { user, displayName, setDisplayName, signOut } = useAuth();
 
-  const [form, setForm] = useState(savedProfile);
-  const [authEmail, setAuthEmail] = useState<string>('');
+  const [activeSection, setActiveSection] = useState<Section>('account');
+  const [form, setForm] = useState(() => splitName(displayName));
+  const [isSaving, setIsSaving] = useState(false);
+  // Track whether the user has manually edited the name fields.
+  // If they haven't, we sync once when displayName arrives from the auth context.
+  const touchedRef = useRef(false);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user?.email) setAuthEmail(data.user.email);
-    });
-  }, []);
+    if (!touchedRef.current && displayName) {
+      setForm(splitName(displayName));
+    }
+  }, [displayName]);
 
   const [notifs, setNotifs] = useState({ master: true, lowStock: true, poDelays: true, weeklyReports: false });
 
-  const handleSave = () => {
-    try {
-      localStorage.setItem("stockpilot-profile", JSON.stringify(form));
-      setSavedProfile(form);
-      window.dispatchEvent(new Event("profile-updated"));
-      toast.success('Changes saved successfully');
-    } catch {
-      toast.error('Failed to save changes');
+  const avatarInitials = displayName
+    .split(' ')
+    .filter(Boolean)
+    .map(w => w[0].toUpperCase())
+    .join('')
+    .slice(0, 2) || 'U'
+
+  const handleSave = async () => {
+    if (isSaving) return;
+    const fullName = [form.firstName.trim(), form.lastName.trim()].filter(Boolean).join(' ')
+    if (!fullName) {
+      toast.error('Name cannot be empty')
+      return
     }
+    if (!user?.id) {
+      toast.error('Could not identify user — please sign in again')
+      return
+    }
+    setIsSaving(true)
+    try {
+      const { error } = await supabase
+        .from('user_roles')
+        .update({ display_name: fullName })
+        .eq('user_id', user.id)
+      if (error) {
+        toast.error('Failed to save changes')
+        return
+      }
+      setDisplayName(fullName)
+      toast.success('Name updated successfully')
+    } catch {
+      toast.error('Failed to save changes')
+    } finally {
+      setIsSaving(false)
+    }
+  };
+
+  const handleSignOut = async () => {
+    await signOut()
+    toast.info("Signed out successfully")
+    navigate("/signin")
   };
 
   const navItems: { icon: typeof User; label: string; key: Section }[] = [
@@ -74,22 +106,22 @@ export default function Profile() {
             <div className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-white/8 dark:bg-[#1a1a1a] flex flex-col items-center text-center">
               <div className="relative mb-4">
                 <div className="h-20 w-20 rounded-full bg-violet-700 flex items-center justify-center text-2xl font-bold text-white uppercase">
-                  {((savedProfile.firstName?.[0] || "") + (savedProfile.lastName?.[0] || "")) || "SM"}
+                  {avatarInitials}
                 </div>
                 <div className="absolute bottom-0 right-0 h-4 w-4 rounded-full border-2 border-white bg-green-500 dark:border-[#1a1a1a]" />
               </div>
               <h2 className="text-base font-bold text-zinc-900 dark:text-white">
-                {savedProfile.firstName} {savedProfile.lastName}
+                {displayName}
               </h2>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-4">Innovation Intern</p>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-4">OPJU IdeaLab</p>
               <div className="w-full space-y-2 text-xs text-left text-zinc-600 border-t border-zinc-100 dark:border-white/8 pt-4">
                 <div className="flex items-center gap-2.5 dark:text-zinc-400">
                   <Mail className="h-3.5 w-3.5 text-zinc-400 dark:text-zinc-600" />
-                  <span className="break-all">{authEmail || savedProfile.email}</span>
+                  <span className="break-all">{user?.email ?? ''}</span>
                 </div>
                 <div className="flex items-center gap-2.5 dark:text-zinc-400">
                   <Building className="h-3.5 w-3.5 text-zinc-400 dark:text-zinc-600" />
-                   <span>OPJU IdeaLab</span>
+                  <span>OPJU IdeaLab</span>
                 </div>
               </div>
             </div>
@@ -122,7 +154,7 @@ export default function Profile() {
                 <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-white/8 dark:bg-[#1a1a1a]">
                   <div className="border-b border-zinc-100 px-5 py-4 dark:border-white/8">
                     <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">Personal Information</h3>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">Update your photo and personal details here.</p>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">Update your personal details here.</p>
                   </div>
                   <div className="p-5 space-y-4">
                     <div className="grid grid-cols-2 gap-4">
@@ -131,8 +163,8 @@ export default function Profile() {
                         <input
                           type="text"
                           value={form.firstName}
-                          onChange={e => setForm({ ...form, firstName: e.target.value })}
-                          className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition-colors focus:border-violet-600 focus:ring-1 focus:ring-violet-600 dark:border-white/8 dark:bg-white/6 dark:text-zinc-900 dark:placeholder:text-zinc-500"
+                          onChange={e => { touchedRef.current = true; setForm(f => ({ ...f, firstName: e.target.value })); }}
+                          className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 outline-none transition-colors focus:border-violet-500 focus:ring-1 focus:ring-violet-500"
                         />
                       </div>
                       <div className="space-y-1.5">
@@ -140,8 +172,8 @@ export default function Profile() {
                         <input
                           type="text"
                           value={form.lastName}
-                          onChange={e => setForm({ ...form, lastName: e.target.value })}
-                          className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition-colors focus:border-violet-600 focus:ring-1 focus:ring-violet-600 dark:border-white/8 dark:bg-white/6 dark:text-zinc-900 dark:placeholder:text-zinc-500"
+                          onChange={e => { touchedRef.current = true; setForm(f => ({ ...f, lastName: e.target.value })); }}
+                          className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 outline-none transition-colors focus:border-violet-500 focus:ring-1 focus:ring-violet-500"
                         />
                       </div>
                       <div className="col-span-2 space-y-1.5">
@@ -149,7 +181,7 @@ export default function Profile() {
                         <div className="relative">
                           <input
                             type="email"
-                            value={authEmail || form.email}
+                            value={user?.email ?? ''}
                             readOnly
                             disabled
                             className="w-full rounded-lg border border-zinc-200 bg-zinc-100 px-3 py-2 pr-8 text-sm text-zinc-500 outline-none cursor-not-allowed opacity-70 dark:border-white/8 dark:bg-white/4 dark:text-zinc-500"
@@ -162,19 +194,17 @@ export default function Profile() {
                     <div className="flex justify-end">
                       <button
                         onClick={handleSave}
-                        className="px-5 py-2 bg-violet-700 hover:bg-violet-600 text-white text-sm font-medium rounded-full transition-colors cursor-pointer"
+                        disabled={isSaving}
+                        className="px-5 py-2 bg-violet-700 hover:bg-violet-600 disabled:opacity-60 text-white text-sm font-medium rounded-full transition-colors cursor-pointer"
                       >
-                        Save Changes
+                        {isSaving ? 'Saving…' : 'Save Changes'}
                       </button>
                     </div>
                   </div>
                   <div className="border-t border-zinc-100 dark:border-white/8 px-5 py-3 flex items-center justify-between bg-zinc-50 dark:bg-white/4">
-                    <span className="text-[10px] text-zinc-500">Active Session: 2 hours</span>
+                    <span className="text-[10px] text-zinc-500">Active Session</span>
                     <button
-                      onClick={() => {
-                        toast.info("Signed out successfully");
-                        navigate("/");
-                      }}
+                      onClick={handleSignOut}
                       className="flex items-center gap-1.5 text-xs font-medium text-red-500 hover:text-red-400 transition-colors"
                     >
                       <LogOut className="h-3.5 w-3.5" /> Sign Out
@@ -196,9 +226,9 @@ export default function Profile() {
                 </div>
                 <div className="divide-y divide-zinc-100 dark:divide-white/6">
                   {[
-                    { key: 'lowStock' as const,       title: 'Low Stock Alerts',  desc: 'Get notified when items drop below threshold.' },
-                    { key: 'poDelays' as const,        title: 'PO Delays',         desc: 'Receive updates on delayed inbound shipments.' },
-                    { key: 'weeklyReports' as const,   title: 'Weekly Reports',    desc: 'Get a summary of procurement activity each week.' },
+                    { key: 'lowStock' as const,      title: 'Low Stock Alerts',  desc: 'Get notified when items drop below threshold.' },
+                    { key: 'poDelays' as const,       title: 'PO Delays',         desc: 'Receive updates on delayed inbound shipments.' },
+                    { key: 'weeklyReports' as const,  title: 'Weekly Reports',    desc: 'Get a summary of procurement activity each week.' },
                   ].map(({ key, title, desc }) => (
                     <div key={key} className="flex items-center justify-between p-5 hover:bg-zinc-50 dark:hover:bg-white/4 transition-colors">
                       <div>
@@ -211,8 +241,6 @@ export default function Profile() {
                 </div>
               </div>
             )}
-
-
 
           </div>
         </div>
