@@ -3,9 +3,7 @@ import { ArrowUpRight, MoreHorizontal } from "lucide-react";
 import { AppShell } from "../components/layout/AppShell";
 import { useItems } from "../hooks/useItems";
 import {
-  LineChart,
   Line,
-  BarChart,
   Bar,
   XAxis,
   YAxis,

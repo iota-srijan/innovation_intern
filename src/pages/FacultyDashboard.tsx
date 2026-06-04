@@ -32,39 +32,11 @@ interface IssueRequest {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-GB", {
-    day: "2-digit", month: "short", year: "numeric",
-  });
-}
-
 function effectivePhysicalStatus(req: IssueRequest): PhysicalStatus {
   return req.physical_status ?? "pending_handover";
 }
 
 // ─── Badges ───────────────────────────────────────────────────────────────────
-
-function StatusBadge({ status }: { status: string }) {
-  if (status === "pending")
-    return (
-      <span className="inline-flex items-center rounded-full border border-amber-400/20 bg-amber-400/10 px-2.5 py-0.5 text-[11px] font-semibold text-amber-400">
-        Pending
-      </span>
-    );
-  if (status === "approved")
-    return (
-      <span className="inline-flex items-center rounded-full border border-green-400/20 bg-green-400/10 px-2.5 py-0.5 text-[11px] font-semibold text-green-400">
-        Approved
-      </span>
-    );
-  if (status === "rejected")
-    return (
-      <span className="inline-flex items-center rounded-full border border-red-400/20 bg-red-400/10 px-2.5 py-0.5 text-[11px] font-semibold text-red-400">
-        Rejected
-      </span>
-    );
-  return null;
-}
 
 function AvailBadge({ qty, threshold }: { qty: number; threshold: number }) {
   if (qty === 0)

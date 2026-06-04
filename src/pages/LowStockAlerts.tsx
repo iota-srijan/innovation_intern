@@ -192,28 +192,6 @@ export default function LowStockAlerts() {
                           <UrgencyBadge urgency={item.urgency} />
                         </td>
                         <td className="px-4 py-3">
-                          <div className="flex items-center gap-3">
-                            <div>
-                              <div className="text-xs font-bold text-zinc-700 dark:text-zinc-300">{item.dailyVelocity}/day</div>
-                              <div className="text-[10px] font-medium text-zinc-500 mt-0.5">Out in ~{Math.floor(item.quantity / item.dailyVelocity)}d</div>
-                            </div>
-                            <div className="w-[60px] h-[24px]">
-                              <ResponsiveContainer width="100%" height="100%">
-                                <LineChart data={item.sparkData}>
-                                  <Line 
-                                    type="monotone" 
-                                    dataKey="v" 
-                                    stroke={item.urgency === 'Critical' ? '#ef4444' : item.urgency === 'High' ? '#f59e0b' : '#3b82f6'} 
-                                    strokeWidth={1.5} 
-                                    dot={false} 
-                                    isAnimationActive={false}
-                                  />
-                                </LineChart>
-                              </ResponsiveContainer>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
                           <span className="inline-flex items-center rounded-lg bg-zinc-100 px-2.5 py-1 text-xs font-bold text-zinc-700 dark:bg-white/8 dark:text-zinc-300">
                             +{item.suggestedOrder} units
                           </span>

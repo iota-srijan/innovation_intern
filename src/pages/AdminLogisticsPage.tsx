@@ -3,9 +3,7 @@ import { AppShell } from "../components/layout/AppShell";
 import { supabase } from "../lib/supabaseClient";
 import { Package, AlertTriangle, FileText, TrendingUp } from "lucide-react";
 import {
-  LineChart,
   Line,
-  BarChart,
   Bar,
   XAxis,
   YAxis,
@@ -23,7 +21,7 @@ type ActivityRange = "Monthly" | "Yearly";
 export default function AdminLogisticsPage() {
   const [items, setItems] = useState<any[]>([]);
   const [requests, setRequests] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [_loading, setLoading] = useState(true);
 
   const [movementRange, setMovementRange] = useState<TimeRange>("30D");
   const [activityRange, setActivityRange] = useState<ActivityRange>("Monthly");
@@ -126,7 +124,7 @@ export default function AdminLogisticsPage() {
   }, [requests, activityRange]);
 
   return (
-    <AppShell>
+    <AppShell title="Logistics">
       <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8 font-['DM_Sans']">
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-white tracking-tight">Logistics</h1>
