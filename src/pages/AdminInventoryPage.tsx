@@ -401,6 +401,7 @@ export default function AdminInventoryPage() {
 
     try {
       if (editItem) {
+        console.log('Updating item:', JSON.stringify(payload))
         const { error } = await supabase.from('inventory_items').update(payload).eq('id', editItem.id)
         if (error) throw new Error(error.message)
         toast.success('Item updated')

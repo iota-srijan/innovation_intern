@@ -48,16 +48,20 @@ export function useUpdateItem() {
 
   return useMutation({
     mutationFn: async ({ id, ...item }: ItemFormData & { id: string }) => {
+      console.log('Update payload:', JSON.stringify(item))
+      console.log('Item ID:', id)
       const { data, error } = await supabase
         .from('inventory_items')
         .update({ ...item, updated_at: new Date().toISOString() })
         .eq('id', id)
         .select(`*, category:categories(*)`)
         .single()
+      console.log('Update response:', data, error)
       if (error) throw error
       return data
     },
     onSuccess: async (updatedItem) => {
+      console.log('Update succeeded, invalidating queries')
       queryClient.invalidateQueries({ queryKey: ['items'] })
       toast.success('Item updated')
       if (updatedItem.quantity <= updatedItem.reorder_threshold) {
@@ -65,7 +69,7 @@ export function useUpdateItem() {
         toast.warning(`Low stock alert sent for ${updatedItem.name}`)
       }
     },
-    onError: () => toast.error('Failed to update item'),
+    onError: (error) => { console.log('Update failed:', error); toast.error('Failed to update item') },
   })
 }
 
