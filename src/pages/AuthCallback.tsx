@@ -70,6 +70,33 @@ export default function AuthCallback() {
           role = defaultRole === 'blocked' ? 'student' : defaultRole
         }
 
+        // Upsert into user_roles before navigation so the DB row exists
+        // by the time AuthContext reads it on the destination page.
+        try {
+          const meta = session.user.user_metadata as Record<string, unknown>
+          const nameFromMeta: string | null =
+            (typeof meta?.full_name === 'string' && meta.full_name ? meta.full_name : null) ??
+            (typeof meta?.name === 'string' && meta.name ? meta.name : null) ??
+            null
+
+          const { error: upsertError } = await supabase
+            .from('user_roles')
+            .upsert(
+              { user_id: session.user.id, email, role, display_name: nameFromMeta },
+              { onConflict: 'user_id', ignoreDuplicates: true }
+            )
+          // Sync display_name from Google for returning users where it is still null
+          if (!upsertError && nameFromMeta) {
+            await supabase
+              .from('user_roles')
+              .update({ display_name: nameFromMeta })
+              .eq('user_id', session.user.id)
+              .is('display_name', null)
+          }
+        } catch {
+          // Upsert failure must not block login
+        }
+
         localStorage.setItem('sp-user-type', role)
 
         if (role === 'faculty') {

@@ -22,12 +22,12 @@ const navItems = [
   { icon: LayoutDashboard,  path: "/dashboard",               label: "Dashboard" },
   { icon: BarChart2,        path: "/admin/logistics",         label: "Logistics" },
   { icon: Package,          path: "/admin/inventory",         label: "Inventory" },   // admin only
-  { icon: Megaphone,        path: "/admin/demands",           label: "Demand Board" }, // admin only
+  { icon: Megaphone,        path: "/admin/demands",           label: "IdeaBoard" }, // admin only
   { icon: Package,          path: "/inventory",               label: "Inventory" },
   { icon: Truck,            path: "/suppliers",               label: "Suppliers" },
   { icon: FileText,         path: "/purchase-orders",         label: "Purchase Orders" },
   { icon: GitBranch,        path: "/alerts/low-stock",        label: "Low Stock Alerts" },
-  { icon: Megaphone,        path: "/demands",                 label: "Demand Board" },
+  { icon: Megaphone,        path: "/demands",                 label: "IdeaBoard" },
   { icon: FileText,         path: "/student/requests",        label: "My Requests" },
   { icon: ListOrdered,      path: "/faculty-requests",        label: "My Requests" },  // faculty
   { icon: Package,          path: "/cart",                    label: "Request Item" },

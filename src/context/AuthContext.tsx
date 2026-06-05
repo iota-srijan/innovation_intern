@@ -136,15 +136,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (s?.user) {
         const email = s.user.email ?? ''
 
-        // Upsert user into user_roles with default role 'student'.
-        // ignoreDuplicates: true → ON CONFLICT DO NOTHING, so existing roles are preserved.
+        // Upsert user into user_roles with the role detected from their email pattern.
+        // ignoreDuplicates: true → ON CONFLICT DO NOTHING so admin-granted roles are preserved.
+        // A second UPDATE syncs display_name from Google metadata for returning users
+        // whose display_name column is still null.
         if (email && !isAdminEmail(email)) {
-          await supabase
-            .from('user_roles')
-            .upsert(
-              { user_id: s.user.id, email, role: 'student' },
-              { onConflict: 'user_id', ignoreDuplicates: true }
-            )
+          const meta = s.user.user_metadata as Record<string, unknown>
+          const nameFromMeta: string | null =
+            (typeof meta?.full_name === 'string' && meta.full_name ? meta.full_name : null) ??
+            (typeof meta?.name === 'string' && meta.name ? meta.name : null) ??
+            null
+          const detectedRole = getDefaultRole(email)
+
+          if (detectedRole === 'student' || detectedRole === 'faculty') {
+            const { error: upsertError } = await supabase
+              .from('user_roles')
+              .upsert(
+                { user_id: s.user.id, email, role: detectedRole, display_name: nameFromMeta },
+                { onConflict: 'user_id', ignoreDuplicates: true }
+              )
+            // For returning users whose display_name is still null (logged in before this
+            // field was added), sync it from Google metadata without touching role.
+            if (!upsertError && nameFromMeta) {
+              await supabase
+                .from('user_roles')
+                .update({ display_name: nameFromMeta })
+                .eq('user_id', s.user.id)
+                .is('display_name', null)
+            }
+          }
         }
 
         const { role, displayName: dbName } = await fetchUserData(email)

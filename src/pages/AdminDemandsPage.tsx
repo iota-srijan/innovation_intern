@@ -346,7 +346,7 @@ export default function AdminDemandsPage() {
       ]);
 
       if (demandsRes.error) {
-        toast.error("Failed to load demands");
+        toast.error("Failed to load IdeaBoard");
         setLoading(false);
         return;
       }
@@ -362,7 +362,7 @@ export default function AdminDemandsPage() {
       setDemands(merged);
       setLoading(false);
     } catch {
-      toast.error("Failed to load demands");
+      toast.error("Failed to load IdeaBoard");
       setLoading(false);
     }
   }, []);
@@ -507,7 +507,7 @@ export default function AdminDemandsPage() {
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <AppShell title="Demand Board">
+    <AppShell title="IdeaBoard">
       <div className="mx-auto max-w-[960px] px-6 pb-24 pt-6">
 
         {/* Header */}
@@ -518,9 +518,9 @@ export default function AdminDemandsPage() {
             </span>
             <div>
               <h1 className="text-[28px] font-extrabold leading-tight tracking-[-0.02em] text-white">
-                Demand Board
+                IdeaBoard
               </h1>
-              <p className="mt-1.5 text-sm text-[#9a9aa6]">Review and action student equipment requests</p>
+              <p className="mt-1.5 text-sm text-[#9a9aa6]">Your queries and equipment requests — addressed here</p>
             </div>
           </div>
           <span className="inline-flex items-center gap-1.5 rounded-full border border-violet-500/30 bg-violet-500/[0.16] px-3 py-1.5 text-[11.5px] font-semibold text-violet-400">
@@ -534,7 +534,7 @@ export default function AdminDemandsPage() {
         {/* Stats row */}
         <div className="mb-6 grid grid-cols-5 gap-3">
           {[
-            { label: "Total Demands",  value: counts.all,          numCls: "text-white",       dotCls: "bg-violet-400" },
+            { label: "Total IdeaBoard",  value: counts.all,          numCls: "text-white",       dotCls: "bg-violet-400" },
             { label: "Pending",        value: counts.pending,      numCls: "text-amber-400",   dotCls: "bg-amber-400" },
             { label: "Under Review",   value: counts.under_review, numCls: "text-blue-400",    dotCls: "bg-blue-400" },
             { label: "Approved",       value: counts.approved,     numCls: "text-green-400",   dotCls: "bg-green-400" },
@@ -574,7 +574,7 @@ export default function AdminDemandsPage() {
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
           </div>
         ) : filtered.length === 0 ? (
-          <p className="py-20 text-center text-sm text-[#6e6e78]">No demands found.</p>
+          <p className="py-20 text-center text-sm text-[#6e6e78]">No IdeaBoard found.</p>
         ) : (
           <div className="flex flex-col gap-3.5">
             {filtered.map(demand => (

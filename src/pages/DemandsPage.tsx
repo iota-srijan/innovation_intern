@@ -463,7 +463,7 @@ export default function DemandsPage() {
         if ((demandsRes.error as { code?: string }).code === "42P01") {
           setDbReady(false);
         } else {
-          toast.error("Failed to load demands");
+          toast.error("Failed to load IdeaBoard");
         }
         setLoading(false);
         return;
@@ -482,7 +482,7 @@ export default function DemandsPage() {
       setDbReady(true);
       setLoading(false);
     } catch {
-      toast.error("Failed to load demands");
+      toast.error("Failed to load IdeaBoard");
       setLoading(false);
     }
   }, [user?.id]);
@@ -796,10 +796,10 @@ export default function DemandsPage() {
 
   if (!dbReady) {
     return (
-      <AppShell title="Demand Board">
+      <AppShell title="IdeaBoard">
         <div className="flex flex-col items-center justify-center gap-3 py-40 text-center">
           <div className="h-7 w-7 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
-          <p className="text-sm font-medium text-white/60">Setting up Demand Board…</p>
+          <p className="text-sm font-medium text-white/60">Setting up IdeaBoard…</p>
           <p className="text-xs text-white/30">Run the database migration to enable this feature.</p>
         </div>
       </AppShell>
@@ -809,7 +809,7 @@ export default function DemandsPage() {
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <AppShell title="Demand Board">
+    <AppShell title="IdeaBoard">
       <div className="mx-auto max-w-[960px] px-6 pb-24 pt-6">
 
         {/* Header */}
@@ -820,12 +820,10 @@ export default function DemandsPage() {
             </span>
             <div>
               <h1 className="text-[28px] font-extrabold leading-tight tracking-[-0.02em] text-white">
-                Demand Board
+                IdeaBoard
               </h1>
               <p className="mt-1.5 text-sm text-[#9a9aa6]">
-                {isFaculty
-                  ? "Review and action student equipment requests"
-                  : "Vote for equipment and features you want in IdeaLab"}
+                Your queries and equipment requests — addressed here
               </p>
             </div>
           </div>
@@ -844,7 +842,7 @@ export default function DemandsPage() {
               className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-gradient-to-b from-violet-500 to-violet-700 px-4 py-3 text-sm font-semibold text-white shadow-[0_1px_0_rgba(255,255,255,0.16)_inset,0_12px_26px_-12px_rgba(124,58,237,0.7),0_0_0_1px_rgba(124,58,237,0.35)] transition-transform hover:-translate-y-px active:translate-y-px"
             >
               <Plus className="h-4 w-4" />
-              Raise a Demand
+              Raise a Query
             </button>
           </div>
         </div>
@@ -853,7 +851,7 @@ export default function DemandsPage() {
         {isFaculty && (
           <div className="mb-6 grid grid-cols-5 gap-3">
             {[
-              { label: "Total Demands",  value: counts.all,          numCls: "text-white",         dotCls: "bg-violet-400" },
+              { label: "Total IdeaBoard",  value: counts.all,          numCls: "text-white",         dotCls: "bg-violet-400" },
               { label: "Pending",        value: counts.pending,      numCls: "text-amber-400",     dotCls: "bg-amber-400" },
               { label: "Under Review",   value: counts.under_review, numCls: "text-blue-400",      dotCls: "bg-blue-400" },
               { label: "Approved",       value: counts.approved,     numCls: "text-green-400",     dotCls: "bg-green-400" },
@@ -896,7 +894,7 @@ export default function DemandsPage() {
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
           </div>
         ) : filtered.length === 0 ? (
-          <p className="py-20 text-center text-sm text-[#6e6e78]">No demands found.</p>
+          <p className="py-20 text-center text-sm text-[#6e6e78]">No IdeaBoard found.</p>
         ) : (
           <div className="flex flex-col gap-3.5">
             {filtered.map((demand) =>
@@ -935,7 +933,7 @@ export default function DemandsPage() {
         <Modal onBackdropClick={() => setShowRaise(false)}>
           <div className="w-full max-w-[480px] rounded-[18px] border border-white/10 bg-[#16161b] p-6 shadow-[0_40px_90px_-30px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.04)]">
             <div className="mb-1 flex items-center justify-between">
-              <h2 className="text-[18px] font-bold tracking-[-0.01em] text-white">Raise a Demand</h2>
+              <h2 className="text-[18px] font-bold tracking-[-0.01em] text-white">Raise a Query</h2>
               <CloseBtn onClick={() => setShowRaise(false)} />
             </div>
             <p className="mb-5 text-[13px] text-[#9a9aa6]">
