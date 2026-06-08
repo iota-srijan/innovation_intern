@@ -110,10 +110,10 @@ export default function StudentDashboard() {
       label: "Items Available",
       value: totalAvailable,
       icon: Package,
-      numCls:  "text-violet-400",
-      dotCls:  "bg-violet-400",
-      bgCls:   "bg-violet-500/10",
-      iconCls: "text-violet-400",
+      numCls:  "text-orange-300",
+      dotCls:  "bg-orange-300",
+      bgCls:   "bg-orange-400/10",
+      iconCls: "text-orange-300",
     },
     {
       label: "Pending Requests",
@@ -153,7 +153,7 @@ export default function StudentDashboard() {
         {/* ── Header ── */}
         <div className="mb-8 flex items-start justify-between gap-4">
           <div>
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-violet-500/30 bg-violet-500/[0.12] px-3 py-1.5 text-xs font-semibold text-violet-400">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-orange-400/30 bg-orange-400/[0.12] px-3 py-1.5 text-xs font-semibold text-orange-300">
               <BookOpen className="h-3.5 w-3.5" />
               OPJU IdeaLab
             </div>
@@ -174,12 +174,12 @@ export default function StudentDashboard() {
             </Link>
             <Link
               to="/cart"
-              className="relative inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-gradient-to-b from-violet-500 to-violet-700 px-4 py-2.5 text-[13px] font-semibold text-white shadow-[0_1px_0_rgba(255,255,255,0.14)_inset,0_8px_20px_-10px_rgba(124,58,237,0.6)] transition-transform hover:-translate-y-px active:translate-y-px"
+              className="relative inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-gradient-to-b from-orange-400 to-orange-500 px-4 py-2.5 text-[13px] font-semibold text-white shadow-[0_1px_0_rgba(255,255,255,0.14)_inset,0_8px_20px_-10px_rgba(124,58,237,0.6)] transition-transform hover:-translate-y-px active:translate-y-px"
             >
               <ShoppingCart className="h-3.5 w-3.5" />
               Cart
               {cartCount > 0 && (
-                <span className="ml-1 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[9px] font-bold text-violet-700">
+                <span className="ml-1 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[9px] font-bold text-orange-500">
                   {cartCount}
                 </span>
               )}
@@ -190,7 +190,7 @@ export default function StudentDashboard() {
         {/* ── Stat cards ── */}
         <div className="mb-8 grid grid-cols-2 gap-3 md:grid-cols-4">
           {statCards.map(({ label, value, icon: Icon, numCls, dotCls, bgCls, iconCls }) => (
-            <div key={label} className="rounded-[13px] border border-white/10 bg-[#111114] px-4 py-4">
+            <div key={label} className="rounded-[13px] border border-white/10 bg-[#1a1108] px-4 py-4">
               <div className="mb-3 flex items-center justify-between">
                 <span className="text-[10px] font-semibold uppercase tracking-widest text-[#6e6e78]">
                   {label}
@@ -211,18 +211,18 @@ export default function StudentDashboard() {
         </div>
 
         {/* ── Browse Inventory ── */}
-        <div className="mb-6 rounded-2xl border border-white/10 bg-[#111114]">
+        <div className="mb-6 rounded-2xl border border-white/10 bg-[#1a1108]">
           {/* Section header */}
           <div className="flex items-center justify-between gap-4 border-b border-white/[0.08] px-5 py-4">
             <h2 className="text-sm font-bold text-white">Browse Inventory</h2>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#6e6e78]" />
+              <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400 dark:text-zinc-500" />
               <input
                 type="text"
                 placeholder="Search items or SKU…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-52 rounded-xl border border-white/10 bg-[#0a0a0b] py-2 pl-9 pr-3 text-[13px] text-white placeholder-[#6e6e78] outline-none transition focus:border-violet-500/60"
+                className="w-52 rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 py-2 pl-9 pr-3 text-[13px] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-500 outline-none transition focus:border-orange-400/60"
               />
             </div>
           </div>
@@ -235,7 +235,7 @@ export default function StudentDashboard() {
                 onClick={() => setCategoryFilter(cat)}
                 className={`cursor-pointer rounded-full border px-3.5 py-1.5 text-[12px] font-medium transition-all ${
                   categoryFilter === cat
-                    ? "border-transparent bg-[#7c3aed] text-white"
+                    ? "border-transparent bg-[#f97316] text-white"
                     : "border-white/10 text-[#9a9aa6] hover:border-white/20 hover:text-white"
                 }`}
               >
@@ -276,13 +276,13 @@ export default function StudentDashboard() {
                       <tr key={item.id} className="transition-colors hover:bg-white/[0.02]">
                         {/* Item / SKU */}
                         <td className="px-5 py-3.5">
-                          <div className="font-semibold text-[#f4f4f6]">{item.name}</div>
-                          <div className="mt-0.5 font-mono text-[10.5px] text-[#6e6e78]">{item.sku}</div>
+                          <div className="font-semibold text-gray-900 dark:text-white">{item.name}</div>
+                          <div className="mt-0.5 font-mono text-[10.5px] text-gray-500 dark:text-zinc-400">{item.sku}</div>
                         </td>
 
                         {/* Category */}
                         <td className="px-5 py-3.5">
-                          <span className="inline-flex items-center rounded-full border border-violet-400/20 bg-violet-400/10 px-2.5 py-0.5 text-[11px] font-semibold text-violet-400">
+                          <span className="inline-flex items-center rounded-full border border-orange-300/20 bg-orange-300/10 px-2.5 py-0.5 text-[11px] font-semibold text-orange-300">
                             {catName}
                           </span>
                         </td>
@@ -290,7 +290,7 @@ export default function StudentDashboard() {
                         {/* Available qty + bar */}
                         <td className="px-5 py-3.5">
                           <div className="flex items-center gap-2">
-                            <span className="w-7 shrink-0 text-right text-[12px] font-bold tabular-nums text-[#f4f4f6]">
+                            <span className="w-7 shrink-0 text-right text-[12px] font-bold tabular-nums text-gray-900 dark:text-white">
                               {qty}
                             </span>
                             <div className="h-1.5 w-16 overflow-hidden rounded-full bg-white/[0.08]">
@@ -329,7 +329,7 @@ export default function StudentDashboard() {
                             className={`inline-flex cursor-pointer items-center gap-1.5 rounded-[9px] px-3 py-1.5 text-[12px] font-semibold transition ${
                               unavail
                                 ? "cursor-not-allowed border border-white/[0.06] bg-white/[0.03] text-[#4b4b57] opacity-50"
-                                : "border border-violet-500/40 bg-violet-500/[0.1] text-violet-400 hover:bg-violet-500/[0.2]"
+                                : "border border-orange-400/40 bg-orange-400/[0.1] text-orange-300 hover:bg-orange-400/[0.2]"
                             }`}
                           >
                             Add to Cart
@@ -352,25 +352,25 @@ export default function StudentDashboard() {
           className="fixed inset-0 z-50 grid place-items-center bg-[rgba(5,5,7,0.75)] p-6 backdrop-blur-[6px]"
           onMouseDown={(e) => { if (e.target === e.currentTarget) setModalItem(null); }}
         >
-          <div className="w-full max-w-[440px] rounded-[18px] border border-white/10 bg-[#16161b] p-6 shadow-[0_40px_90px_-30px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.04)]">
+          <div className="w-full max-w-[440px] rounded-[18px] border border-gray-200 dark:border-white/10 bg-white dark:bg-[#16161b] p-6 shadow-xl dark:shadow-[0_40px_90px_-30px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.04)]">
             {/* Modal header */}
             <div className="mb-1 flex items-center justify-between">
-              <h3 className="text-[17px] font-bold text-white">Add to Cart</h3>
+              <h3 className="text-[17px] font-bold text-gray-900 dark:text-white">Add to Cart</h3>
               <button
                 onClick={() => setModalItem(null)}
-                className="grid h-8 w-8 cursor-pointer place-items-center rounded-[9px] border border-white/10 bg-white/[0.04] text-[#9a9aa6] transition hover:bg-white/[0.08] hover:text-white"
+                className="grid h-8 w-8 cursor-pointer place-items-center rounded-[9px] border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/[0.04] text-gray-500 dark:text-[#9a9aa6] transition hover:bg-gray-100 dark:hover:bg-white/[0.08] hover:text-gray-900 dark:hover:text-white"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
-            <p className="mb-5 text-[13px] text-[#9a9aa6]">{modalItem.name}</p>
+            <p className="mb-5 text-[13px] text-gray-600 dark:text-[#9a9aa6]">{modalItem.name}</p>
 
             <div className="space-y-4">
               {/* Quantity */}
               <div>
-                <label className="mb-1.5 block text-[12.5px] font-semibold text-[#f4f4f6]">
+                <label className="mb-1.5 block text-[12.5px] font-semibold text-gray-900 dark:text-[#f4f4f6]">
                   Quantity{" "}
-                  <span className="font-normal text-[#6e6e78]">(max {modalItem.quantity})</span>
+                  <span className="font-normal text-gray-500 dark:text-[#6e6e78]">(max {modalItem.quantity})</span>
                 </label>
                 <input
                   type="number"
@@ -390,22 +390,22 @@ export default function StudentDashboard() {
                     if (val > modalItem.quantity) val = modalItem.quantity;
                     setRequestQty(val);
                   }}
-                  className="w-full rounded-[11px] border border-white/10 bg-[#0a0a0b] px-3 py-[11px] text-[14px] text-white outline-none transition focus:border-violet-500 focus:shadow-[0_0_0_3px_rgba(124,58,237,0.16)]"
+                  className="w-full rounded-[11px] border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#0d0a08] px-3 py-[11px] text-[14px] text-gray-900 dark:text-white outline-none transition focus:border-orange-400 focus:shadow-[0_0_0_3px_rgba(124,58,237,0.16)]"
                 />
               </div>
 
               {/* Purpose */}
               <div>
-                <label className="mb-1.5 block text-[12.5px] font-semibold text-[#f4f4f6]">
+                <label className="mb-1.5 block text-[12.5px] font-semibold text-gray-900 dark:text-[#f4f4f6]">
                   Purpose{" "}
-                  <span className="font-normal text-[#6e6e78]">(optional — set in cart)</span>
+                  <span className="font-normal text-gray-500 dark:text-[#6e6e78]">(optional — set in cart)</span>
                 </label>
                 <textarea
                   value={purpose}
                   onChange={(e) => setPurpose(e.target.value)}
                   placeholder="Describe your project or purpose for this item…"
                   rows={3}
-                  className="w-full resize-none rounded-[11px] border border-white/10 bg-[#0a0a0b] px-3 py-[11px] text-[14px] leading-relaxed text-white placeholder-[#6e6e78] outline-none transition focus:border-violet-500 focus:shadow-[0_0_0_3px_rgba(124,58,237,0.16)]"
+                  className="w-full resize-none rounded-[11px] border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#0d0a08] px-3 py-[11px] text-[14px] leading-relaxed text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-[#6e6e78] outline-none transition focus:border-orange-400 focus:shadow-[0_0_0_3px_rgba(124,58,237,0.16)]"
                 />
               </div>
 
@@ -428,7 +428,7 @@ export default function StudentDashboard() {
                   setPurpose("");
                   setRequestQty(1);
                 }}
-                className="w-full cursor-pointer rounded-xl bg-gradient-to-b from-violet-500 to-violet-700 py-3 text-[14px] font-semibold text-white shadow-[0_1px_0_rgba(255,255,255,0.14)_inset] transition-opacity hover:opacity-90"
+                className="w-full cursor-pointer rounded-xl bg-gradient-to-b from-orange-400 to-orange-500 py-3 text-[14px] font-semibold text-white shadow-[0_1px_0_rgba(255,255,255,0.14)_inset] transition-opacity hover:opacity-90"
               >
                 Add to Cart
               </button>

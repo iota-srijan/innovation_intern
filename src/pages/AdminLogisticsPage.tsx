@@ -132,10 +132,10 @@ export default function AdminLogisticsPage() {
 
         {/* Stats Row */}
         <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-xl border border-white/10 bg-[#111114] p-5 flex flex-col justify-between h-28">
+          <div className="rounded-xl border border-white/10 bg-[#1a1108] p-5 flex flex-col justify-between h-full min-h-[7rem]">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-bold uppercase tracking-widest text-[#6e6e78]">Total SKUs</span>
-              <Package className="h-4 w-4 text-violet-400" />
+              <Package className="h-4 w-4 text-orange-300" />
             </div>
             <div>
               <div className="text-3xl font-bold text-white tracking-tight">{stats.totalSkus}</div>
@@ -143,7 +143,7 @@ export default function AdminLogisticsPage() {
             </div>
           </div>
           
-          <div className="rounded-xl border border-white/10 bg-[#111114] p-5 flex flex-col justify-between h-28">
+          <div className="rounded-xl border border-white/10 bg-[#1a1108] p-5 flex flex-col justify-between h-full min-h-[7rem]">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-bold uppercase tracking-widest text-[#6e6e78]">Low Stock</span>
               <AlertTriangle className="h-4 w-4 text-red-400" />
@@ -154,7 +154,7 @@ export default function AdminLogisticsPage() {
             </div>
           </div>
 
-          <div className="rounded-xl border border-white/10 bg-[#111114] p-5 flex flex-col justify-between h-28">
+          <div className="rounded-xl border border-white/10 bg-[#1a1108] p-5 flex flex-col justify-between h-full min-h-[7rem]">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-bold uppercase tracking-widest text-[#6e6e78]">Inventory Value</span>
               <FileText className="h-4 w-4 text-blue-400" />
@@ -165,14 +165,15 @@ export default function AdminLogisticsPage() {
             </div>
           </div>
 
-          <div className="rounded-xl border border-white/10 bg-[#111114] p-5 flex flex-col justify-between h-28">
+          <div className="rounded-xl border border-white/10 bg-[#1a1108] p-5 flex flex-col justify-between h-full min-h-[7rem]">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-widest text-[#6e6e78]">Fulfillment Rate</span>
+              <span className="text-[11px] font-bold uppercase tracking-widest text-[#6e6e78]">Stock Availability</span>
               <TrendingUp className="h-4 w-4 text-emerald-400" />
             </div>
             <div>
               <div className="text-3xl font-bold text-white tracking-tight">{stats.fulfillmentRate.toFixed(1)}%</div>
-              <div className="text-[11px] text-[#6e6e78] mt-1">Items with approved = true</div>
+              <div className="text-[11px] text-[#6e6e78] mt-1">Items currently in stock</div>
+              <div className="text-xs text-gray-500 dark:text-zinc-500 mt-1">% of catalog items with quantity &gt; 0</div>
             </div>
           </div>
         </div>
@@ -180,7 +181,7 @@ export default function AdminLogisticsPage() {
         {/* Charts Row */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {/* Inventory Movement */}
-          <div className="rounded-xl border border-white/10 bg-[#111114] p-5">
+          <div className="rounded-xl border border-white/10 bg-[#1a1108] p-5">
             <div className="flex items-center justify-between mb-8">
               <div>
                 <h3 className="text-sm font-bold text-white">Inventory Movement</h3>
@@ -192,7 +193,7 @@ export default function AdminLogisticsPage() {
                     key={range}
                     onClick={() => setMovementRange(range)}
                     className={`rounded-md px-3 py-1 text-[11px] font-bold transition-colors ${
-                      movementRange === range ? "bg-violet-600 text-white" : "text-[#6e6e78] hover:text-white"
+                      movementRange === range ? "bg-orange-500 text-white" : "text-[#6e6e78] hover:text-white"
                     }`}
                   >
                     {range}
@@ -205,26 +206,26 @@ export default function AdminLogisticsPage() {
                 <AreaChart data={movementData}>
                   <defs>
                     <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#7c3aed" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#7c3aed" stopOpacity={0}/>
+                      <stop offset="5%" stopColor="#f97316" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#f97316" stopOpacity={0}/>
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
                   <XAxis dataKey="name" stroke="#6e6e78" fontSize={10} tickLine={false} axisLine={false} tickMargin={10} />
                   <YAxis stroke="#6e6e78" fontSize={10} tickLine={false} axisLine={false} tickMargin={10} />
                   <Tooltip 
-                    contentStyle={{ backgroundColor: '#111114', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '8px', fontSize: '12px', color: '#fff' }}
+                    contentStyle={{ backgroundColor: '#1a1108', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '8px', fontSize: '12px', color: '#fff' }}
                     itemStyle={{ color: '#fff' }}
                     cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1 }}
                   />
-                  <Area type="monotone" dataKey="value" stroke="#7c3aed" strokeWidth={2} fillOpacity={1} fill="url(#colorValue)" />
+                  <Area type="monotone" dataKey="value" stroke="#f97316" strokeWidth={2} fillOpacity={1} fill="url(#colorValue)" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
           </div>
 
           {/* Issue Activity */}
-          <div className="rounded-xl border border-white/10 bg-[#111114] p-5">
+          <div className="rounded-xl border border-white/10 bg-[#1a1108] p-5">
             <div className="flex items-center justify-between mb-8">
               <div>
                 <h3 className="text-sm font-bold text-white">Issue Activity</h3>
@@ -236,7 +237,7 @@ export default function AdminLogisticsPage() {
                     key={range}
                     onClick={() => setActivityRange(range)}
                     className={`rounded-md px-3 py-1 text-[11px] font-bold transition-colors ${
-                      activityRange === range ? "bg-violet-600 text-white" : "text-[#6e6e78] hover:text-white"
+                      activityRange === range ? "bg-orange-500 text-white" : "text-[#6e6e78] hover:text-white"
                     }`}
                   >
                     {range}
@@ -251,12 +252,12 @@ export default function AdminLogisticsPage() {
                   <XAxis dataKey="name" stroke="#6e6e78" fontSize={10} tickLine={false} axisLine={false} tickMargin={10} />
                   <YAxis stroke="#6e6e78" fontSize={10} tickLine={false} axisLine={false} tickMargin={10} />
                   <Tooltip 
-                    contentStyle={{ backgroundColor: '#111114', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '8px', fontSize: '12px', color: '#fff' }}
+                    contentStyle={{ backgroundColor: '#1a1108', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '8px', fontSize: '12px', color: '#fff' }}
                     itemStyle={{ color: '#fff' }}
                     cursor={{ fill: 'rgba(255,255,255,0.05)' }}
                   />
                   <Bar dataKey="total" fill="#3f3f46" radius={[4, 4, 0, 0]} maxBarSize={30} />
-                  <Line type="monotone" dataKey="approved" stroke="#7c3aed" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="approved" stroke="#f97316" strokeWidth={2} dot={false} />
                 </ComposedChart>
               </ResponsiveContainer>
             </div>

@@ -15,7 +15,7 @@ export function LandingFooter() {
           {/* Brand col */}
           <div className="col-span-2 md:col-span-1 md:pr-8">
             <Link to="/" className="mb-4 flex items-center gap-2 focus-visible:outline-none">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-500">
                 <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none">
                   <polygon points="8,2 14,5.5 8,9 2,5.5" fill="white" opacity="0.95" />
                   <polygon points="2,5.5 8,9 8,14 2,10.5" fill="white" opacity="0.65" />

@@ -12,7 +12,7 @@ const initialPOs: {
 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, string> = {
-    Processing: "bg-violet-500/15 text-violet-400 border-violet-500/20",
+    Processing: "bg-orange-400/15 text-orange-300 border-orange-400/20",
     "In Transit": "bg-blue-500/15 text-blue-400 border-blue-500/20",
     Delayed: "bg-red-500/15 text-red-400 border-red-500/20",
     "Pending Approval": "bg-amber-500/15 text-amber-400 border-amber-500/20",
@@ -79,7 +79,7 @@ export default function PurchaseOrders() {
           </div>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-1.5 rounded-lg bg-violet-700 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-violet-600 shadow-lg shadow-violet-700/20"
+            className="flex items-center gap-1.5 rounded-lg bg-orange-500 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-orange-500 shadow-lg shadow-orange-500/20"
           >
             <Plus className="h-3.5 w-3.5" />
             Create PO
@@ -88,28 +88,28 @@ export default function PurchaseOrders() {
 
         {/* Summary Strip */}
         <div className="flex gap-3 mb-4 overflow-x-auto pb-1">
-          <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl px-4 py-2.5 flex items-center gap-3 shrink-0">
-            <div className="p-2 bg-violet-500/10 rounded-lg text-violet-500"><DollarSign className="w-4 h-4"/></div>
+          <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-orange-950/30 rounded-xl px-4 py-2.5 flex items-center gap-3 shrink-0">
+            <div className="p-2 bg-orange-400/10 rounded-lg text-orange-400"><DollarSign className="w-4 h-4"/></div>
             <div>
               <p className="text-[10px] uppercase font-bold text-zinc-400">Total PO Value</p>
               <p className="text-sm font-bold text-zinc-900 dark:text-white">₹88,250</p>
             </div>
           </div>
-          <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl px-4 py-2.5 flex items-center gap-3 shrink-0">
+          <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-orange-950/30 rounded-xl px-4 py-2.5 flex items-center gap-3 shrink-0">
             <div className="p-2 bg-red-500/10 rounded-lg text-red-500"><AlertCircle className="w-4 h-4"/></div>
             <div>
               <p className="text-[10px] uppercase font-bold text-zinc-400">Delayed</p>
               <p className="text-sm font-bold text-zinc-900 dark:text-white">1</p>
             </div>
           </div>
-          <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl px-4 py-2.5 flex items-center gap-3 shrink-0">
+          <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-orange-950/30 rounded-xl px-4 py-2.5 flex items-center gap-3 shrink-0">
             <div className="p-2 bg-blue-500/10 rounded-lg text-blue-500"><Truck className="w-4 h-4"/></div>
             <div>
               <p className="text-[10px] uppercase font-bold text-zinc-400">In Transit</p>
               <p className="text-sm font-bold text-zinc-900 dark:text-white">1</p>
             </div>
           </div>
-          <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl px-4 py-2.5 flex items-center gap-3 shrink-0">
+          <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-orange-950/30 rounded-xl px-4 py-2.5 flex items-center gap-3 shrink-0">
             <div className="p-2 bg-amber-500/10 rounded-lg text-amber-500"><Clock className="w-4 h-4"/></div>
             <div>
               <p className="text-[10px] uppercase font-bold text-zinc-400">Pending Approval</p>
@@ -126,8 +126,8 @@ export default function PurchaseOrders() {
               onClick={() => setFilterTab(tab)}
               className={`px-4 py-1.5 rounded-full text-xs transition-all ${
                 filterTab === tab
-                  ? "bg-violet-600 text-white font-medium"
-                  : "border border-slate-200 dark:border-zinc-700 text-zinc-500 hover:border-violet-400 dark:hover:border-violet-500 font-medium"
+                  ? "bg-orange-500 text-white font-medium"
+                  : "border border-slate-200 dark:border-zinc-700 text-zinc-500 hover:border-orange-300 dark:hover:border-orange-400 font-medium"
               }`}
             >
               {tab}
@@ -136,7 +136,7 @@ export default function PurchaseOrders() {
         </div>
 
         {/* Table card */}
-        <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-white/8 dark:bg-[#1a1a1a]">
+        <div className="overflow-hidden rounded-2xl border border-orange-100 bg-white dark:border-white/8 dark:bg-[#1f1509]">
           <div className="border-b border-zinc-100 p-4 dark:border-white/8">
             <div className="relative w-full sm:max-w-sm">
               <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-500" />
@@ -145,14 +145,14 @@ export default function PurchaseOrders() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search by PO number or supplier..."
-                className="h-8 w-full rounded-lg border border-zinc-200 bg-white pl-9 pr-4 text-xs text-zinc-700 outline-none focus:border-violet-600 dark:border-white/8 dark:bg-white/6 dark:text-zinc-300"
+                className="h-8 w-full rounded-lg border border-orange-100 bg-white pl-9 pr-4 text-xs text-zinc-700 outline-none focus:border-orange-500 dark:border-white/8 dark:bg-white/6 dark:text-zinc-300"
               />
             </div>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left">
-              <thead className="border-b border-zinc-100 dark:border-white/8 bg-zinc-50 dark:bg-[#1a1a1a]">
+              <thead className="border-b border-zinc-100 dark:border-white/8 bg-orange-50 dark:bg-[#1f1509]">
                 <tr>
                   {["PO Number", "Supplier", "Amount", "Status", "Expected Delivery", ""].map((h) => (
                     <th key={h} className="px-4 py-3 text-[9px] font-semibold uppercase tracking-wide text-zinc-400">
@@ -166,11 +166,11 @@ export default function PurchaseOrders() {
                   <React.Fragment key={po.id}>
                     <tr 
                       onClick={() => setExpandedPO(expandedPO === po.id ? null : po.id)}
-                      className="group transition-colors hover:bg-zinc-50 dark:hover:bg-white/4 cursor-pointer"
+                      className="group transition-colors hover:bg-orange-50 dark:hover:bg-white/4 cursor-pointer"
                     >
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
-                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-zinc-200 bg-zinc-50 text-zinc-500 dark:border-white/8 dark:bg-white/6 dark:text-zinc-400">
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-orange-100 bg-orange-50 text-zinc-500 dark:border-white/8 dark:bg-white/6 dark:text-zinc-400">
                             <FileText className="h-3.5 w-3.5" />
                           </div>
                           <div>
@@ -206,7 +206,7 @@ export default function PurchaseOrders() {
                       </td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-2">
-                          <button className="flex items-center gap-1 text-[10px] font-bold text-violet-500 hover:text-violet-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button className="flex items-center gap-1 text-[10px] font-bold text-orange-400 hover:text-orange-300 opacity-0 group-hover:opacity-100 transition-opacity">
                             View <ArrowUpRight className="h-2.5 w-2.5" />
                           </button>
                         </div>
@@ -216,9 +216,9 @@ export default function PurchaseOrders() {
                     {expandedPO === po.id && (
                       <tr className="bg-slate-50/50 dark:bg-zinc-800/30">
                         <td colSpan={6} className="px-14 py-4">
-                          <div className="border border-slate-200 dark:border-zinc-800 rounded-xl overflow-hidden bg-white dark:bg-zinc-900">
+                          <div className="border border-slate-200 dark:border-orange-950/30 rounded-xl overflow-hidden bg-white dark:bg-zinc-900">
                             <table className="w-full text-left text-xs">
-                              <thead className="bg-slate-50 dark:bg-zinc-950 border-b border-slate-200 dark:border-zinc-800">
+                              <thead className="bg-slate-50 dark:bg-zinc-950 border-b border-slate-200 dark:border-orange-950/30">
                                 <tr>
                                   <th className="px-4 py-2 font-semibold text-zinc-500">SKU</th>
                                   <th className="px-4 py-2 font-semibold text-zinc-500">Item Name</th>
@@ -250,7 +250,7 @@ export default function PurchaseOrders() {
       {/* Create PO Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm overflow-y-auto">
-          <div className="w-full max-w-3xl rounded-2xl border border-zinc-200 bg-white p-6 dark:border-white/8 dark:bg-[#1a1a1a] shadow-2xl my-8">
+          <div className="w-full max-w-3xl rounded-2xl border border-orange-100 bg-white p-6 dark:border-white/8 dark:bg-[#1f1509] shadow-2xl my-8">
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h3 className="text-xl font-bold text-zinc-900 dark:text-white">Create Purchase Order</h3>
@@ -268,7 +268,7 @@ export default function PurchaseOrders() {
                   <select 
                     value={newPO.supplier} 
                     onChange={e => setNewPO({...newPO, supplier: e.target.value})} 
-                    className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-zinc-900 outline-none focus:border-violet-600 focus:bg-white dark:border-zinc-700 dark:bg-zinc-900 dark:text-white font-medium"
+                    className="w-full rounded-xl border border-orange-100 bg-orange-50 px-3 py-2.5 text-zinc-900 outline-none focus:border-orange-500 focus:bg-white dark:border-zinc-700 dark:bg-zinc-900 dark:text-white font-medium"
                   >
                     <option value="Robocraze">Robocraze</option>
                     <option value="ThinkRobotics">ThinkRobotics</option>
@@ -283,7 +283,7 @@ export default function PurchaseOrders() {
                     required 
                     value={newPO.eta} 
                     onChange={e => setNewPO({...newPO, eta: e.target.value})} 
-                    className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-zinc-900 outline-none focus:border-violet-600 focus:bg-white dark:border-zinc-700 dark:bg-zinc-900 dark:text-white font-medium" 
+                    className="w-full rounded-xl border border-orange-100 bg-orange-50 px-3 py-2.5 text-zinc-900 outline-none focus:border-orange-500 focus:bg-white dark:border-zinc-700 dark:bg-zinc-900 dark:text-white font-medium" 
                   />
                 </div>
               </div>
@@ -294,7 +294,7 @@ export default function PurchaseOrders() {
                   <button 
                     type="button" 
                     onClick={() => setNewPOLines([...newPOLines, { id: Date.now(), sku: "", name: "", qty: 1, price: 0 }])}
-                    className="text-xs font-bold text-violet-600 hover:text-violet-700 flex items-center gap-1"
+                    className="text-xs font-bold text-orange-500 hover:text-orange-500 flex items-center gap-1"
                   >
                     <Plus className="w-3 h-3"/> Add Item
                   </button>
@@ -302,27 +302,27 @@ export default function PurchaseOrders() {
                 
                 <div className="space-y-3">
                   {newPOLines.map((line, idx) => (
-                    <div key={line.id} className="flex items-center gap-3 bg-zinc-50 dark:bg-zinc-800/50 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800">
+                    <div key={line.id} className="flex items-center gap-3 bg-orange-50 dark:bg-zinc-800/50 p-3 rounded-xl border border-orange-100 dark:border-orange-950/30">
                       <div className="w-1/4">
                         <input type="text" placeholder="SKU" required value={line.sku} onChange={e => {
                           const newL = [...newPOLines]; newL[idx].sku = e.target.value; setNewPOLines(newL);
-                        }} className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs outline-none focus:border-violet-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white" />
+                        }} className="w-full rounded-lg border border-orange-100 bg-white px-3 py-1.5 text-xs outline-none focus:border-orange-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white" />
                       </div>
                       <div className="flex-1">
                         <input type="text" placeholder="Item Name" required value={line.name} onChange={e => {
                           const newL = [...newPOLines]; newL[idx].name = e.target.value; setNewPOLines(newL);
-                        }} className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs outline-none focus:border-violet-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white" />
+                        }} className="w-full rounded-lg border border-orange-100 bg-white px-3 py-1.5 text-xs outline-none focus:border-orange-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white" />
                       </div>
                       <div className="w-20">
                         <input type="number" min="1" placeholder="Qty" required value={line.qty} onChange={e => {
                           const newL = [...newPOLines]; newL[idx].qty = parseInt(e.target.value)||0; setNewPOLines(newL);
-                        }} className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs outline-none focus:border-violet-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white" />
+                        }} className="w-full rounded-lg border border-orange-100 bg-white px-3 py-1.5 text-xs outline-none focus:border-orange-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white" />
                       </div>
                       <div className="w-28 relative">
                         <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-zinc-400" />
                         <input type="number" min="0" step="0.01" placeholder="Price" required value={line.price} onChange={e => {
                           const newL = [...newPOLines]; newL[idx].price = parseFloat(e.target.value)||0; setNewPOLines(newL);
-                        }} className="w-full rounded-lg border border-zinc-200 bg-white pl-7 pr-3 py-1.5 text-xs outline-none focus:border-violet-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white" />
+                        }} className="w-full rounded-lg border border-orange-100 bg-white pl-7 pr-3 py-1.5 text-xs outline-none focus:border-orange-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white" />
                       </div>
                       <button type="button" onClick={() => setNewPOLines(newPOLines.filter(l => l.id !== line.id))} className="text-zinc-400 hover:text-red-500 p-1">
                         <Trash2 className="w-4 h-4"/>
@@ -332,14 +332,14 @@ export default function PurchaseOrders() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between pt-6 border-t border-zinc-200 dark:border-zinc-800">
+              <div className="flex items-center justify-between pt-6 border-t border-orange-100 dark:border-orange-950/30">
                 <div className="text-lg font-bold text-zinc-900 dark:text-white flex items-center gap-2">
                   <span className="text-sm font-medium text-zinc-500">Total:</span> 
                   {fmt(newPOLines.reduce((acc, l) => acc + (l.qty * l.price), 0))}
                 </div>
                 <div className="flex gap-3">
                   <button type="button" onClick={() => setIsModalOpen(false)} className="rounded-xl px-5 py-2.5 font-bold text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800 transition-colors">Cancel</button>
-                  <button type="submit" className="rounded-xl bg-violet-600 px-5 py-2.5 font-bold text-white hover:bg-violet-700 transition-colors shadow-lg shadow-violet-600/20">Submit PO</button>
+                  <button type="submit" className="rounded-xl bg-orange-500 px-5 py-2.5 font-bold text-white hover:bg-orange-500 transition-colors shadow-lg shadow-orange-500/20">Submit PO</button>
                 </div>
               </div>
             </form>

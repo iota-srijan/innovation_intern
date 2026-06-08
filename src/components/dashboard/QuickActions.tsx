@@ -17,7 +17,7 @@ export function QuickActions() {
         <div className="grid grid-cols-2 gap-4">
           <button 
             onClick={() => handleAction("Item Scan")}
-            className="flex flex-col items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white p-6 transition-all hover:border-indigo-200 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            className="flex flex-col items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white p-6 transition-all hover:border-orange-200 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2"
           >
             <ScanBarcode className="h-6 w-6 text-slate-400" strokeWidth={1.5} />
             <span className="text-xs font-semibold text-slate-600">Scan Item</span>
@@ -25,7 +25,7 @@ export function QuickActions() {
           
           <Link 
             to="/purchase-orders"
-            className="flex flex-col items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white p-6 transition-all hover:border-indigo-200 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            className="flex flex-col items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white p-6 transition-all hover:border-orange-200 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2"
           >
             <FilePlus2 className="h-6 w-6 text-slate-400" strokeWidth={1.5} />
             <span className="text-xs font-semibold text-slate-600">Create PO</span>
@@ -33,7 +33,7 @@ export function QuickActions() {
 
           <button 
             onClick={() => handleAction("Inventory Transfer")}
-            className="flex flex-col items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white p-6 transition-all hover:border-indigo-200 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            className="flex flex-col items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white p-6 transition-all hover:border-orange-200 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2"
           >
             <ArrowLeftRight className="h-6 w-6 text-slate-400" strokeWidth={1.5} />
             <span className="text-xs font-semibold text-slate-600">Transfer</span>
@@ -41,7 +41,7 @@ export function QuickActions() {
 
           <button 
             onClick={() => handleAction("Audit Process")}
-            className="flex flex-col items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white p-6 transition-all hover:border-indigo-200 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            className="flex flex-col items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white p-6 transition-all hover:border-orange-200 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2"
           >
             <ClipboardCheck className="h-6 w-6 text-slate-400" strokeWidth={1.5} />
             <span className="text-xs font-semibold text-slate-600">Audit</span>

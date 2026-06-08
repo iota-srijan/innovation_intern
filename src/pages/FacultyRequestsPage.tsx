@@ -145,10 +145,10 @@ export default function FacultyRequestsPage() {
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <div className="flex items-center gap-2">
-              <ClipboardList className="h-4 w-4 text-violet-400" />
+              <ClipboardList className="h-4 w-4 text-orange-300" />
               <h2 className="text-lg font-semibold text-zinc-900 dark:text-white">My Requests</h2>
               {requests.length > 0 && (
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-violet-500/20 text-violet-400">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-400/20 text-orange-300">
                   {requests.length}
                 </span>
               )}
@@ -160,14 +160,14 @@ export default function FacultyRequestsPage() {
           <div className="flex items-center gap-2 flex-wrap">
             <Link
               to="/cart"
-              className="flex items-center gap-1.5 rounded-xl border border-white/10 px-4 py-2 text-xs font-medium text-zinc-300 hover:text-white hover:border-violet-500/50 transition-colors"
+              className="flex items-center gap-1.5 rounded-xl border border-gray-200 dark:border-white/10 px-4 py-2 text-xs font-medium text-gray-600 dark:text-zinc-300 hover:text-gray-900 dark:hover:text-white hover:border-orange-400/50 transition-colors"
             >
               <ShoppingCart className="h-3.5 w-3.5" />
               Go to Cart
             </Link>
             <Link
               to="/faculty-dashboard"
-              className="rounded-xl bg-violet-700 hover:bg-violet-600 px-4 py-2 text-xs font-semibold text-white transition-colors"
+              className="rounded-xl bg-orange-500 hover:bg-orange-500 px-4 py-2 text-xs font-semibold text-white transition-colors"
             >
               Browse Inventory
             </Link>
@@ -189,12 +189,12 @@ export default function FacultyRequestsPage() {
         )}
 
         {/* ── New Request panel ── */}
-        <div className="rounded-2xl border border-white/8 bg-[#1a1a1a]">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
-            <span className="text-sm font-semibold text-white">New Request</span>
+        <div className="rounded-2xl border border-gray-200 dark:border-white/8 bg-white dark:bg-[#111827]">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-white/[0.06]">
+            <span className="text-sm font-semibold text-gray-900 dark:text-white">New Request</span>
             <button
               onClick={() => setShowForm((v) => !v)}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-violet-500/40 bg-violet-500/10 px-3 py-1.5 text-[11px] font-semibold text-violet-400 hover:bg-violet-500/20 transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-orange-400/40 bg-orange-400/10 px-3 py-1.5 text-[11px] font-semibold text-orange-300 hover:bg-orange-400/20 transition-colors cursor-pointer"
             >
               {showForm ? <X className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
               {showForm ? 'Cancel' : 'Submit a Request'}
@@ -207,12 +207,12 @@ export default function FacultyRequestsPage() {
                 {/* Item selector */}
                 <div>
                   <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-widest text-zinc-400">
-                    Item <span className="text-violet-400">*</span>
+                    Item <span className="text-orange-300">*</span>
                   </label>
                   <select
                     value={reqItem}
                     onChange={(e) => setReqItem(e.target.value)}
-                    className="w-full rounded-[10px] border border-white/10 bg-zinc-900 px-3 py-2.5 text-[12px] text-white outline-none transition focus:border-violet-500"
+                    className="w-full rounded-[10px] border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-zinc-900 px-3 py-2.5 text-[12px] text-gray-900 dark:text-white outline-none transition focus:border-orange-400"
                   >
                     <option value="">Select item…</option>
                     {extendedItems
@@ -228,7 +228,7 @@ export default function FacultyRequestsPage() {
                 {/* Quantity */}
                 <div>
                   <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-widest text-zinc-400">
-                    Quantity <span className="text-violet-400">*</span>
+                    Quantity <span className="text-orange-300">*</span>
                   </label>
                   <input
                     type="number"
@@ -236,14 +236,14 @@ export default function FacultyRequestsPage() {
                     max={reqItem ? (extendedItems.find((i: any) => i.id === reqItem)?.quantity ?? 999) : 999}
                     value={reqQty}
                     onChange={(e) => setReqQty(e.target.value === '' ? '' : Number(e.target.value))}
-                    className="w-full rounded-[10px] border border-white/10 bg-zinc-900 px-3 py-2.5 text-[12px] text-white outline-none transition focus:border-violet-500"
+                    className="w-full rounded-[10px] border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-zinc-900 px-3 py-2.5 text-[12px] text-gray-900 dark:text-white outline-none transition focus:border-orange-400"
                   />
                 </div>
 
                 {/* Purpose */}
                 <div>
                   <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-widest text-zinc-400">
-                    Purpose <span className="text-violet-400">*</span>
+                    Purpose <span className="text-orange-300">*</span>
                   </label>
                   <input
                     type="text"
@@ -251,7 +251,7 @@ export default function FacultyRequestsPage() {
                     maxLength={500}
                     onChange={(e) => setReqPurpose(e.target.value)}
                     placeholder="Describe usage or project…"
-                    className="w-full rounded-[10px] border border-white/10 bg-zinc-900 px-3 py-2.5 text-[12px] text-white placeholder-zinc-600 outline-none transition focus:border-violet-500"
+                    className="w-full rounded-[10px] border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-zinc-900 px-3 py-2.5 text-[12px] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-600 outline-none transition focus:border-orange-400"
                   />
                 </div>
               </div>
@@ -260,7 +260,7 @@ export default function FacultyRequestsPage() {
                 <button
                   onClick={handleSubmit}
                   disabled={!reqItem || !reqPurpose.trim() || submitting || submitCooldown}
-                  className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-b from-violet-500 to-violet-700 px-5 py-2.5 text-[13px] font-semibold text-white disabled:opacity-50 transition-opacity cursor-pointer"
+                  className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-b from-orange-400 to-orange-500 px-5 py-2.5 text-[13px] font-semibold text-white disabled:opacity-50 transition-opacity cursor-pointer"
                 >
                   {submitting && (
                     <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
@@ -273,25 +273,25 @@ export default function FacultyRequestsPage() {
         </div>
 
         {/* ── Pending Requests ── */}
-        <div className="rounded-2xl border border-white/8 bg-[#1a1a1a] p-5">
-          <div className="flex items-center gap-3 mb-4">
-            <h2 className="text-sm font-semibold text-white">Pending Requests</h2>
+        <div className="rounded-2xl border border-gray-200 dark:border-white/8 bg-white dark:bg-[#111827] overflow-hidden">
+          <div className="flex items-center gap-3 mb-4 p-5 pb-0">
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-white">Pending Requests</h2>
             {pending > 0 && (
-              <span className="rounded-full border border-violet-400/20 bg-violet-400/10 px-2.5 py-0.5 text-[10px] font-semibold text-violet-400">
+              <span className="rounded-full border border-orange-300/20 bg-orange-300/10 px-2.5 py-0.5 text-[10px] font-semibold text-orange-300">
                 {pending}
               </span>
             )}
           </div>
 
           {pending === 0 ? (
-            <div className="py-8 text-center text-sm text-zinc-400">
+            <div className="py-8 text-center text-sm text-gray-500 dark:text-zinc-400">
               No pending requests — all caught up!
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto w-full">
               <table className="w-full text-[11px]">
                 <thead>
-                  <tr className="border-b border-white/8">
+                  <tr className="border-b border-gray-200 dark:border-white/8 bg-blue-50 dark:bg-zinc-800">
                     {["ITEM", "QTY", "PURPOSE", "SUBMITTED", "STATUS"].map((h) => (
                       <th
                         key={h}
@@ -304,20 +304,20 @@ export default function FacultyRequestsPage() {
                 </thead>
                 <tbody>
                   {requests.filter(r => r.status === 'pending').map((req) => (
-                    <tr key={req.id} className="border-b border-white/6 hover:bg-white/4 last:border-0 transition-colors">
-                      <td className="py-3 px-2 first:pl-0 font-medium text-zinc-200">
+                    <tr key={req.id} className="border-b border-gray-100 dark:border-white/6 hover:bg-gray-50 dark:hover:bg-white/4 last:border-0 transition-colors">
+                      <td className="py-3 px-2 first:pl-5 font-medium text-gray-900 dark:text-white">
                         {req.item_name}
                       </td>
-                      <td className="py-3 px-2 text-zinc-400">
+                      <td className="py-3 px-2 text-gray-500 dark:text-zinc-400">
                         {req.quantity_requested}
                       </td>
-                      <td className="py-3 px-2 text-zinc-400 max-w-[200px]">
+                      <td className="py-3 px-2 text-gray-500 dark:text-zinc-400 max-w-[200px]">
                         <span className="line-clamp-2" title={req.purpose}>{req.purpose || "—"}</span>
                       </td>
-                      <td className="py-3 px-2 text-zinc-500">
+                      <td className="py-3 px-2 text-gray-600 dark:text-zinc-500">
                         {new Date(req.created_at).toLocaleDateString()}
                       </td>
-                      <td className="py-3 px-2">
+                      <td className="py-3 px-2 pr-5">
                         <StatusBadge status={req.status} />
                       </td>
                     </tr>
@@ -329,10 +329,10 @@ export default function FacultyRequestsPage() {
         </div>
 
         {/* ── Requests table ── */}
-        <div className="rounded-2xl border border-white/8 bg-[#1a1a1a] p-5">
+        <div className="rounded-2xl border border-gray-200 dark:border-white/8 bg-white dark:bg-[#111827] overflow-hidden">
           {/* Filter tabs */}
-          <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-            <span className="text-sm font-semibold text-white">Request History</span>
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-3 p-5 pb-0">
+            <span className="text-sm font-semibold text-gray-900 dark:text-white">Request History</span>
             <div className="flex items-center gap-1">
               {(['All', 'Pending', 'Approved', 'Rejected'] as const).map((f) => (
                 <button
@@ -340,7 +340,7 @@ export default function FacultyRequestsPage() {
                   onClick={() => setStatusFilter(f)}
                   className={`px-3 py-1.5 rounded-lg text-[10px] font-medium transition-colors cursor-pointer ${
                     statusFilter === f
-                      ? 'bg-violet-700 text-white'
+                      ? 'bg-orange-500 text-white'
                       : 'text-zinc-500 hover:text-zinc-300 border border-zinc-700'
                   }`}
                 >
@@ -352,30 +352,30 @@ export default function FacultyRequestsPage() {
 
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="h-6 w-6 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-orange-400 border-t-transparent" />
             </div>
           ) : filteredRequests.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-14 gap-3 text-center">
               <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-zinc-800/60 border border-white/8">
                 <ClipboardList className="h-6 w-6 text-zinc-500" />
               </div>
-              <p className="text-sm text-zinc-400">
+              <p className="text-sm text-gray-500 dark:text-zinc-400">
                 {requests.length === 0 ? 'No requests yet.' : 'No requests match this filter.'}
               </p>
               {requests.length === 0 && (
                 <button
                   onClick={() => setShowForm(true)}
-                  className="text-xs text-violet-400 hover:text-violet-300 transition-colors cursor-pointer"
+                  className="text-xs text-orange-300 hover:text-orange-200 transition-colors cursor-pointer"
                 >
                   Submit your first request →
                 </button>
               )}
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto w-full">
               <table className="w-full text-[11px]">
                 <thead>
-                  <tr className="border-b border-white/8">
+                  <tr className="border-b border-gray-200 dark:border-white/8 bg-blue-50 dark:bg-zinc-800">
                     {['ITEM NAME', 'QTY', 'PURPOSE', 'STATUS', 'RETURN BY', 'SUBMITTED'].map((h) => (
                       <th
                         key={h}
@@ -390,18 +390,18 @@ export default function FacultyRequestsPage() {
                   {filteredRequests.map((req) => (
                     <tr
                       key={req.id}
-                      className="border-b border-white/6 hover:bg-white/4 last:border-0 transition-colors"
+                      className="border-b border-gray-100 dark:border-white/6 hover:bg-gray-50 dark:hover:bg-white/4 last:border-0 transition-colors"
                     >
-                      <td className="py-3 px-2 first:pl-0 font-medium text-zinc-200">{req.item_name}</td>
-                      <td className="py-3 px-2 text-zinc-400">{req.quantity_requested}</td>
-                      <td className="py-3 px-2 text-zinc-400 max-w-[200px]">
+                      <td className="py-3 px-2 first:pl-5 font-medium text-gray-900 dark:text-white">{req.item_name}</td>
+                      <td className="py-3 px-2 text-gray-500 dark:text-zinc-400">{req.quantity_requested}</td>
+                      <td className="py-3 px-2 text-gray-500 dark:text-zinc-400 max-w-[200px]">
                         <span className="line-clamp-2" title={req.purpose}>{req.purpose}</span>
                       </td>
                       <td className="py-3 px-2"><StatusBadge status={req.status} /></td>
-                      <td className="py-3 px-2 text-zinc-400">
+                      <td className="py-3 px-2 text-gray-500 dark:text-zinc-400">
                         {req.return_deadline ? new Date(req.return_deadline).toLocaleDateString() : '—'}
                       </td>
-                      <td className="py-3 px-2 text-zinc-500">
+                      <td className="py-3 px-2 pr-5 text-gray-600 dark:text-zinc-500">
                         {new Date(req.created_at).toLocaleDateString()}
                       </td>
                     </tr>

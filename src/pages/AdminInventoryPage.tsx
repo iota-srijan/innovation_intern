@@ -72,7 +72,7 @@ function stockBarPct(qty: number, threshold: number | null): number {
 
 const CAT_COLORS = [
   'text-cyan-400 bg-cyan-400/10 border-cyan-400/20',
-  'text-violet-400 bg-violet-400/10 border-violet-400/20',
+  'text-orange-300 bg-orange-300/10 border-orange-300/20',
   'text-orange-400 bg-orange-400/10 border-orange-400/20',
   'text-pink-400 bg-pink-400/10 border-pink-400/20',
   'text-blue-400 bg-blue-400/10 border-blue-400/20',
@@ -125,16 +125,16 @@ interface ItemFormModalProps {
 }
 
 function ItemFormModal({ title, form, categories, submitting, onChange, onSubmit, onClose }: ItemFormModalProps) {
-  const inp = 'w-full rounded-[10px] border border-white/10 bg-[#0a0a0b] px-3 py-2.5 text-[13.5px] text-white placeholder-[#6e6e78] outline-none transition focus:border-violet-500 focus:shadow-[0_0_0_3px_rgba(124,58,237,0.14)]'
+  const inp = 'w-full rounded-[10px] border border-white/10 bg-[#0d0a08] px-3 py-2.5 text-[13.5px] text-white placeholder-[#6e6e78] outline-none transition focus:border-orange-400 focus:shadow-[0_0_0_3px_rgba(124,58,237,0.14)]'
 
   return (
     <ModalBackdrop onClose={onClose}>
-      <div className="max-h-[90vh] w-full max-w-[540px] overflow-y-auto rounded-[18px] border border-white/10 bg-[#16161b] p-6 shadow-[0_40px_90px_-30px_rgba(0,0,0,0.8)]">
+      <div className="max-h-[90vh] w-full max-w-[540px] overflow-y-auto rounded-[18px] border border-gray-200 dark:border-white/10 bg-white dark:bg-[#16161b] p-6 shadow-xl dark:shadow-[0_40px_90px_-30px_rgba(0,0,0,0.8)]">
         <div className="mb-5 flex items-center justify-between">
-          <h2 className="text-[17px] font-bold text-white">{title}</h2>
+          <h2 className="text-[17px] font-bold text-gray-900 dark:text-white">{title}</h2>
           <button
             onClick={onClose}
-            className="grid h-8 w-8 cursor-pointer place-items-center rounded-[9px] border border-white/10 bg-white/[0.04] text-[#9a9aa6] transition hover:bg-white/[0.08] hover:text-white"
+            className="grid h-8 w-8 cursor-pointer place-items-center rounded-[9px] border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/[0.04] text-gray-500 dark:text-[#9a9aa6] transition hover:bg-gray-100 dark:hover:bg-white/[0.08] hover:text-gray-900 dark:hover:text-white"
           >
             <X className="h-4 w-4" />
           </button>
@@ -142,8 +142,8 @@ function ItemFormModal({ title, form, categories, submitting, onChange, onSubmit
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="mb-1.5 block text-[12.5px] font-semibold text-[#f4f4f6]">
-              Name <span className="text-violet-400">*</span>
+            <label className="mb-1.5 block text-[12.5px] font-semibold text-gray-900 dark:text-[#f4f4f6]">
+              Name <span className="text-orange-400 dark:text-orange-300">*</span>
             </label>
             <input
               className={inp}
@@ -154,8 +154,8 @@ function ItemFormModal({ title, form, categories, submitting, onChange, onSubmit
           </div>
 
           <div>
-            <label className="mb-1.5 block text-[12.5px] font-semibold text-[#f4f4f6]">
-              SKU <span className="text-violet-400">*</span>
+            <label className="mb-1.5 block text-[12.5px] font-semibold text-gray-900 dark:text-[#f4f4f6]">
+              SKU <span className="text-orange-400 dark:text-orange-300">*</span>
             </label>
             <input
               className={inp}
@@ -166,7 +166,7 @@ function ItemFormModal({ title, form, categories, submitting, onChange, onSubmit
           </div>
 
           <div>
-            <label className="mb-1.5 block text-[12.5px] font-semibold text-[#f4f4f6]">Category</label>
+            <label className="mb-1.5 block text-[12.5px] font-semibold text-gray-900 dark:text-[#f4f4f6]">Category</label>
             <select
               className={inp + ' appearance-none cursor-pointer'}
               value={form.category_id}
@@ -180,7 +180,7 @@ function ItemFormModal({ title, form, categories, submitting, onChange, onSubmit
           </div>
 
           <div>
-            <label className="mb-1.5 block text-[12.5px] font-semibold text-[#f4f4f6]">Status</label>
+            <label className="mb-1.5 block text-[12.5px] font-semibold text-gray-900 dark:text-[#f4f4f6]">Status</label>
             <select
               className={inp + ' appearance-none cursor-pointer'}
               value={form.status}
@@ -193,8 +193,8 @@ function ItemFormModal({ title, form, categories, submitting, onChange, onSubmit
           </div>
 
           <div>
-            <label className="mb-1.5 block text-[12.5px] font-semibold text-[#f4f4f6]">
-              Quantity <span className="text-violet-400">*</span>
+            <label className="mb-1.5 block text-[12.5px] font-semibold text-gray-900 dark:text-[#f4f4f6]">
+              Quantity <span className="text-orange-400 dark:text-orange-300">*</span>
             </label>
             <input
               className={inp}
@@ -207,7 +207,7 @@ function ItemFormModal({ title, form, categories, submitting, onChange, onSubmit
           </div>
 
           <div>
-            <label className="mb-1.5 block text-[12.5px] font-semibold text-[#f4f4f6]">Reorder Threshold</label>
+            <label className="mb-1.5 block text-[12.5px] font-semibold text-gray-900 dark:text-[#f4f4f6]">Reorder Threshold</label>
             <input
               className={inp}
               type="number"
@@ -219,7 +219,7 @@ function ItemFormModal({ title, form, categories, submitting, onChange, onSubmit
           </div>
 
           <div>
-            <label className="mb-1.5 block text-[12.5px] font-semibold text-[#f4f4f6]">Supplier</label>
+            <label className="mb-1.5 block text-[12.5px] font-semibold text-gray-900 dark:text-[#f4f4f6]">Supplier</label>
             <input
               className={inp}
               value={form.supplier}
@@ -229,7 +229,7 @@ function ItemFormModal({ title, form, categories, submitting, onChange, onSubmit
           </div>
 
           <div>
-            <label className="mb-1.5 block text-[12.5px] font-semibold text-[#f4f4f6]">Unit Price ₹</label>
+            <label className="mb-1.5 block text-[12.5px] font-semibold text-gray-900 dark:text-[#f4f4f6]">Unit Price ₹</label>
             <input
               className={inp}
               type="number"
@@ -245,14 +245,14 @@ function ItemFormModal({ title, form, categories, submitting, onChange, onSubmit
         <div className="mt-6 flex justify-end gap-3">
           <button
             onClick={onClose}
-            className="cursor-pointer rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-[14px] font-semibold text-white transition hover:bg-white/[0.06]"
+            className="cursor-pointer rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/[0.03] px-4 py-2.5 text-[14px] font-semibold text-gray-700 dark:text-white transition hover:bg-gray-100 dark:hover:bg-white/[0.06]"
           >
             Cancel
           </button>
           <button
             onClick={onSubmit}
             disabled={!form.name.trim() || !form.sku.trim() || !form.quantity || submitting}
-            className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-gradient-to-b from-violet-500 to-violet-700 px-4 py-2.5 text-[14px] font-semibold text-white disabled:opacity-50"
+            className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-gradient-to-b from-orange-400 to-orange-500 px-4 py-2.5 text-[14px] font-semibold text-white disabled:opacity-50"
           >
             {submitting && (
               <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
@@ -550,19 +550,19 @@ export default function AdminInventoryPage() {
         {/* Header */}
         <div className="mb-6 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <span className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-[11px] bg-gradient-to-b from-violet-500 to-violet-700 shadow-[0_8px_20px_-10px_rgba(124,58,237,0.7)]">
+            <span className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-[11px] bg-gradient-to-b from-orange-400 to-orange-500 shadow-[0_8px_20px_-10px_rgba(124,58,237,0.7)]">
               <Package className="h-5 w-5 text-white" />
             </span>
             <div>
-              <h1 className="text-[22px] font-extrabold tracking-[-0.02em] text-white">Inventory Management</h1>
-              <p className="text-xs text-[#9a9aa6]">Manage all IdeaLab equipment and supplies</p>
+              <h1 className="text-[22px] font-extrabold tracking-[-0.02em] text-gray-900 dark:text-white">Inventory Management</h1>
+              <p className="text-xs text-gray-500 dark:text-[#9a9aa6]">Manage all IdeaLab equipment and supplies</p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowCatModal(true)}
-              className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2 text-[13px] font-semibold text-white transition hover:bg-white/[0.07]"
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/[0.03] px-3.5 py-2 text-[13px] font-semibold text-gray-700 dark:text-white transition hover:bg-gray-100 dark:hover:bg-white/[0.07]"
             >
               <FolderPlus className="h-3.5 w-3.5" />
               + New Category
@@ -570,7 +570,7 @@ export default function AdminInventoryPage() {
 
             <button
               onClick={() => csvRef.current?.click()}
-              className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2 text-[13px] font-semibold text-white transition hover:bg-white/[0.07]"
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/[0.03] px-3.5 py-2 text-[13px] font-semibold text-gray-700 dark:text-white transition hover:bg-gray-100 dark:hover:bg-white/[0.07]"
             >
               <Upload className="h-3.5 w-3.5" />
               Import CSV
@@ -585,7 +585,7 @@ export default function AdminInventoryPage() {
 
             <button
               onClick={openAdd}
-              className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-gradient-to-b from-violet-500 to-violet-700 px-4 py-2 text-[13px] font-semibold text-white shadow-[0_1px_0_rgba(255,255,255,0.14)_inset,0_8px_20px_-10px_rgba(124,58,237,0.6)] transition-transform hover:-translate-y-px active:translate-y-px"
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-gradient-to-b from-orange-400 to-orange-500 px-4 py-2 text-[13px] font-semibold text-white shadow-[0_1px_0_rgba(255,255,255,0.14)_inset,0_8px_20px_-10px_rgba(124,58,237,0.6)] transition-transform hover:-translate-y-px active:translate-y-px"
             >
               <Plus className="h-3.5 w-3.5" />
               Add Item
@@ -600,8 +600,8 @@ export default function AdminInventoryPage() {
               onClick={() => setActiveCat('all')}
               className={`cursor-pointer rounded-full border px-3.5 py-1.5 text-[12px] font-medium transition-all ${
                 activeCat === 'all'
-                  ? 'border-transparent bg-[#7c3aed] text-white'
-                  : 'border-white/10 text-[#9a9aa6] hover:border-white/20 hover:text-white'
+                  ? 'border-transparent bg-[#f97316] text-white'
+                  : 'border-gray-200 dark:border-white/10 text-gray-500 dark:text-[#9a9aa6] hover:border-gray-300 hover:dark:border-white/20 hover:text-gray-900 hover:dark:text-white'
               }`}
             >
               All <span className="ml-1 tabular-nums opacity-70">{items.length}</span>
@@ -612,8 +612,8 @@ export default function AdminInventoryPage() {
                 onClick={() => setActiveCat(cat.id)}
                 className={`cursor-pointer rounded-full border px-3.5 py-1.5 text-[12px] font-medium transition-all ${
                   activeCat === cat.id
-                    ? 'border-transparent bg-[#7c3aed] text-white'
-                    : 'border-white/10 text-[#9a9aa6] hover:border-white/20 hover:text-white'
+                    ? 'border-transparent bg-[#f97316] text-white'
+                    : 'border-gray-200 dark:border-white/10 text-gray-500 dark:text-[#9a9aa6] hover:border-gray-300 hover:dark:border-white/20 hover:text-gray-900 hover:dark:text-white'
                 }`}
               >
                 <span className={`inline-block h-1.5 w-1.5 rounded-full mr-1.5 ${CAT_COLORS[idx % CAT_COLORS.length].split(' ')[0].replace('text-', 'bg-')}`} />
@@ -623,27 +623,27 @@ export default function AdminInventoryPage() {
           </div>
 
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#6e6e78]" />
+            <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400 dark:text-[#6e6e78]" />
             <input
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search name or SKU…"
-              className="w-56 rounded-xl border border-white/10 bg-[#111114] py-2 pl-9 pr-3 text-[13px] text-white placeholder-[#6e6e78] outline-none transition focus:border-violet-500/60"
+              className="w-56 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#1a1108] py-2 pl-9 pr-3 text-[13px] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-[#6e6e78] outline-none transition focus:border-orange-400/60 focus:bg-white focus:dark:bg-[#1a1108]"
             />
           </div>
         </div>
 
         {/* Table card */}
-        <div className="rounded-2xl border border-white/10 bg-[#111114]">
+        <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#1a1108]">
           {loading ? (
             <div className="flex justify-center py-16">
-              <div className="h-6 w-6 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-orange-400 border-t-transparent" />
             </div>
           ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center gap-3 py-20 text-center">
-              <Package className="h-10 w-10 text-[#4b4b57]" />
-              <p className="text-sm text-[#6e6e78]">
+              <Package className="h-10 w-10 text-gray-300 dark:text-[#4b4b57]" />
+              <p className="text-sm text-gray-500 dark:text-[#6e6e78]">
                 {search || activeCat !== 'all'
                   ? 'No items match your search'
                   : 'No items yet. Add your first item.'}
@@ -651,7 +651,7 @@ export default function AdminInventoryPage() {
               {!search && activeCat === 'all' && (
                 <button
                   onClick={openAdd}
-                  className="mt-1 inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-gradient-to-b from-violet-500 to-violet-700 px-4 py-2 text-[13px] font-semibold text-white"
+                  className="mt-1 inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-gradient-to-b from-orange-400 to-orange-500 px-4 py-2 text-[13px] font-semibold text-white"
                 >
                   <Plus className="h-3.5 w-3.5" />
                   Add Item
@@ -662,18 +662,18 @@ export default function AdminInventoryPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-left text-[13px]">
                 <thead>
-                  <tr className="border-b border-white/[0.08]">
+                  <tr className="border-b border-gray-200 dark:border-white/[0.08]">
                     {['Item / SKU', 'Category', 'Stock', 'Available', 'Status', 'Actions'].map(h => (
                       <th
                         key={h}
-                        className="px-4 py-3.5 text-[10px] font-semibold uppercase tracking-widest text-[#6e6e78]"
+                        className="px-4 py-3.5 text-[10px] font-semibold uppercase tracking-widest text-gray-500 dark:text-[#6e6e78]"
                       >
                         {h}
                       </th>
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/[0.05]">
+                <tbody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
                   {filtered.map(item => {
                     const qty = item.quantity ?? 0
                     const threshold = item.reorder_threshold ?? null
@@ -683,14 +683,14 @@ export default function AdminInventoryPage() {
                     const catName = getCatName(item.categories)
                     const catCls = catIdx >= 0
                       ? CAT_COLORS[catIdx % CAT_COLORS.length]
-                      : 'text-[#6e6e78] bg-white/[0.04] border-white/[0.08]'
+                      : 'text-gray-500 dark:text-[#6e6e78] bg-gray-100 dark:bg-white/[0.04] border-gray-200 dark:border-white/[0.08]'
 
                     return (
-                      <tr key={item.id} className="transition-colors hover:bg-white/[0.02]">
+                      <tr key={item.id} className="transition-colors hover:bg-gray-50 dark:hover:bg-white/[0.02]">
                         {/* Item / SKU */}
                         <td className="px-4 py-3.5">
-                          <div className="font-semibold text-[#f4f4f6]">{item.name}</div>
-                          <div className="mt-0.5 font-mono text-[10.5px] text-[#6e6e78]">
+                          <div className="font-semibold text-gray-900 dark:text-[#f4f4f6]">{item.name}</div>
+                          <div className="mt-0.5 font-mono text-[10.5px] text-gray-500 dark:text-[#6e6e78]">
                             {item.sku ?? '—'}
                           </div>
                         </td>
@@ -705,10 +705,10 @@ export default function AdminInventoryPage() {
                         {/* Stock bar */}
                         <td className="px-4 py-3.5">
                           <div className="flex items-center gap-2">
-                            <span className="w-8 shrink-0 text-right text-[12px] font-bold tabular-nums text-[#f4f4f6]">
+                            <span className="w-8 shrink-0 text-right text-[12px] font-bold tabular-nums text-gray-900 dark:text-[#f4f4f6]">
                               {qty}
                             </span>
-                            <div className="h-1.5 w-20 overflow-hidden rounded-full bg-white/[0.08]">
+                            <div className="h-1.5 w-20 overflow-hidden rounded-full bg-gray-200 dark:bg-white/[0.08]">
                               <div
                                 className={`h-full rounded-full transition-all ${barColor}`}
                                 style={{ width: `${barPct}%` }}
@@ -719,7 +719,7 @@ export default function AdminInventoryPage() {
 
                         {/* Available */}
                         <td className="px-4 py-3.5">
-                          <span className="font-semibold tabular-nums text-[#f4f4f6]">{qty}</span>
+                          <span className="font-semibold tabular-nums text-gray-900 dark:text-[#f4f4f6]">{qty}</span>
                         </td>
 
                         {/* Status */}
@@ -733,14 +733,14 @@ export default function AdminInventoryPage() {
                             <button
                               onClick={() => openEdit(item)}
                               title="Edit"
-                              className="grid h-7 w-7 cursor-pointer place-items-center rounded-lg border border-white/[0.08] bg-white/[0.03] text-[#9a9aa6] transition hover:border-violet-500/40 hover:text-violet-400"
+                              className="grid h-7 w-7 cursor-pointer place-items-center rounded-lg border border-gray-200 dark:border-white/[0.08] bg-gray-50 dark:bg-white/[0.03] text-gray-500 dark:text-[#9a9aa6] transition hover:border-orange-400/40 hover:text-orange-500 dark:hover:text-orange-300"
                             >
                               <Pencil className="h-3.5 w-3.5" />
                             </button>
                             <button
                               onClick={() => setDeleteTarget(item)}
                               title="Delete"
-                              className="grid h-7 w-7 cursor-pointer place-items-center rounded-lg border border-white/[0.08] bg-white/[0.03] text-[#9a9aa6] transition hover:border-red-400/40 hover:text-red-400"
+                              className="grid h-7 w-7 cursor-pointer place-items-center rounded-lg border border-gray-200 dark:border-white/[0.08] bg-gray-50 dark:bg-white/[0.03] text-gray-500 dark:text-[#9a9aa6] transition hover:border-red-400/40 hover:text-red-500 dark:hover:text-red-400"
                             >
                               <Trash2 className="h-3.5 w-3.5" />
                             </button>
@@ -772,15 +772,15 @@ export default function AdminInventoryPage() {
       {/* ── Delete Confirmation ── */}
       {deleteTarget && (
         <ModalBackdrop onClose={() => setDeleteTarget(null)}>
-          <div className="w-full max-w-[380px] rounded-[18px] border border-white/10 bg-[#16161b] p-6 shadow-[0_40px_90px_-30px_rgba(0,0,0,0.8)]">
-            <h2 className="mb-2 text-[16px] font-bold text-white">Delete Item?</h2>
-            <p className="mb-6 text-[13px] text-[#9a9aa6]">
-              Delete <span className="font-semibold text-white">"{deleteTarget.name}"</span>? This cannot be undone.
+          <div className="w-full max-w-[380px] rounded-[18px] border border-gray-200 dark:border-white/10 bg-white dark:bg-[#16161b] p-6 shadow-xl dark:shadow-[0_40px_90px_-30px_rgba(0,0,0,0.8)]">
+            <h2 className="mb-2 text-[16px] font-bold text-gray-900 dark:text-white">Delete Item?</h2>
+            <p className="mb-6 text-[13px] text-gray-500 dark:text-[#9a9aa6]">
+              Delete <span className="font-semibold text-gray-900 dark:text-white">"{deleteTarget.name}"</span>? This cannot be undone.
             </p>
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setDeleteTarget(null)}
-                className="cursor-pointer rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-[14px] font-semibold text-white transition hover:bg-white/[0.06]"
+                className="cursor-pointer rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/[0.03] px-4 py-2.5 text-[14px] font-semibold text-gray-700 dark:text-white transition hover:bg-gray-100 dark:hover:bg-white/[0.06]"
               >
                 Cancel
               </button>
@@ -814,7 +814,7 @@ export default function AdminInventoryPage() {
             </div>
 
             <label className="mb-1.5 block text-[12.5px] font-semibold text-[#f4f4f6]">
-              Category name <span className="text-violet-400">*</span>
+              Category name <span className="text-orange-300">*</span>
             </label>
             <input
               type="text"
@@ -822,7 +822,7 @@ export default function AdminInventoryPage() {
               onChange={e => setNewCatName(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') void handleAddCategory() }}
               placeholder="e.g. Electronics"
-              className="mb-5 w-full rounded-[11px] border border-white/10 bg-[#0a0a0b] px-3 py-[11px] text-[14px] text-white placeholder-[#6e6e78] outline-none transition focus:border-violet-500 focus:shadow-[0_0_0_3px_rgba(124,58,237,0.16)]"
+              className="mb-5 w-full rounded-[11px] border border-white/10 bg-[#0d0a08] px-3 py-[11px] text-[14px] text-white placeholder-[#6e6e78] outline-none transition focus:border-orange-400 focus:shadow-[0_0_0_3px_rgba(124,58,237,0.16)]"
             />
 
             <div className="flex justify-end gap-3">
@@ -835,7 +835,7 @@ export default function AdminInventoryPage() {
               <button
                 onClick={() => void handleAddCategory()}
                 disabled={!newCatName.trim() || catSubmitting}
-                className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-gradient-to-b from-violet-500 to-violet-700 px-4 py-2.5 text-[14px] font-semibold text-white disabled:opacity-50"
+                className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-gradient-to-b from-orange-400 to-orange-500 px-4 py-2.5 text-[14px] font-semibold text-white disabled:opacity-50"
               >
                 {catSubmitting && (
                   <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />

@@ -48,10 +48,10 @@ export default function SignIn() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center px-4">
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-10 w-full max-w-sm shadow-2xl shadow-black/40">
+      <div className="bg-zinc-900 border border-orange-950/30 rounded-2xl p-10 w-full max-w-sm shadow-2xl shadow-black/40">
 
         {/* Logo */}
-        <div className="w-10 h-10 bg-violet-700 rounded-xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-violet-700/30">
+        <div className="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-orange-500/30">
           <Layers className="w-5 h-5 text-white" />
         </div>
 
@@ -114,9 +114,9 @@ export default function SignIn() {
 
         {/* Divider */}
         <div className="flex items-center gap-3 my-6">
-          <div className="flex-1 border-t border-zinc-800" />
+          <div className="flex-1 border-t border-orange-950/30" />
           <span className="text-xs text-zinc-600">or</span>
-          <div className="flex-1 border-t border-zinc-800" />
+          <div className="flex-1 border-t border-orange-950/30" />
         </div>
 
         {/* Admin Login Section */}
@@ -132,7 +132,7 @@ export default function SignIn() {
             onChange={(e) => { setEmail(e.target.value); setError('') }}
             placeholder="Admin email"
             autoComplete="off"
-            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white placeholder:text-zinc-600 mb-2 focus:outline-none focus:border-violet-500 transition-colors"
+            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white placeholder:text-zinc-600 mb-2 focus:outline-none focus:border-orange-400 transition-colors"
           />
           <input
             type="password"
@@ -141,13 +141,13 @@ export default function SignIn() {
             placeholder="Password"
             autoComplete="new-password"
             onKeyDown={(e) => { if (e.key === 'Enter') handleAdminSignIn() }}
-            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-violet-500 transition-colors"
+            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-orange-400 transition-colors"
           />
 
           <button
             onClick={handleAdminSignIn}
             disabled={isLoading}
-            className="w-full py-2 bg-violet-700 hover:bg-violet-600 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg mt-3 transition-colors cursor-pointer"
+            className="w-full py-2 bg-orange-500 hover:bg-orange-500 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg mt-3 transition-colors cursor-pointer"
           >
             {isLoading ? 'Signing in…' : 'Sign in'}
           </button>

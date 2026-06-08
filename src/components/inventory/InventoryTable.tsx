@@ -145,7 +145,7 @@ export function InventoryTable({ onEdit, lowStockFilter = false }: InventoryTabl
       {/* Delete confirm dialog */}
       {itemToDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-6 dark:border-white/8 dark:bg-[#1a1a1a]">
+          <div className="w-full max-w-md rounded-2xl border border-orange-100 bg-white p-6 dark:border-white/8 dark:bg-[#1f1509]">
             <h3 className="mb-2 text-base font-semibold text-zinc-900 dark:text-white">Delete Inventory Item</h3>
             <p className="mb-6 text-sm text-zinc-500 dark:text-zinc-400">
               Are you sure you want to delete <span className="font-semibold">{itemToDelete.name}</span>?
@@ -153,7 +153,7 @@ export function InventoryTable({ onEdit, lowStockFilter = false }: InventoryTabl
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setItemToDelete(null)}
-                className="rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:bg-white/6 dark:text-zinc-300 dark:hover:bg-white/10"
+                className="rounded-lg border border-orange-100 bg-white px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-orange-50 dark:bg-white/6 dark:text-zinc-300 dark:hover:bg-white/10"
               >
                 Cancel
               </button>
@@ -172,7 +172,7 @@ export function InventoryTable({ onEdit, lowStockFilter = false }: InventoryTabl
       {expandedItem && (
         <>
           <div className="fixed inset-0 z-30 bg-black/10 backdrop-blur-[1px]" onClick={() => setExpandedItem(null)} />
-          <div className="fixed right-0 top-0 h-full w-80 bg-white dark:bg-zinc-900 border-l border-slate-200 dark:border-zinc-800 z-40 p-6 shadow-2xl transform translate-x-0 transition-transform">
+          <div className="fixed right-0 top-0 h-full w-80 bg-white dark:bg-zinc-900 border-l border-slate-200 dark:border-orange-950/30 z-40 p-6 shadow-2xl transform translate-x-0 transition-transform">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-bold text-zinc-900 dark:text-white truncate pr-4">{expandedItem.name}</h3>
               <button onClick={() => setExpandedItem(null)} className="text-zinc-400 hover:text-zinc-900 dark:hover:text-white">
@@ -181,23 +181,23 @@ export function InventoryTable({ onEdit, lowStockFilter = false }: InventoryTabl
             </div>
             
             <div className="space-y-4 text-sm">
-              <div className="flex justify-between border-b border-slate-100 dark:border-zinc-800 pb-2">
+              <div className="flex justify-between border-b border-slate-100 dark:border-orange-950/30 pb-2">
                 <span className="text-zinc-500">SKU</span>
                 <span className="font-medium text-zinc-900 dark:text-zinc-200">{expandedItem.sku}</span>
               </div>
-              <div className="flex justify-between border-b border-slate-100 dark:border-zinc-800 pb-2">
+              <div className="flex justify-between border-b border-slate-100 dark:border-orange-950/30 pb-2">
                 <span className="text-zinc-500">Category</span>
                 <span className="font-medium text-zinc-900 dark:text-zinc-200">{expandedItem.category?.name || "None"}</span>
               </div>
-              <div className="flex justify-between border-b border-slate-100 dark:border-zinc-800 pb-2">
+              <div className="flex justify-between border-b border-slate-100 dark:border-orange-950/30 pb-2">
                 <span className="text-zinc-500">Supplier</span>
                 <span className="font-medium text-zinc-900 dark:text-zinc-200">{expandedItem.supplier}</span>
               </div>
-              <div className="flex justify-between border-b border-slate-100 dark:border-zinc-800 pb-2">
+              <div className="flex justify-between border-b border-slate-100 dark:border-orange-950/30 pb-2">
                 <span className="text-zinc-500">Quantity</span>
-                <span className="font-bold text-violet-600 dark:text-violet-400">{expandedItem.quantity}</span>
+                <span className="font-bold text-orange-500 dark:text-orange-300">{expandedItem.quantity}</span>
               </div>
-              <div className="flex justify-between border-b border-slate-100 dark:border-zinc-800 pb-2">
+              <div className="flex justify-between border-b border-slate-100 dark:border-orange-950/30 pb-2">
                 <span className="text-zinc-500">Threshold</span>
                 <span className="font-medium text-zinc-900 dark:text-zinc-200">{expandedItem.reorder_threshold}</span>
               </div>
@@ -211,7 +211,7 @@ export function InventoryTable({ onEdit, lowStockFilter = false }: InventoryTabl
                   { date: "Apr 04, 2026", qty: 25 },
                   { date: "Feb 18, 2026", qty: 100 },
                 ].map((entry, idx) => (
-                  <div key={idx} className="flex justify-between items-center text-sm p-2 rounded-lg bg-slate-50 dark:bg-zinc-800/50 border border-slate-100 dark:border-zinc-800">
+                  <div key={idx} className="flex justify-between items-center text-sm p-2 rounded-lg bg-slate-50 dark:bg-zinc-800/50 border border-slate-100 dark:border-orange-950/30">
                     <span className="text-zinc-600 dark:text-zinc-400 text-xs">{entry.date}</span>
                     <span className="font-medium text-zinc-900 dark:text-zinc-200">+{entry.qty} units</span>
                   </div>
@@ -232,14 +232,14 @@ export function InventoryTable({ onEdit, lowStockFilter = false }: InventoryTabl
               placeholder="Search name or SKU..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="h-8 w-full rounded-lg border border-zinc-200 bg-white py-0 pl-9 pr-4 text-xs text-zinc-700 outline-none focus:border-violet-600 dark:border-white/8 dark:bg-white/6 dark:text-zinc-900 dark:placeholder:text-zinc-500"
+              className="h-8 w-full rounded-lg border border-orange-100 bg-white py-0 pl-9 pr-4 text-xs text-zinc-700 outline-none focus:border-orange-500 dark:border-white/8 dark:bg-white/6 dark:text-zinc-900 dark:placeholder:text-zinc-500"
             />
           </div>
           <div className="relative w-full sm:w-52">
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="h-8 w-full appearance-none rounded-lg border border-zinc-200 bg-white py-0 pl-3 pr-8 text-xs text-zinc-700 outline-none focus:border-violet-600 dark:border-white/8 dark:bg-white/6 dark:text-zinc-900"
+              className="h-8 w-full appearance-none rounded-lg border border-orange-100 bg-white py-0 pl-3 pr-8 text-xs text-zinc-700 outline-none focus:border-orange-500 dark:border-white/8 dark:bg-white/6 dark:text-zinc-900"
             >
               <option value="all">All Categories</option>
               {categories?.map((cat) => (
@@ -252,11 +252,11 @@ export function InventoryTable({ onEdit, lowStockFilter = false }: InventoryTabl
 
         {/* Bulk action bar */}
         {selectedRows.length > 0 && userRole === 'admin' && (
-          <div className="flex items-center gap-3 px-4 py-1.5 bg-violet-50 dark:bg-violet-950/30 border border-violet-200 dark:border-violet-800 rounded-xl">
-            <span className="text-xs font-semibold text-violet-700 dark:text-violet-400">
+          <div className="flex items-center gap-3 px-4 py-1.5 bg-orange-50 dark:bg-violet-950/30 border border-orange-200 dark:border-violet-800 rounded-xl">
+            <span className="text-xs font-semibold text-orange-500 dark:text-orange-300">
               {selectedRows.length} items selected
             </span>
-            <button className="text-xs font-medium text-violet-600 hover:text-violet-800 dark:text-violet-300 dark:hover:text-violet-100 transition-colors">
+            <button className="text-xs font-medium text-orange-500 hover:text-violet-800 dark:text-orange-200 dark:hover:text-orange-100 transition-colors">
               Export Selected
             </button>
             <button onClick={handleBulkDelete} className="text-xs font-medium text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 transition-colors">
@@ -282,17 +282,17 @@ export function InventoryTable({ onEdit, lowStockFilter = false }: InventoryTabl
       )}
 
       {/* Table card */}
-      <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-white/8 dark:bg-[#1a1a1a]">
+      <div className="overflow-hidden rounded-2xl border border-orange-100 bg-white dark:border-white/8 dark:bg-[#1f1509]">
         <div className="overflow-x-auto">
           <table className="w-full whitespace-nowrap text-left text-xs">
-            <thead className="border-b border-zinc-200 dark:border-white/8 bg-zinc-50 dark:bg-[#1a1a1a]">
+            <thead className="border-b border-orange-100 dark:border-white/8 bg-orange-50 dark:bg-[#1f1509]">
               <tr>
                 <th className="px-4 py-3 w-10">
                   <input
                     type="checkbox"
                     checked={selectedRows.length > 0 && selectedRows.length === paginatedItems.length}
                     onChange={toggleSelectAll}
-                    className="rounded border-zinc-300 text-violet-600 focus:ring-violet-600 bg-white dark:bg-zinc-800 dark:border-zinc-600"
+                    className="rounded border-zinc-300 text-orange-500 focus:ring-orange-500 bg-white dark:bg-zinc-800 dark:border-zinc-600"
                   />
                 </th>
                 <SortHeader field="name" label="Item Name" />
@@ -322,14 +322,14 @@ export function InventoryTable({ onEdit, lowStockFilter = false }: InventoryTabl
                     <tr
                       key={item.id}
                       onClick={() => setExpandedItem(item)}
-                      className="group transition-colors hover:bg-zinc-50 dark:hover:bg-white/4 cursor-pointer"
+                      className="group transition-colors hover:bg-orange-50 dark:hover:bg-white/4 cursor-pointer"
                     >
                       <td className="px-4 py-2.5 w-10" onClick={(e) => e.stopPropagation()}>
                         <input
                           type="checkbox"
                           checked={selectedRows.includes(item.id)}
                           onChange={() => toggleRow(item.id)}
-                          className="rounded border-zinc-300 text-violet-600 focus:ring-violet-600 bg-white dark:bg-zinc-800 dark:border-zinc-600"
+                          className="rounded border-zinc-300 text-orange-500 focus:ring-orange-500 bg-white dark:bg-zinc-800 dark:border-zinc-600"
                         />
                       </td>
                       <td className="px-4 py-2.5 font-medium text-zinc-900 dark:text-zinc-200">
@@ -339,7 +339,7 @@ export function InventoryTable({ onEdit, lowStockFilter = false }: InventoryTabl
                         {item.sku}
                       </td>
                       <td className="px-4 py-2.5">
-                        <span className="inline-flex items-center rounded-md border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-[10px] font-medium text-zinc-600 dark:border-white/8 dark:bg-white/6 dark:text-zinc-400">
+                        <span className="inline-flex items-center rounded-md border border-orange-100 bg-orange-50 px-2 py-0.5 text-[10px] font-medium text-zinc-600 dark:border-white/8 dark:bg-white/6 dark:text-zinc-400">
                           {item.category?.name || "Uncategorized"}
                         </span>
                       </td>
@@ -352,13 +352,13 @@ export function InventoryTable({ onEdit, lowStockFilter = false }: InventoryTabl
                             onChange={(e) => setTempQty(e.target.value)}
                             onBlur={() => saveQty(item.id)}
                             onKeyDown={(e) => { if (e.key === 'Enter') saveQty(item.id); }}
-                            className="w-16 bg-transparent border-b border-violet-500 text-sm focus:outline-none dark:text-zinc-900"
+                            className="w-16 bg-transparent border-b border-orange-400 text-sm focus:outline-none dark:text-zinc-900"
                           />
                         ) : (
                           <div className="flex flex-col w-16">
                             <span 
                               onClick={() => { setEditingQtyId(item.id); setTempQty(item.quantity.toString()); }}
-                              className="font-medium text-zinc-900 dark:text-zinc-200 hover:text-violet-600 dark:hover:text-violet-400 cursor-text"
+                              className="font-medium text-zinc-900 dark:text-zinc-200 hover:text-orange-500 dark:hover:text-orange-300 cursor-text"
                             >
                               {item.quantity}
                             </span>
@@ -385,7 +385,7 @@ export function InventoryTable({ onEdit, lowStockFilter = false }: InventoryTabl
                           <div className="relative inline-block text-left">
                             <button
                               onClick={() => { onEdit(item); }}
-                              className="text-zinc-400 hover:text-violet-600 transition-colors mr-3"
+                              className="text-zinc-400 hover:text-orange-500 transition-colors mr-3"
                               title="Edit"
                             >
                               <Edit2 className="h-3.5 w-3.5" />
@@ -425,7 +425,7 @@ export function InventoryTable({ onEdit, lowStockFilter = false }: InventoryTabl
               onClick={() => setCurrentPage(i + 1)}
               className={`w-7 h-7 flex items-center justify-center rounded-md transition-colors ${
                 currentPage === i + 1 
-                  ? "bg-violet-600 text-white" 
+                  ? "bg-orange-500 text-white" 
                   : "hover:bg-slate-100 dark:hover:bg-zinc-800"
               }`}
             >

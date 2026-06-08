@@ -55,10 +55,10 @@ function getInitials(name: string): string {
 }
 
 const AVATAR_GRADIENTS = [
-  "from-violet-500 to-violet-700",
+  "from-orange-400 to-orange-500",
   "from-cyan-500 to-cyan-700",
   "from-orange-400 to-red-600",
-  "from-purple-400 to-purple-700",
+  "from-orange-300 to-orange-500",
   "from-amber-400 to-orange-600",
   "from-blue-400 to-blue-700",
   "from-green-400 to-green-700",
@@ -72,18 +72,18 @@ function avatarGradient(email: string): string {
 }
 
 const CATEGORY_CLS: Record<string, string> = {
-  "IoT Devices": "text-cyan-400 bg-cyan-400/10",
-  "3D Printing": "text-orange-400 bg-orange-400/10",
-  "Electronics": "text-yellow-400 bg-yellow-400/10",
-  "Software":    "text-purple-400 bg-purple-400/10",
-  "Other":       "text-[#9ca3af] bg-[#9ca3af]/10",
+  "IoT Devices": "text-cyan-700 dark:text-cyan-400 bg-cyan-400/10",
+  "3D Printing": "text-orange-700 dark:text-orange-400 bg-orange-400/10",
+  "Electronics": "text-yellow-700 dark:text-yellow-400 bg-yellow-400/10",
+  "Software":    "text-orange-600 dark:text-orange-300 bg-orange-300/10",
+  "Other":       "text-gray-600 dark:text-[#9ca3af] bg-gray-500/10 dark:bg-[#9ca3af]/10",
 };
 
 const STATUS_CLS: Record<string, string> = {
-  pending:      "text-amber-400 bg-amber-400/10",
-  under_review: "text-blue-400 bg-blue-400/10",
-  approved:     "text-green-400 bg-green-400/10",
-  rejected:     "text-red-400 bg-red-400/10",
+  pending:      "text-amber-600 dark:text-amber-400 bg-amber-400/10",
+  under_review: "text-blue-600 dark:text-blue-400 bg-blue-400/10",
+  approved:     "text-green-600 dark:text-green-400 bg-green-400/10",
+  rejected:     "text-red-600 dark:text-red-400 bg-red-400/10",
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -135,7 +135,7 @@ function CloseBtn({ onClick }: { onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="grid h-8 w-8 cursor-pointer place-items-center rounded-[9px] border border-white/10 bg-white/[0.04] text-[#9a9aa6] transition hover:bg-white/[0.08] hover:text-white"
+      className="grid h-8 w-8 cursor-pointer place-items-center rounded-[9px] border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/[0.04] text-gray-500 dark:text-[#9a9aa6] transition hover:bg-gray-100 dark:hover:bg-white/[0.08] hover:text-gray-900 dark:hover:text-white"
     >
       <X className="h-4 w-4" />
     </button>
@@ -144,9 +144,9 @@ function CloseBtn({ onClick }: { onClick: () => void }) {
 
 function DemandRef({ title }: { title: string }) {
   return (
-    <div className="mb-[18px] rounded-[11px] border border-white/[0.06] bg-[#0a0a0b] px-3.5 py-3">
-      <div className="mb-1 text-[11px] font-semibold uppercase tracking-[0.07em] text-[#6e6e78]">Demand</div>
-      <div className="text-[14px] font-semibold text-[#f4f4f6]">{title}</div>
+    <div className="mb-[18px] rounded-[11px] border border-gray-200 dark:border-white/[0.06] bg-gray-50 dark:bg-[#0d0a08] px-3.5 py-3">
+      <div className="mb-1 text-[11px] font-semibold uppercase tracking-[0.07em] text-gray-500 dark:text-[#6e6e78]">Demand</div>
+      <div className="text-[14px] font-semibold text-gray-900 dark:text-[#f4f4f6]">{title}</div>
     </div>
   );
 }
@@ -169,40 +169,40 @@ function AdminDemandCard({
   const isActionable = demand.status === "pending" || demand.status === "under_review";
 
   return (
-    <article className="flex items-stretch gap-4 rounded-2xl border border-white/10 bg-[#111114] px-5 py-[18px] transition-colors hover:border-white/[0.16]">
+    <article className="flex items-stretch gap-4 rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#1a1108] px-5 py-[18px] transition-colors hover:border-gray-300 dark:hover:border-white/[0.16]">
 
       {/* Vote area — always disabled for admin with tooltip */}
       <div className="group relative flex-shrink-0">
-        <div className="flex w-14 cursor-not-allowed flex-col items-center justify-center gap-0.5 rounded-xl border border-white/[0.06] bg-white/[0.02] py-2 text-[#6e6e78]">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" className="opacity-[0.28]">
+        <div className="flex w-14 cursor-not-allowed flex-col items-center justify-center gap-0.5 rounded-xl border border-white/[0.06] bg-[#1e40af] dark:bg-[#1e3a5f] py-2 text-white">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" className="opacity-70">
             <path d="M12 19V5M5 12l7-7 7 7" />
           </svg>
-          <span className="text-[17px] font-bold tabular-nums">{demand.vote_count}</span>
-          <span className="text-[9.5px] font-medium uppercase tracking-[0.06em]">votes</span>
+          <span className="text-[17px] font-bold tabular-nums always-white">{demand.vote_count}</span>
+          <span className="text-[9.5px] font-medium uppercase tracking-[0.06em] always-white opacity-90">votes</span>
         </div>
-        <div className="pointer-events-none absolute bottom-[calc(100%+8px)] left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-[7px] border border-white/10 bg-[#16161b] px-[9px] py-[5px] text-[11px] font-medium text-[#9a9aa6] opacity-0 transition-opacity group-hover:opacity-100">
+        <div className="pointer-events-none absolute bottom-[calc(100%+8px)] left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-[7px] border border-gray-200 dark:border-white/10 bg-gray-800 dark:bg-[#16161b] px-[9px] py-[5px] text-[11px] font-medium text-white dark:text-[#9a9aa6] opacity-0 transition-opacity group-hover:opacity-100">
           Admins cannot vote
         </div>
       </div>
 
       {/* Body */}
       <div className="min-w-0 flex-1">
-        <h3 className="mb-1 text-[15.5px] font-semibold leading-snug tracking-[-0.01em] text-[#f4f4f6]">
+        <h3 className="mb-1 text-[15.5px] font-semibold leading-snug tracking-[-0.01em] text-gray-900 dark:text-[#f4f4f6]">
           {demand.title}
         </h3>
         {demand.description && (
-          <p className="mb-3 line-clamp-2 text-[13.5px] leading-relaxed text-[#9a9aa6]">
+          <p className="mb-3 line-clamp-2 text-[13.5px] leading-relaxed text-gray-500 dark:text-[#9a9aa6]">
             {demand.description}
           </p>
         )}
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <CategoryDot category={demand.category} />
           <StatusBadge status={demand.status} />
-          <span className="text-xs text-[#6e6e78]">· {timeAgo(demand.created_at)}</span>
-          <span className="inline-flex items-center gap-1 rounded-full border border-white/[0.08] bg-white/[0.04] px-2 py-0.5 text-[11px] text-[#6e6e78]">
+          <span className="text-xs text-gray-500 dark:text-[#6e6e78]">· {timeAgo(demand.created_at)}</span>
+          <span className="inline-flex items-center gap-1 rounded-full border border-gray-200 dark:border-white/[0.08] bg-gray-50 dark:bg-white/[0.04] px-2 py-0.5 text-[11px] text-gray-500 dark:text-[#6e6e78]">
             ↑ {demand.student_vote_count}
           </span>
-          <span className="inline-flex items-center gap-1 rounded-full border border-violet-500/20 bg-violet-500/[0.08] px-2 py-0.5 text-[11px] font-medium text-violet-400">
+          <span className="inline-flex items-center gap-1 rounded-full border border-orange-400/20 bg-orange-400/[0.08] px-2 py-0.5 text-[11px] font-medium text-orange-600 dark:text-orange-300">
             ↑ {demand.faculty_vote_count} Faculty
           </span>
         </div>
@@ -210,7 +210,7 @@ function AdminDemandCard({
         {/* View Votes button */}
         <button
           onClick={e => { e.stopPropagation(); onViewVotes(demand); }}
-          className="mb-3 inline-flex cursor-pointer items-center gap-1.5 rounded-[7px] border border-violet-500/30 bg-violet-500/[0.16] px-2.5 py-[5px] text-[12px] font-semibold text-violet-400 transition hover:bg-violet-500/25"
+          className="mb-3 inline-flex cursor-pointer items-center gap-1.5 rounded-[7px] border border-orange-400/30 bg-orange-400/[0.16] px-2.5 py-[5px] text-[12px] font-semibold text-orange-600 dark:text-orange-300 transition hover:bg-orange-400/25"
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
@@ -220,13 +220,13 @@ function AdminDemandCard({
         </button>
 
         <div className="flex items-center gap-2">
-          <span className="text-[11.5px] text-[#6e6e78]">Submitted by</span>
+          <span className="text-[11.5px] text-gray-500 dark:text-[#6e6e78]">Submitted by</span>
           <Avatar name={demand.created_by_name} email={demand.created_by_email} />
-          <span className="text-[13px] font-semibold text-[#f4f4f6]">
+          <span className="text-[13px] font-semibold text-gray-900 dark:text-[#f4f4f6]">
             {demand.created_by_name || demand.created_by_email.split("@")[0]}
           </span>
-          <span className="text-xs text-[#6e6e78]">·</span>
-          <span className="text-xs text-[#6e6e78]">{demand.created_by_email}</span>
+          <span className="text-xs text-gray-500 dark:text-[#6e6e78]">·</span>
+          <span className="text-xs text-gray-500 dark:text-[#6e6e78]">{demand.created_by_email}</span>
         </div>
       </div>
 
@@ -236,7 +236,7 @@ function AdminDemandCard({
           {demand.status === "pending" && (
             <button
               onClick={() => onMarkReview(demand)}
-              className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-[10px] border border-blue-400/45 bg-transparent px-3 py-2 text-[13px] font-semibold text-blue-400 transition-all hover:border-blue-400 hover:bg-blue-400/10 active:translate-y-px"
+              className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-[10px] border border-blue-400/45 bg-transparent px-3 py-2 text-[13px] font-semibold text-blue-600 dark:text-blue-400 transition-all hover:border-blue-400 hover:bg-blue-400/10 active:translate-y-px"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>
@@ -246,7 +246,7 @@ function AdminDemandCard({
           )}
           <button
             onClick={() => onOpenAction("approve", demand)}
-            className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-[10px] border border-green-400/40 bg-green-400/[0.14] px-3 py-2 text-[13px] font-semibold text-green-400 transition-all hover:bg-green-400/[0.22] active:translate-y-px"
+            className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-[10px] border border-green-400/40 bg-green-400/[0.14] px-3 py-2 text-[13px] font-semibold text-green-600 dark:text-green-400 transition-all hover:bg-green-400/[0.22] active:translate-y-px"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
               <path d="M20 6L9 17l-5-5"/>
@@ -255,7 +255,7 @@ function AdminDemandCard({
           </button>
           <button
             onClick={() => onOpenAction("reject", demand)}
-            className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-[10px] border border-red-400/35 bg-red-400/10 px-3 py-2 text-[13px] font-semibold text-red-400 transition-all hover:bg-red-400/[0.18] active:translate-y-px"
+            className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-[10px] border border-red-400/35 bg-red-400/10 px-3 py-2 text-[13px] font-semibold text-red-600 dark:text-red-400 transition-all hover:bg-red-400/[0.18] active:translate-y-px"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
               <path d="M18 6L6 18M6 6l12 12"/>
@@ -264,9 +264,9 @@ function AdminDemandCard({
           </button>
         </div>
       ) : (
-        <div className="flex w-[200px] flex-shrink-0 flex-col justify-center gap-2 border-l border-white/[0.06] pl-4">
+        <div className="flex w-[200px] flex-shrink-0 flex-col justify-center gap-2 border-l border-gray-100 dark:border-white/[0.06] pl-4">
           {demand.faculty_note && (
-            <div className="flex items-start gap-2 text-[12.5px] italic leading-relaxed text-[#9a9aa6]">
+            <div className="flex items-start gap-2 text-[12.5px] italic leading-relaxed text-gray-500 dark:text-[#9a9aa6]">
               {demand.status === "approved" ? (
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4ade80" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 flex-shrink-0 opacity-80">
                   <path d="M20 6L9 17l-5-5"/>
@@ -513,17 +513,17 @@ export default function AdminDemandsPage() {
         {/* Header */}
         <div className="mb-8 flex items-start justify-between gap-6">
           <div className="flex items-start gap-4">
-            <span className="grid h-12 w-12 flex-shrink-0 place-items-center rounded-[13px] bg-gradient-to-b from-violet-500 to-violet-700 shadow-[0_10px_24px_-10px_rgba(124,58,237,0.7),inset_0_0_0_1px_rgba(255,255,255,0.12)]">
+            <span className="grid h-12 w-12 flex-shrink-0 place-items-center rounded-[13px] bg-gradient-to-b from-orange-400 to-orange-500 shadow-[0_10px_24px_-10px_rgba(124,58,237,0.7),inset_0_0_0_1px_rgba(255,255,255,0.12)]">
               <Megaphone className="h-5 w-5 text-white" />
             </span>
             <div>
-              <h1 className="text-[28px] font-extrabold leading-tight tracking-[-0.02em] text-white">
+              <h1 className="text-[28px] font-extrabold leading-tight tracking-[-0.02em] text-gray-900 dark:text-white">
                 IdeaBoard
               </h1>
-              <p className="mt-1.5 text-sm text-[#9a9aa6]">Your queries and equipment requests — addressed here</p>
+              <p className="mt-1.5 text-sm text-gray-500 dark:text-[#9a9aa6]">Your queries and equipment requests — addressed here</p>
             </div>
           </div>
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-violet-500/30 bg-violet-500/[0.16] px-3 py-1.5 text-[11.5px] font-semibold text-violet-400">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-orange-400/30 bg-orange-400/[0.16] px-3 py-1.5 text-[11.5px] font-semibold text-orange-600 dark:text-orange-300">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"/>
             </svg>
@@ -534,15 +534,15 @@ export default function AdminDemandsPage() {
         {/* Stats row */}
         <div className="mb-6 grid grid-cols-5 gap-3">
           {[
-            { label: "Total IdeaBoard",  value: counts.all,          numCls: "text-white",       dotCls: "bg-violet-400" },
-            { label: "Pending",        value: counts.pending,      numCls: "text-amber-400",   dotCls: "bg-amber-400" },
-            { label: "Under Review",   value: counts.under_review, numCls: "text-blue-400",    dotCls: "bg-blue-400" },
-            { label: "Approved",       value: counts.approved,     numCls: "text-green-400",   dotCls: "bg-green-400" },
-            { label: "Rejected",       value: counts.rejected,     numCls: "text-red-400",     dotCls: "bg-red-400" },
+            { label: "Total IdeaBoard",  value: counts.all,          numCls: "text-gray-900 dark:text-white",       dotCls: "bg-orange-300" },
+            { label: "Pending",        value: counts.pending,      numCls: "text-amber-500 dark:text-amber-400",   dotCls: "bg-amber-400" },
+            { label: "Under Review",   value: counts.under_review, numCls: "text-blue-500 dark:text-blue-400",    dotCls: "bg-blue-400" },
+            { label: "Approved",       value: counts.approved,     numCls: "text-green-500 dark:text-green-400",   dotCls: "bg-green-400" },
+            { label: "Rejected",       value: counts.rejected,     numCls: "text-red-500 dark:text-red-400",     dotCls: "bg-red-400" },
           ].map(({ label, value, numCls, dotCls }) => (
-            <div key={label} className="rounded-[13px] border border-white/10 bg-[#111114] px-4 py-3.5">
+            <div key={label} className="rounded-[13px] border border-gray-200 dark:border-white/10 bg-white dark:bg-[#1a1108] px-4 py-3.5">
               <div className={`text-2xl font-extrabold tabular-nums leading-none ${numCls}`}>{value}</div>
-              <div className="mt-1.5 flex items-center gap-1.5 text-xs text-[#9a9aa6]">
+              <div className="mt-1.5 flex items-center gap-1.5 text-xs text-gray-500 dark:text-[#9a9aa6]">
                 <span className={`h-[7px] w-[7px] rounded-full ${dotCls}`} />
                 {label}
               </div>
@@ -558,8 +558,8 @@ export default function AdminDemandsPage() {
               onClick={() => setFilter(key)}
               className={`cursor-pointer rounded-full border px-4 py-2 text-[13px] font-medium transition-all ${
                 filter === key
-                  ? "border-transparent bg-[#7c3aed] text-white shadow-[0_8px_18px_-10px_rgba(124,58,237,0.8)]"
-                  : "border-white/10 bg-transparent text-[#9a9aa6] hover:border-white/20 hover:text-white"
+                  ? "border-transparent bg-[#f97316] text-white shadow-[0_8px_18px_-10px_rgba(124,58,237,0.8)]"
+                  : "border-gray-200 dark:border-white/10 bg-transparent text-gray-500 dark:text-[#9a9aa6] hover:border-gray-300 dark:hover:border-white/20 hover:text-gray-900 dark:hover:text-white"
               }`}
             >
               {label}{" "}
@@ -571,10 +571,10 @@ export default function AdminDemandsPage() {
         {/* Card list */}
         {loading ? (
           <div className="flex justify-center py-20">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-orange-400 border-t-transparent" />
           </div>
         ) : filtered.length === 0 ? (
-          <p className="py-20 text-center text-sm text-[#6e6e78]">No IdeaBoard found.</p>
+          <p className="py-20 text-center text-sm text-gray-500 dark:text-[#6e6e78]">No IdeaBoard found.</p>
         ) : (
           <div className="flex flex-col gap-3.5">
             {filtered.map(demand => (
@@ -591,14 +591,14 @@ export default function AdminDemandsPage() {
         )}
       </div>
 
-      {/* ── Approve / Reject modal ─────────────────────────────────────── */}
+      {/* ── Admin: Approve / Reject modal ───────────────────────────────── */}
       {actionModal && (
         <Modal onBackdropClick={() => { setActionModal(null); setFacultyNote(""); }}>
-          <div className="w-full max-w-[440px] rounded-[18px] border border-white/10 bg-[#16161b] p-6 shadow-[0_40px_90px_-30px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.04)]">
+          <div className="w-full max-w-[440px] rounded-[18px] border border-gray-200 dark:border-white/10 bg-white dark:bg-[#16161b] p-6 shadow-xl dark:shadow-[0_40px_90px_-30px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.04)]">
             <div className="mb-4 flex items-center justify-between">
               <div className="flex items-center gap-[11px]">
                 <span className={`grid h-[34px] w-[34px] flex-shrink-0 place-items-center rounded-[10px] ${
-                  actionModal.type === "approve" ? "bg-green-400/[0.12] text-green-400" : "bg-red-400/[0.12] text-red-400"
+                  actionModal.type === "approve" ? "bg-green-400/[0.12] text-green-500 dark:text-green-400" : "bg-red-400/[0.12] text-red-500 dark:text-red-400"
                 }`}>
                   {actionModal.type === "approve" ? (
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
@@ -610,7 +610,7 @@ export default function AdminDemandsPage() {
                     </svg>
                   )}
                 </span>
-                <h2 className="text-[18px] font-bold tracking-[-0.01em] text-white">
+                <h2 className="text-[18px] font-bold tracking-[-0.01em] text-gray-900 dark:text-white">
                   {actionModal.type === "approve" ? "Approve Demand" : "Reject Demand"}
                 </h2>
               </div>
@@ -620,9 +620,9 @@ export default function AdminDemandsPage() {
             <DemandRef title={actionModal.demand.title} />
 
             <div className="mb-6">
-              <label className="mb-1.5 block text-[12.5px] font-semibold text-[#f4f4f6]">
+              <label className="mb-1.5 block text-[12.5px] font-semibold text-gray-900 dark:text-[#f4f4f6]">
                 {actionModal.type === "approve" ? (
-                  <>Add a note for students <span className="font-normal text-[#6e6e78]">(optional)</span></>
+                  <>Add a note for students <span className="font-normal text-gray-400 dark:text-[#6e6e78]">(optional)</span></>
                 ) : (
                   <>Reason for rejection <span className="text-red-400">*</span></>
                 )}
@@ -636,10 +636,10 @@ export default function AdminDemandsPage() {
                     : "Explain why this demand can't be approved — students will see this."
                 }
                 rows={3}
-                className={`w-full resize-none rounded-[11px] border bg-[#0a0a0b] px-3 py-[11px] text-[14px] leading-relaxed text-white placeholder-[#6e6e78] outline-none transition ${
+                className={`w-full resize-none rounded-[11px] border bg-gray-50 dark:bg-[#0d0a08] px-3 py-[11px] text-[14px] leading-relaxed text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-[#6e6e78] outline-none transition ${
                   actionModal.type === "approve"
-                    ? "border-white/10 focus:border-violet-500 focus:shadow-[0_0_0_3px_rgba(124,58,237,0.16)]"
-                    : "border-white/10 focus:border-red-500 focus:shadow-[0_0_0_3px_rgba(248,113,113,0.12)]"
+                    ? "border-gray-200 dark:border-white/10 focus:border-orange-400 focus:shadow-[0_0_0_3px_rgba(124,58,237,0.16)]"
+                    : "border-gray-200 dark:border-white/10 focus:border-red-500 focus:shadow-[0_0_0_3px_rgba(248,113,113,0.12)]"
                 }`}
               />
             </div>
@@ -647,7 +647,7 @@ export default function AdminDemandsPage() {
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => { setActionModal(null); setFacultyNote(""); }}
-                className="cursor-pointer rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-[14px] font-semibold text-white transition hover:bg-white/[0.06]"
+                className="cursor-pointer rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/[0.03] px-4 py-2.5 text-[14px] font-semibold text-gray-700 dark:text-white transition hover:bg-gray-100 dark:hover:bg-white/[0.06]"
               >
                 Cancel
               </button>
@@ -682,10 +682,10 @@ export default function AdminDemandsPage() {
       {/* ── Delete Demand modal ────────────────────────────────────────── */}
       {deleteTarget && (
         <Modal onBackdropClick={() => setDeleteTarget(null)}>
-          <div className="w-full max-w-[440px] rounded-[18px] border border-white/10 bg-[#16161b] p-6 shadow-[0_40px_90px_-30px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.04)]">
+          <div className="w-full max-w-[440px] rounded-[18px] border border-gray-200 dark:border-white/10 bg-white dark:bg-[#16161b] p-6 shadow-xl dark:shadow-[0_40px_90px_-30px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.04)]">
             <div className="mb-4 flex items-center justify-between">
               <div className="flex items-center gap-[11px]">
-                <span className="grid h-[34px] w-[34px] flex-shrink-0 place-items-center rounded-[10px] bg-red-400/[0.12] text-red-400">
+                <span className="grid h-[34px] w-[34px] flex-shrink-0 place-items-center rounded-[10px] bg-red-400/[0.12] text-red-500 dark:text-red-400">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="3 6 5 6 21 6"/>
                     <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
@@ -693,20 +693,20 @@ export default function AdminDemandsPage() {
                     <path d="M9 6V4h6v2"/>
                   </svg>
                 </span>
-                <h2 className="text-[18px] font-bold tracking-[-0.01em] text-white">Delete Demand?</h2>
+                <h2 className="text-[18px] font-bold tracking-[-0.01em] text-gray-900 dark:text-white">Delete Demand?</h2>
               </div>
               <CloseBtn onClick={() => setDeleteTarget(null)} />
             </div>
 
             <DemandRef title={deleteTarget.title} />
 
-            <p className="mb-6 text-[13.5px] leading-relaxed text-[#9a9aa6]">
+            <p className="mb-6 text-[13.5px] leading-relaxed text-gray-500 dark:text-[#9a9aa6]">
               This will permanently remove this demand and all its votes. This cannot be undone.
             </p>
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setDeleteTarget(null)}
-                className="cursor-pointer rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-[14px] font-semibold text-white transition hover:bg-white/[0.06]"
+                className="cursor-pointer rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/[0.03] px-4 py-2.5 text-[14px] font-semibold text-gray-700 dark:text-white transition hover:bg-gray-100 dark:hover:bg-white/[0.06]"
               >
                 Cancel
               </button>
@@ -732,10 +732,10 @@ export default function AdminDemandsPage() {
       {/* ── Vote Breakdown modal ───────────────────────────────────────── */}
       {voteBreakdown && (
         <Modal onBackdropClick={() => setVoteBreakdown(null)}>
-          <div className="w-full max-w-[500px] rounded-[18px] border border-white/10 bg-[#16161b] p-6 shadow-[0_40px_90px_-30px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.04)]">
+          <div className="w-full max-w-[500px] rounded-[18px] border border-gray-200 dark:border-white/10 bg-white dark:bg-[#16161b] p-6 shadow-xl dark:shadow-[0_40px_90px_-30px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.04)]">
             <div className="mb-4 flex items-center justify-between">
               <div className="flex items-center gap-[11px]">
-                <span className="grid h-[34px] w-[34px] flex-shrink-0 place-items-center rounded-[10px] bg-violet-500/[0.16] text-violet-400">
+                <span className="grid h-[34px] w-[34px] flex-shrink-0 place-items-center rounded-[10px] bg-orange-400/[0.16] text-orange-300">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
                     <circle cx="9" cy="7" r="4"/>
@@ -743,7 +743,7 @@ export default function AdminDemandsPage() {
                     <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
                   </svg>
                 </span>
-                <h2 className="text-[18px] font-bold tracking-[-0.01em] text-white">Vote Breakdown</h2>
+                <h2 className="text-[18px] font-bold tracking-[-0.01em] text-gray-900 dark:text-white">Vote Breakdown</h2>
               </div>
               <CloseBtn onClick={() => setVoteBreakdown(null)} />
             </div>
@@ -752,31 +752,31 @@ export default function AdminDemandsPage() {
 
             {voteBreakdownLoading ? (
               <div className="flex justify-center py-8">
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-orange-400 border-t-transparent" />
               </div>
             ) : (
               <div className="space-y-5">
                 {/* Faculty Votes */}
                 <div>
                   <div className="mb-3 flex items-center gap-[9px]">
-                    <h3 className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#6e6e78]">Faculty Votes</h3>
-                    <span className="rounded-full border border-violet-500/30 bg-violet-500/[0.08] px-2 py-0.5 text-[11px] font-bold text-violet-400">
+                    <h3 className="text-[11px] font-bold uppercase tracking-[0.08em] text-gray-500 dark:text-[#6e6e78]">Faculty Votes</h3>
+                    <span className="rounded-full border border-orange-400/30 bg-orange-400/[0.08] px-2 py-0.5 text-[11px] font-bold text-orange-300">
                       {voteBreakdown.facultyVoters.length}
                     </span>
                   </div>
                   {voteBreakdown.facultyVoters.length === 0 ? (
-                    <p className="text-[12px] text-[#4b4b57]">No faculty votes yet.</p>
+                    <p className="text-[12px] text-gray-500 dark:text-[#4b4b57]">No faculty votes yet.</p>
                   ) : (
                     <div className="flex flex-col gap-2.5">
                       {voteBreakdown.facultyVoters.map(v => (
-                        <div key={v.voter_id} className="flex items-start gap-3 rounded-[11px] border border-white/[0.06] bg-[#0a0a0b] px-3.5 py-3">
-                          <div className="grid h-[34px] w-[34px] flex-shrink-0 place-items-center rounded-[9px] bg-violet-500/20 text-[12px] font-bold text-violet-400">
+                        <div key={v.voter_id} className="flex items-start gap-3 rounded-[11px] border border-gray-200 dark:border-white/[0.06] bg-gray-50 dark:bg-[#0d0a08] px-3.5 py-3">
+                          <div className="grid h-[34px] w-[34px] flex-shrink-0 place-items-center rounded-[9px] bg-orange-400/20 text-[12px] font-bold text-orange-300">
                             {v.email.slice(0, 2).toUpperCase()}
                           </div>
                           <div className="min-w-0 flex-1">
-                            <div className="truncate font-mono text-[12.5px] font-semibold text-[#f4f4f6]">{v.email}</div>
-                            <div className="mt-0.5 text-[10.5px] text-[#6e6e78]">Faculty member</div>
-                            <div className={`mt-[7px] text-[12.5px] leading-relaxed ${v.note ? "italic text-[#9a9aa6]" : "text-[#6e6e78]"}`}>
+                            <div className="truncate font-mono text-[12.5px] font-semibold text-gray-900 dark:text-[#f4f4f6]">{v.email}</div>
+                            <div className="mt-0.5 text-[10.5px] text-gray-500 dark:text-[#6e6e78]">Faculty member</div>
+                            <div className={`mt-[7px] text-[12.5px] leading-relaxed ${v.note ? "italic text-gray-600 dark:text-[#9a9aa6]" : "text-gray-400 dark:text-[#6e6e78]"}`}>
                               {v.note ? `"${v.note}"` : "No note"}
                             </div>
                           </div>
@@ -788,12 +788,12 @@ export default function AdminDemandsPage() {
 
                 {/* Student Votes */}
                 <div>
-                  <h3 className="mb-3 text-[11px] font-bold uppercase tracking-[0.08em] text-[#6e6e78]">Student Votes</h3>
-                  <div className="flex items-baseline gap-2.5 rounded-[11px] border border-white/[0.06] bg-[#0a0a0b] px-5 py-4">
-                    <span className="text-[36px] font-extrabold leading-none tabular-nums tracking-[-0.02em] text-violet-400">
+                  <h3 className="mb-3 text-[11px] font-bold uppercase tracking-[0.08em] text-gray-500 dark:text-[#6e6e78]">Student Votes</h3>
+                  <div className="flex items-baseline gap-2.5 rounded-[11px] border border-gray-200 dark:border-white/[0.06] bg-gray-50 dark:bg-[#0d0a08] px-5 py-4">
+                    <span className="text-[36px] font-extrabold leading-none tabular-nums tracking-[-0.02em] text-orange-400 dark:text-orange-300">
                       {voteBreakdown.studentCount}
                     </span>
-                    <span className="text-[14px] text-[#9a9aa6]">
+                    <span className="text-[14px] text-gray-500 dark:text-[#9a9aa6]">
                       {voteBreakdown.studentCount !== 1 ? "students" : "student"} voted
                     </span>
                   </div>
@@ -804,7 +804,7 @@ export default function AdminDemandsPage() {
             <div className="mt-5 flex justify-end">
               <button
                 onClick={() => setVoteBreakdown(null)}
-                className="cursor-pointer rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-[14px] font-semibold text-white transition hover:bg-white/[0.06]"
+                className="cursor-pointer rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/[0.03] px-4 py-2.5 text-[14px] font-semibold text-gray-700 dark:text-white transition hover:bg-gray-100 dark:hover:bg-white/[0.06]"
               >
                 Close
               </button>

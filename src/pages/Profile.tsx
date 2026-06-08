@@ -12,7 +12,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void 
   return (
     <button
       onClick={onChange}
-      className={`relative h-6 w-11 rounded-full transition-colors duration-200 focus:outline-none ${checked ? 'bg-violet-700' : 'bg-zinc-300 dark:bg-zinc-600'}`}
+      className={`relative h-6 w-11 rounded-full transition-colors duration-200 focus:outline-none ${checked ? 'bg-orange-500' : 'bg-zinc-300 dark:bg-zinc-600'}`}
     >
       <span className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ${checked ? 'translate-x-5' : 'translate-x-0'}`} />
     </button>
@@ -103,12 +103,12 @@ export default function Profile() {
           {/* Left sidebar */}
           <div className="flex flex-col gap-4">
             {/* User card */}
-            <div className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-white/8 dark:bg-[#1a1a1a] flex flex-col items-center text-center">
+            <div className="rounded-2xl border border-orange-100 bg-white p-6 dark:border-white/8 dark:bg-[#1f1509] flex flex-col items-center text-center">
               <div className="relative mb-4">
-                <div className="h-20 w-20 rounded-full bg-violet-700 flex items-center justify-center text-2xl font-bold text-white uppercase">
+                <div className="h-20 w-20 rounded-full bg-orange-500 flex items-center justify-center text-2xl font-bold text-white uppercase">
                   {avatarInitials}
                 </div>
-                <div className="absolute bottom-0 right-0 h-4 w-4 rounded-full border-2 border-white bg-green-500 dark:border-[#1a1a1a]" />
+                <div className="absolute bottom-0 right-0 h-4 w-4 rounded-full border-2 border-white bg-green-500 dark:border-[#1f1509]" />
               </div>
               <h2 className="text-base font-bold text-zinc-900 dark:text-white">
                 {displayName}
@@ -127,18 +127,18 @@ export default function Profile() {
             </div>
 
             {/* Nav list */}
-            <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-white/8 dark:bg-[#1a1a1a]">
+            <div className="overflow-hidden rounded-2xl border border-orange-100 bg-white dark:border-white/8 dark:bg-[#1f1509]">
               {navItems.map(({ icon: Icon, label, key }) => (
                 <button
                   key={key}
                   onClick={() => setActiveSection(key)}
                   className={`flex w-full items-center gap-3 border-l-2 p-4 text-xs font-medium transition-colors ${
                     activeSection === key
-                      ? "border-violet-600 bg-violet-500/8 text-violet-500 dark:bg-violet-500/10"
-                      : "border-transparent text-zinc-600 hover:bg-zinc-50 dark:text-zinc-400 dark:hover:bg-white/4"
+                      ? "border-orange-500 bg-orange-400/8 text-orange-400 dark:bg-orange-400/10"
+                      : "border-transparent text-zinc-600 hover:bg-orange-50 dark:text-zinc-400 dark:hover:bg-white/4"
                   }`}
                 >
-                  <Icon className={`h-3.5 w-3.5 ${activeSection === key ? "text-violet-500" : "text-zinc-400 dark:text-zinc-600"}`} />
+                  <Icon className={`h-3.5 w-3.5 ${activeSection === key ? "text-orange-400" : "text-zinc-400 dark:text-zinc-600"}`} />
                   {label}
                 </button>
               ))}
@@ -151,7 +151,7 @@ export default function Profile() {
             {/* ── ACCOUNT ── */}
             {activeSection === 'account' && (
               <>
-                <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-white/8 dark:bg-[#1a1a1a]">
+                <div className="overflow-hidden rounded-2xl border border-orange-100 bg-white dark:border-white/8 dark:bg-[#1f1509]">
                   <div className="border-b border-zinc-100 px-5 py-4 dark:border-white/8">
                     <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">Personal Information</h3>
                     <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">Update your personal details here.</p>
@@ -164,7 +164,7 @@ export default function Profile() {
                           type="text"
                           value={form.firstName}
                           onChange={e => { touchedRef.current = true; setForm(f => ({ ...f, firstName: e.target.value })); }}
-                          className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 outline-none transition-colors focus:border-violet-500 focus:ring-1 focus:ring-violet-500"
+                          className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 outline-none transition-colors focus:border-orange-400 focus:ring-1 focus:ring-orange-400"
                         />
                       </div>
                       <div className="space-y-1.5">
@@ -173,7 +173,7 @@ export default function Profile() {
                           type="text"
                           value={form.lastName}
                           onChange={e => { touchedRef.current = true; setForm(f => ({ ...f, lastName: e.target.value })); }}
-                          className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 outline-none transition-colors focus:border-violet-500 focus:ring-1 focus:ring-violet-500"
+                          className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 outline-none transition-colors focus:border-orange-400 focus:ring-1 focus:ring-orange-400"
                         />
                       </div>
                       <div className="col-span-2 space-y-1.5">
@@ -184,7 +184,7 @@ export default function Profile() {
                             value={user?.email ?? ''}
                             readOnly
                             disabled
-                            className="w-full rounded-lg border border-zinc-200 bg-zinc-100 px-3 py-2 pr-8 text-sm text-zinc-500 outline-none cursor-not-allowed opacity-70 dark:border-white/8 dark:bg-white/4 dark:text-zinc-500"
+                            className="w-full rounded-lg border border-orange-100 bg-zinc-100 px-3 py-2 pr-8 text-sm text-zinc-500 outline-none cursor-not-allowed opacity-70 dark:border-white/8 dark:bg-white/4 dark:text-zinc-500"
                           />
                           <Lock className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400 dark:text-zinc-600" />
                         </div>
@@ -195,13 +195,13 @@ export default function Profile() {
                       <button
                         onClick={handleSave}
                         disabled={isSaving}
-                        className="px-5 py-2 bg-violet-700 hover:bg-violet-600 disabled:opacity-60 text-white text-sm font-medium rounded-full transition-colors cursor-pointer"
+                        className="px-5 py-2 bg-orange-500 hover:bg-orange-500 disabled:opacity-60 text-white text-sm font-medium rounded-full transition-colors cursor-pointer"
                       >
                         {isSaving ? 'Saving…' : 'Save Changes'}
                       </button>
                     </div>
                   </div>
-                  <div className="border-t border-zinc-100 dark:border-white/8 px-5 py-3 flex items-center justify-between bg-zinc-50 dark:bg-white/4">
+                  <div className="border-t border-zinc-100 dark:border-white/8 px-5 py-3 flex items-center justify-between bg-orange-50 dark:bg-white/4">
                     <span className="text-[10px] text-zinc-500">Active Session</span>
                     <button
                       onClick={handleSignOut}
@@ -216,7 +216,7 @@ export default function Profile() {
 
             {/* ── NOTIFICATIONS ── */}
             {activeSection === 'notifications' && (
-              <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-white/8 dark:bg-[#1a1a1a]">
+              <div className="overflow-hidden rounded-2xl border border-orange-100 bg-white dark:border-white/8 dark:bg-[#1f1509]">
                 <div className="border-b border-zinc-100 px-5 py-4 dark:border-white/8 flex items-center justify-between">
                   <div>
                     <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">Notification Preferences</h3>
@@ -230,7 +230,7 @@ export default function Profile() {
                     { key: 'poDelays' as const,       title: 'PO Delays',         desc: 'Receive updates on delayed inbound shipments.' },
                     { key: 'weeklyReports' as const,  title: 'Weekly Reports',    desc: 'Get a summary of procurement activity each week.' },
                   ].map(({ key, title, desc }) => (
-                    <div key={key} className="flex items-center justify-between p-5 hover:bg-zinc-50 dark:hover:bg-white/4 transition-colors">
+                    <div key={key} className="flex items-center justify-between p-5 hover:bg-orange-50 dark:hover:bg-white/4 transition-colors">
                       <div>
                         <div className="text-xs font-medium text-zinc-900 dark:text-zinc-200">{title}</div>
                         <div className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">{desc}</div>

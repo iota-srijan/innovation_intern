@@ -14,7 +14,7 @@ export default function Landing() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#0a0a0b] font-sans text-white">
+    <div className="min-h-screen bg-[#0d0a08] font-sans text-white">
       <LandingNav />
       <HeroSection />
       <FeaturesSection />

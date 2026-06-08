@@ -2,6 +2,28 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─── CSS custom properties ──────────────────────────────────────────────── */
+
+:root {
+  --bg-primary: #f0f4f8;
+  --bg-card: #ffffff;
+  --bg-sidebar: #1e3a5f;
+  --text-primary: #0f172a;
+  --text-muted: #64748b;
+  --border-color: #bfdbfe;
+  --accent-orange: #f97316;
+  --accent-blue: #1e40af;
+}
+
+.dark {
+  --bg-primary: #0a0d12;
+  --bg-card: #111827;
+  --bg-sidebar: #0f1f35;
+  --text-primary: #f1f5f9;
+  --text-muted: #94a3b8;
+  --border-color: #1e3a5f;
+}
+
 @layer base {
   body {
     @apply font-sans antialiased;
@@ -9,21 +31,21 @@
 
   /* Landing page dark override */
   html.landing-dark body {
-    background-color: #0a0a0b;
+    background-color: #0d0a08;
     color: white;
   }
 
   ::selection {
-    background-color: #7c3aed40;
-    color: #ddd6fe;
+    background-color: #f9731640;
+    color: #fed7aa;
   }
 
   *:focus-visible {
-    @apply outline-none ring-2 ring-violet-600 ring-offset-2;
+    @apply outline-none ring-2 ring-orange-500 ring-offset-2;
   }
 
   html.dark *:focus-visible {
-    ring-offset-color: #111111;
+    ring-offset-color: #1a1108;
   }
 }
 
@@ -54,4 +76,100 @@
   .border-white\/8 {
     border-color: rgba(255,255,255,0.08);
   }
+}
+
+/* ─── Light mode global overrides ────────────────────────────────────────── */
+
+html:not(.dark) body {
+  background-color: #f0f4f8;
+  color: #0f172a;
+}
+
+/* Fix dark cards in light mode */
+html:not(.dark) [class*="bg-[#1a"],
+html:not(.dark) [class*="bg-[#11"],
+html:not(.dark) [class*="bg-zinc-900"],
+html:not(.dark) [class*="bg-zinc-800"],
+html:not(.dark) [class*="bg-neutral-900"] {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #bfdbfe !important;
+}
+
+/* Light mode text fixes */
+html:not(.dark) [class*="text-zinc-1"],
+html:not(.dark) [class*="text-white"] {
+  color: #0f172a !important;
+}
+
+/* Light mode border fixes */
+html:not(.dark) [class*="border-zinc-8"],
+html:not(.dark) [class*="border-zinc-7"] {
+  border-color: #bfdbfe !important;
+}
+
+/* Sidebar stays dark blue in light mode */
+html:not(.dark) [class*="w-14"] {
+  background-color: #1e3a5f !important;
+  border-right: 1px solid #e2e8f0;
+}
+
+/* ─── Issue 1 — Invisible text in light mode ─────────────────────────────── */
+
+html:not(.dark) table td,
+html:not(.dark) table th,
+html:not(.dark) [class*="text-white"],
+html:not(.dark) [class*="text-zinc-100"],
+html:not(.dark) [class*="text-zinc-200"],
+html:not(.dark) [class*="text-zinc-300"],
+html:not(.dark) [class*="text-gray-100"],
+html:not(.dark) [class*="text-gray-200"] {
+  color: #1e293b !important;
+}
+
+html:not(.dark) [class*="text-zinc-400"],
+html:not(.dark) [class*="text-zinc-500"],
+html:not(.dark) [class*="text-gray-400"],
+html:not(.dark) [class*="text-gray-500"] {
+  color: #64748b !important;
+}
+
+/* ─── Issue 2 — Dark table background in light mode ─────────────────────── */
+
+html:not(.dark) table,
+html:not(.dark) tbody,
+html:not(.dark) thead,
+html:not(.dark) tr {
+  background-color: transparent !important;
+  color: #1e293b !important;
+}
+
+html:not(.dark) [class*="bg-[#1a"],
+html:not(.dark) [class*="bg-[#11"],
+html:not(.dark) [class*="bg-zinc-900"],
+html:not(.dark) [class*="bg-zinc-800"],
+html:not(.dark) [class*="bg-neutral-900"],
+html:not(.dark) [class*="bg-stone-900"] {
+  background-color: #ffffff !important;
+  color: #1e293b !important;
+}
+
+/* ─── Issue 3 — Sidebar icons invisible in light mode ───────────────────── */
+
+html:not(.dark) nav svg,
+html:not(.dark) [class*="w-14"] svg,
+html:not(.dark) aside svg {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+html:not(.dark) [class*="w-14"] button,
+html:not(.dark) [class*="w-14"] a {
+  color: #ffffff !important;
+}
+
+/* Force white text where necessary to avoid aggressive light-mode text-white overrides */
+html body .always-white,
+html:not(.dark) body .always-white {
+  color: #ffffff !important;
 }

@@ -84,7 +84,7 @@ export default function AdminPasswordPage() {
         {/* Back Link */}
         <Link 
           to="/admin/settings" 
-          className="mb-6 flex w-fit items-center gap-2 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs font-semibold text-[#9a9aa6] transition hover:bg-white/[0.08] hover:text-white"
+          className="mb-6 flex w-fit items-center gap-2 rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/[0.03] px-3 py-1.5 text-xs font-semibold text-gray-500 dark:text-[#9a9aa6] transition hover:bg-gray-100 dark:hover:bg-white/[0.08] hover:text-gray-900 dark:hover:text-white"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
           Back to Settings
@@ -92,30 +92,30 @@ export default function AdminPasswordPage() {
 
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-[28px] font-extrabold tracking-[-0.02em] text-white">Change Password</h1>
-          <p className="mt-1 text-sm text-[#9a9aa6]">
+          <h1 className="text-[28px] font-extrabold tracking-[-0.02em] text-gray-900 dark:text-white">Change Password</h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-[#9a9aa6]">
             Update your admin account password
           </p>
         </div>
 
         {/* Change Password Card */}
-        <div className="rounded-2xl border border-white/10 bg-[#111114] p-6">
+        <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#1a1108] p-6">
           <div className="mb-5 flex items-center gap-3">
-            <div className="rounded-lg bg-violet-500/10 p-2">
-              <KeyRound className="h-4 w-4 text-violet-400" />
+            <div className="rounded-lg bg-orange-400/10 p-2">
+              <KeyRound className="h-4 w-4 text-orange-400 dark:text-orange-300" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-white">Password Details</h2>
+              <h2 className="text-sm font-bold text-gray-900 dark:text-white">Password Details</h2>
               {adminEmail && (
-                <p className="mt-0.5 font-mono text-[11px] text-[#6e6e78]">{adminEmail}</p>
+                <p className="mt-0.5 font-mono text-[11px] text-gray-500 dark:text-[#6e6e78]">{adminEmail}</p>
               )}
             </div>
           </div>
 
           <form onSubmit={handleUpdatePassword} className="space-y-4">
             <div>
-              <label className="mb-1.5 block text-[12.5px] font-semibold text-[#f4f4f6]">
-                Current Password <span className="text-violet-400">*</span>
+              <label className="mb-1.5 block text-[12.5px] font-semibold text-gray-900 dark:text-[#f4f4f6]">
+                Current Password <span className="text-orange-400 dark:text-orange-300">*</span>
               </label>
               <input
                 type="password"
@@ -123,13 +123,13 @@ export default function AdminPasswordPage() {
                 onChange={e => setCurrentPassword(e.target.value)}
                 required
                 autoComplete="current-password"
-                className="w-full rounded-[11px] border border-white/10 bg-[#0a0a0b] px-3 py-[11px] text-[14px] text-white placeholder-[#6e6e78] outline-none transition focus:border-violet-500 focus:shadow-[0_0_0_3px_rgba(124,58,237,0.16)]"
+                className="w-full rounded-[11px] border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#0d0a08] px-3 py-[11px] text-[14px] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-[#6e6e78] outline-none transition focus:border-orange-400 focus:bg-white dark:focus:bg-[#0d0a08]"
               />
             </div>
 
             <div>
-              <label className="mb-1.5 block text-[12.5px] font-semibold text-[#f4f4f6]">
-                New Password <span className="text-violet-400">*</span>
+              <label className="mb-1.5 block text-[12.5px] font-semibold text-gray-900 dark:text-[#f4f4f6]">
+                New Password <span className="text-orange-400 dark:text-orange-300">*</span>
               </label>
               <input
                 type="password"
@@ -137,13 +137,13 @@ export default function AdminPasswordPage() {
                 onChange={e => setNewPassword(e.target.value)}
                 required
                 autoComplete="new-password"
-                className="w-full rounded-[11px] border border-white/10 bg-[#0a0a0b] px-3 py-[11px] text-[14px] text-white placeholder-[#6e6e78] outline-none transition focus:border-violet-500 focus:shadow-[0_0_0_3px_rgba(124,58,237,0.16)]"
+                className="w-full rounded-[11px] border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#0d0a08] px-3 py-[11px] text-[14px] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-[#6e6e78] outline-none transition focus:border-orange-400 focus:bg-white dark:focus:bg-[#0d0a08]"
               />
             </div>
 
             <div>
-              <label className="mb-1.5 block text-[12.5px] font-semibold text-[#f4f4f6]">
-                Confirm New Password <span className="text-violet-400">*</span>
+              <label className="mb-1.5 block text-[12.5px] font-semibold text-gray-900 dark:text-[#f4f4f6]">
+                Confirm New Password <span className="text-orange-400 dark:text-orange-300">*</span>
               </label>
               <input
                 type="password"
@@ -151,7 +151,7 @@ export default function AdminPasswordPage() {
                 onChange={e => setConfirmPassword(e.target.value)}
                 required
                 autoComplete="new-password"
-                className="w-full rounded-[11px] border border-white/10 bg-[#0a0a0b] px-3 py-[11px] text-[14px] text-white placeholder-[#6e6e78] outline-none transition focus:border-violet-500 focus:shadow-[0_0_0_3px_rgba(124,58,237,0.16)]"
+                className="w-full rounded-[11px] border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#0d0a08] px-3 py-[11px] text-[14px] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-[#6e6e78] outline-none transition focus:border-orange-400 focus:bg-white dark:focus:bg-[#0d0a08]"
               />
             </div>
 
@@ -159,7 +159,7 @@ export default function AdminPasswordPage() {
               <button
                 type="submit"
                 disabled={isSubmitting || !currentPassword || !newPassword || !confirmPassword}
-                className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-gradient-to-b from-violet-500 to-violet-700 px-5 py-2.5 text-[14px] font-semibold text-white shadow-[0_1px_0_rgba(255,255,255,0.14)_inset,0_8px_20px_-10px_rgba(124,58,237,0.6)] transition-transform hover:-translate-y-px active:translate-y-px disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-gradient-to-b from-orange-400 to-orange-500 px-5 py-2.5 text-[14px] font-semibold text-white shadow-[0_1px_0_rgba(255,255,255,0.14)_inset,0_8px_20px_-10px_rgba(124,58,237,0.6)] transition-transform hover:-translate-y-px active:translate-y-px disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isSubmitting && (
                   <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />

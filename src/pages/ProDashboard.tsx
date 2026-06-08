@@ -164,7 +164,7 @@ function ProcSpark({ days }: { days: number }) {
 const InvoiceTooltip = ({ active, payload }: any) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-md bg-white dark:bg-zinc-850 border border-zinc-200 dark:border-white/8 px-3 py-2 text-[10px] text-zinc-900 dark:text-white shadow-lg">
+    <div className="rounded-md bg-white dark:bg-zinc-850 border border-orange-100 dark:border-white/8 px-3 py-2 text-[10px] text-zinc-900 dark:text-white shadow-lg">
       <div className="font-semibold mb-1">{payload[0]?.payload?.month}</div>
       {payload.map((p: any) => (
         <div key={p.dataKey} className="flex items-center gap-2">
@@ -234,16 +234,16 @@ export default function ProDashboard() {
 
   return (
     <AppShell title="Pro Procurement Dashboard" isPro={true}>
-      <div className="flex flex-col gap-5 p-6 bg-white dark:bg-[#111111] min-h-screen text-zinc-900 dark:text-white">
+      <div className="flex flex-col gap-5 p-6 bg-white dark:bg-[#1a1108] min-h-screen text-zinc-900 dark:text-white">
 
         {/* ── Row 1: Stat Cards (4 premium cards with high data density) ── */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           
           {/* Card 1: Total SKUs */}
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 flex flex-col justify-between hover:border-zinc-300 dark:hover:border-zinc-700 transition-all duration-200">
+          <div className="bg-white dark:bg-zinc-900 border border-orange-100 dark:border-orange-950/30 rounded-xl p-5 flex flex-col justify-between hover:border-zinc-300 dark:hover:border-zinc-700 transition-all duration-200">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Total SKUs</span>
-              <div className="p-1.5 bg-violet-500/10 text-violet-400 rounded-lg">
+              <div className="p-1.5 bg-orange-400/10 text-orange-300 rounded-lg">
                 <Package className="h-4 w-4" />
               </div>
             </div>
@@ -261,7 +261,7 @@ export default function ProDashboard() {
           {/* Card 2: Low Stock (red accent) */}
           <div
             onClick={handleLowStockCardClick}
-            className={`bg-white dark:bg-zinc-900 border border-red-500/30 rounded-xl p-5 flex flex-col justify-between hover:border-red-500/50 transition-all duration-200 relative overflow-hidden cursor-pointer${filterClicked ? ' ring-1 ring-violet-500' : ''}`}
+            className={`bg-white dark:bg-zinc-900 border border-red-500/30 rounded-xl p-5 flex flex-col justify-between hover:border-red-500/50 transition-all duration-200 relative overflow-hidden cursor-pointer${filterClicked ? ' ring-1 ring-orange-400' : ''}`}
           >
             <div className="absolute right-0 top-0 w-24 h-24 bg-red-500/5 rounded-full blur-xl pointer-events-none" />
             <div className="flex items-center justify-between mb-2">
@@ -282,7 +282,7 @@ export default function ProDashboard() {
           </div>
 
           {/* Card 3: Inventory Value */}
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 flex flex-col justify-between hover:border-zinc-300 dark:hover:border-zinc-700 transition-all duration-200">
+          <div className="bg-white dark:bg-zinc-900 border border-orange-100 dark:border-orange-950/30 rounded-xl p-5 flex flex-col justify-between hover:border-zinc-300 dark:hover:border-zinc-700 transition-all duration-200">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Inventory Value</span>
               <div className="p-1.5 bg-blue-500/10 text-blue-400 rounded-lg">
@@ -301,7 +301,7 @@ export default function ProDashboard() {
           </div>
 
           {/* Card 4: Fulfillment Rate */}
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 flex flex-col justify-between hover:border-zinc-300 dark:hover:border-zinc-700 transition-all duration-200">
+          <div className="bg-white dark:bg-zinc-900 border border-orange-100 dark:border-orange-950/30 rounded-xl p-5 flex flex-col justify-between hover:border-zinc-300 dark:hover:border-zinc-700 transition-all duration-200">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Fulfillment Rate</span>
               <div className="p-1.5 bg-emerald-500/10 text-emerald-400 rounded-lg">
@@ -325,13 +325,13 @@ export default function ProDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           
           {/* Left: Inventory Movement AreaChart */}
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 flex flex-col justify-between hover:border-zinc-200 dark:hover:border-zinc-800 transition-all">
+          <div className="bg-white dark:bg-zinc-900 border border-orange-100 dark:border-orange-950/30 rounded-xl p-5 flex flex-col justify-between hover:border-orange-100 dark:hover:border-orange-950/30 transition-all">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">Inventory Movement</h3>
                 <p className="text-[10px] text-zinc-500">Real-time stock trajectory across networks</p>
               </div>
-              <div className="flex gap-1 bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-850 rounded-lg p-1">
+              <div className="flex gap-1 bg-zinc-100 dark:bg-zinc-950 border border-orange-100 dark:border-zinc-850 rounded-lg p-1">
                 {(["30D", "90D", "1Y"] as const).map((r) => (
                   <button
                     key={r}
@@ -353,8 +353,8 @@ export default function ProDashboard() {
                 <AreaChart data={areaChartData[movementTab]} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
                   <defs>
                     <linearGradient id="proAreaGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.4} />
-                      <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0.0} />
+                      <stop offset="0%" stopColor="#f97316" stopOpacity={0.4} />
+                      <stop offset="100%" stopColor="#f97316" stopOpacity={0.0} />
                     </linearGradient>
                   </defs>
                   <XAxis
@@ -382,7 +382,7 @@ export default function ProDashboard() {
                   <Area
                     type="monotone"
                     dataKey="qty"
-                    stroke="#8b5cf6"
+                    stroke="#f97316"
                     strokeWidth={2}
                     fill="url(#proAreaGrad)"
                     name="Stock Qty"
@@ -393,11 +393,11 @@ export default function ProDashboard() {
           </div>
 
           {/* Right: Priority Restock Queue */}
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 flex flex-col justify-between">
+          <div className="bg-white dark:bg-zinc-900 border border-orange-100 dark:border-orange-950/30 rounded-xl p-5 flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between mb-1">
                 <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">Priority Restock Queue</h3>
-                <span className="text-[10px] text-violet-400 font-semibold px-2 py-0.5 bg-violet-500/10 rounded-full border border-violet-500/20">
+                <span className="text-[10px] text-orange-300 font-semibold px-2 py-0.5 bg-orange-400/10 rounded-full border border-orange-400/20">
                   Critical
                 </span>
               </div>
@@ -438,8 +438,8 @@ export default function ProDashboard() {
 
         {/* ── Pro-only Label Strip ── */}
         <div className="flex items-center gap-2 mt-4 mb-1">
-          <Sparkles className="w-3.5 h-3.5 text-violet-400 shrink-0" />
-          <span className="text-xs text-violet-400 font-medium whitespace-nowrap">Pro analytics</span>
+          <Sparkles className="w-3.5 h-3.5 text-orange-300 shrink-0" />
+          <span className="text-xs text-orange-300 font-medium whitespace-nowrap">Pro analytics</span>
           <div className="flex-1 border-t border-violet-900/50" />
         </div>
 
@@ -447,13 +447,13 @@ export default function ProDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           
           {/* Left: Spend by Category Table */}
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 flex flex-col justify-between">
+          <div className="bg-white dark:bg-zinc-900 border border-orange-100 dark:border-orange-950/30 rounded-xl p-5 flex flex-col justify-between">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">Spend by Category</h3>
                 <p className="text-[10px] text-zinc-500">Transaction counts and cycle averages</p>
               </div>
-              <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-850 p-1 rounded-lg">
+              <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-950 border border-orange-100 dark:border-zinc-850 p-1 rounded-lg">
                 {tabs.map((t) => (
                   <button
                     key={t}
@@ -473,7 +473,7 @@ export default function ProDashboard() {
             <div className="overflow-x-auto">
               <table className="w-full text-[11px]">
                 <thead>
-                  <tr className="border-b border-zinc-200 dark:border-zinc-800">
+                  <tr className="border-b border-orange-100 dark:border-orange-950/30">
                     {["CATEGORY", "SPEND", "TRANS.", "SUPPLIERS", "PROC. CYCLE"].map((h) => (
                       <th key={h} className="pb-2 text-left text-[9px] font-semibold uppercase tracking-wide text-zinc-500 first:pl-0 px-2">
                         {h}
@@ -486,7 +486,7 @@ export default function ProDashboard() {
                   {spendData[spendTab].map((row) => (
                     <tr
                       key={row.category}
-                      className="border-b border-zinc-200 dark:border-zinc-850/50 transition-colors hover:bg-zinc-50 dark:hover:bg-white/4 last:border-0"
+                      className="border-b border-orange-100 dark:border-zinc-850/50 transition-colors hover:bg-orange-50 dark:hover:bg-white/4 last:border-0"
                     >
                       <td className="py-2.5 first:pl-0 px-2 font-medium text-zinc-900 dark:text-zinc-200 whitespace-nowrap">
                         {row.category}
@@ -530,13 +530,13 @@ export default function ProDashboard() {
           </div>
 
           {/* Right: Total Invoice / Discount % */}
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 flex flex-col justify-between">
+          <div className="bg-white dark:bg-zinc-900 border border-orange-100 dark:border-orange-950/30 rounded-xl p-5 flex flex-col justify-between">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">Total Invoice &amp; Discount %</h3>
                 <p className="text-[10px] text-zinc-500">Overview of capital invoices and average discount rate</p>
               </div>
-              <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-850 p-1 rounded-lg">
+              <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-950 border border-orange-100 dark:border-zinc-850 p-1 rounded-lg">
                 {tabs.map((t) => (
                   <button
                     key={t}
@@ -554,7 +554,7 @@ export default function ProDashboard() {
             </div>
 
             <div className="relative">
-              <div className="absolute -top-1.5 right-1.5 text-xs font-semibold bg-violet-500/10 text-violet-400 px-2 py-0.5 rounded border border-violet-500/15">
+              <div className="absolute -top-1.5 right-1.5 text-xs font-semibold bg-orange-400/10 text-orange-300 px-2 py-0.5 rounded border border-orange-400/15">
                 Max: {Math.max(...(invoiceChartData[invoiceTab] ?? []).map((d) => d.discount)).toFixed(1)}% Discount
               </div>
               <div className="h-56 mt-2">
@@ -594,7 +594,7 @@ export default function ProDashboard() {
                       yAxisId="right"
                       type="monotone"
                       dataKey="discount"
-                      stroke="#8b5cf6"
+                      stroke="#f97316"
                       strokeWidth={2}
                       dot={{ r: 2, strokeWidth: 1 }}
                       name="Discount %"

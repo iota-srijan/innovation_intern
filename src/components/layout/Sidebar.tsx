@@ -14,6 +14,7 @@ import {
   Clock,
   ClipboardList,
   ScrollText,
+  Bell,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../../context/AuthContext";
@@ -30,9 +31,11 @@ const navItems = [
   { icon: Megaphone,        path: "/demands",                 label: "IdeaBoard" },
   { icon: FileText,         path: "/student/requests",        label: "My Requests" },
   { icon: ListOrdered,      path: "/faculty-requests",        label: "My Requests" },  // faculty
+  { icon: Bell,             path: "/notifications",           label: "Notifications" },
   { icon: Package,          path: "/cart",                    label: "Request Item" },
-  { icon: Clock,            path: "/admin/pending",           label: "Pending Requests" }, // admin only
+  { icon: Clock,            path: "/admin/pending",           label: "Pending" }, // admin only
   { icon: ClipboardList,    path: "/admin/requests",          label: "All Requests" },     // admin only
+  { icon: Bell,             path: "/admin/notifications",     label: "Notifications" },
   { icon: ScrollText,       path: "/admin/audit-log",         label: "Audit Log" },        // admin only
   { icon: Settings,         path: "/profile",                 label: "Settings" },
   { icon: Settings,         path: "/admin/settings",          label: "Settings" },
@@ -77,28 +80,30 @@ export function Sidebar() {
   if (!userRole) return null;
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-20 flex w-14 flex-col items-center border-r border-white/8 bg-[#111111] py-4 gap-1">
+    <aside className="group w-14 hover:w-48 transition-all duration-200 ease-in-out overflow-hidden bg-[#1e3a5f] dark:bg-[#0f1f35] flex flex-col h-screen fixed left-0 top-0 z-40 border-r border-white/8 py-4">
       {/* Logo mark */}
-      <div className="mb-3 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-700">
+      <div className="mb-4 ml-3 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-orange-500">
         <Layers className="h-4 w-4 text-white" />
       </div>
 
       {/* Nav icons */}
-      <nav className="flex flex-1 flex-col items-center gap-1">
+      <nav className="flex flex-1 flex-col gap-2 w-full px-2">
         {navItems.map(({ icon: Icon, path, label }) => {
           if (path === "/dashboard") {
             return (
               <button
                 key={path}
                 onClick={goToDashboard}
-                title={label}
-                className={`flex h-9 w-9 items-center justify-center rounded-lg transition-all duration-150 cursor-pointer ${
+                className={`flex items-center gap-3 px-2.5 py-2.5 rounded-lg cursor-pointer transition-colors duration-150 w-full ${
                   isActive(path)
-                    ? "bg-white/10 text-white"
-                    : "text-zinc-500 hover:bg-white/8 hover:text-white"
+                    ? "bg-orange-500/20 text-orange-400"
+                    : "text-white hover:bg-white/10"
                 }`}
               >
-                <Icon className="h-4 w-4" />
+                <Icon className="w-5 h-5 shrink-0" />
+                <span className={`opacity-0 group-hover:opacity-100 transition-opacity duration-150 whitespace-nowrap text-sm font-medium`} style={{ color: isActive(path) ? "#fdba74" : "white" }}>
+                  {label}
+                </span>
               </button>
             );
           }
@@ -108,13 +113,13 @@ export function Sidebar() {
             return null;
           }
 
-          // Students only see Dashboard, Demand Board, My Requests, Request Item, and Settings
-          if (userRole === 'student' && !['/dashboard', '/demands', '/student/requests', '/cart', '/profile'].includes(path)) {
+          // Students only see Dashboard, Demand Board, My Requests, Request Item, Notifications, and Settings
+          if (userRole === 'student' && !['/dashboard', '/demands', '/student/requests', '/cart', '/notifications', '/profile'].includes(path)) {
             return null;
           }
 
-          // Faculty sees Dashboard, Demand Board, My Requests, and Settings
-          if (userRole === 'faculty' && !['/dashboard', '/demands', '/faculty-requests', '/profile'].includes(path)) {
+          // Faculty sees Dashboard, Demand Board, My Requests, Notifications, and Settings
+          if (userRole === 'faculty' && !['/dashboard', '/demands', '/faculty-requests', '/notifications', '/profile'].includes(path)) {
             return null;
           }
 
@@ -133,21 +138,23 @@ export function Sidebar() {
             <Link
               key={path}
               to={path}
-              title={label}
-              className={`flex h-9 w-9 items-center justify-center rounded-lg transition-all duration-150 ${
+              className={`flex items-center gap-3 px-2.5 py-2.5 rounded-lg cursor-pointer transition-colors duration-150 w-full ${
                 isActive(path)
-                  ? "bg-white/10 text-white"
-                  : "text-zinc-500 hover:bg-white/8 hover:text-white"
+                  ? "bg-orange-500/20 text-orange-400"
+                  : "text-white hover:bg-white/10"
               }`}
             >
-              <Icon className="h-4 w-4" />
+              <Icon className="w-5 h-5 shrink-0" />
+              <span className={`opacity-0 group-hover:opacity-100 transition-opacity duration-150 whitespace-nowrap text-sm font-medium`} style={{ color: isActive(path) ? "#fdba74" : "white" }}>
+                {label}
+              </span>
             </Link>
           );
         })}
       </nav>
 
       {/* Bottom actions */}
-      <div className="flex flex-col items-center gap-1 mt-auto">
+      <div className="flex flex-col gap-2 w-full px-2 mt-auto">
         {/* Logout */}
         <button
           onClick={async () => {
@@ -155,10 +162,12 @@ export function Sidebar() {
             toast.info("Signed out successfully");
             navigate("/signin");
           }}
-          title="Sign Out"
-          className="flex h-9 w-9 items-center justify-center rounded-lg text-zinc-500 transition-all duration-150 hover:bg-white/8 hover:text-white cursor-pointer"
+          className="flex items-center gap-3 px-2.5 py-2.5 rounded-lg cursor-pointer transition-colors duration-150 w-full text-white hover:bg-white/10"
         >
-          <LogOut className="h-4 w-4" />
+          <LogOut className="w-5 h-5 shrink-0" />
+          <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-150 whitespace-nowrap text-sm font-medium" style={{ color: "white" }}>
+            Sign Out
+          </span>
         </button>
       </div>
     </aside>

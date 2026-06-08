@@ -89,17 +89,17 @@ export function FeaturesSection() {
             <motion.div
               key={feature.title}
               variants={cardVariants}
-              className="group relative flex flex-col gap-4 bg-[#0a0a0b] p-8 transition-colors hover:bg-[#111113]"
+              className="group relative flex flex-col gap-4 bg-[#0d0a08] p-8 transition-colors hover:bg-[#111113]"
             >
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/8 bg-white/4 transition-colors group-hover:border-indigo-500/30 group-hover:bg-indigo-500/10">
-                <feature.icon className="h-5 w-5 text-white/50 transition-colors group-hover:text-indigo-400" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/8 bg-white/4 transition-colors group-hover:border-orange-400/30 group-hover:bg-orange-400/10">
+                <feature.icon className="h-5 w-5 text-white/50 transition-colors group-hover:text-orange-300" />
               </div>
               <div>
                 <h3 className="mb-2 text-[15px] font-semibold text-white">{feature.title}</h3>
                 <p className="text-sm leading-relaxed text-white/40">{feature.description}</p>
               </div>
               {/* Subtle hover border */}
-              <div className="pointer-events-none absolute inset-0 rounded-none opacity-0 ring-1 ring-inset ring-indigo-500/20 transition-opacity group-hover:opacity-100" />
+              <div className="pointer-events-none absolute inset-0 rounded-none opacity-0 ring-1 ring-inset ring-orange-400/20 transition-opacity group-hover:opacity-100" />
             </motion.div>
           ))}
         </motion.div>

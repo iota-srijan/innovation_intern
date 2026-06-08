@@ -42,15 +42,15 @@ function IssueStatusBadge({ status }: { status: IssueStatus }) {
 }
 
 function PhysStatusBadge({ req }: { req: IssueRequest }) {
-  if (req.status !== 'approved') return <span className="text-[#4b4b57]">—</span>
+  if (req.status !== 'approved') return <span className="text-gray-400 dark:text-[#4b4b57]">—</span>
   const ps: PhysicalStatus = req.physical_status ?? 'pending_handover'
   if (ps === 'pending_handover')
-    return <span className="inline-flex items-center rounded-full border border-white/10 bg-white/[0.06] px-2.5 py-0.5 text-[11px] font-semibold text-[#9a9aa6]">Awaiting Handover</span>
+    return <span className="inline-flex items-center rounded-full border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/[0.06] px-2.5 py-0.5 text-[11px] font-semibold text-gray-500 dark:text-[#9a9aa6]">Awaiting Handover</span>
   if (ps === 'issued')
     return <span className="inline-flex items-center rounded-full border border-blue-400/20 bg-blue-400/10 px-2.5 py-0.5 text-[11px] font-semibold text-blue-400">Issued</span>
   if (ps === 'returned')
     return <span className="inline-flex items-center rounded-full border border-green-400/20 bg-green-400/10 px-2.5 py-0.5 text-[11px] font-semibold text-green-400">Returned</span>
-  return <span className="inline-flex items-center rounded-full border border-purple-400/20 bg-purple-400/10 px-2.5 py-0.5 text-[11px] font-semibold text-purple-400">Consumed</span>
+  return <span className="inline-flex items-center rounded-full border border-orange-300/20 bg-orange-300/10 px-2.5 py-0.5 text-[11px] font-semibold text-orange-300">Consumed</span>
 }
 
 // ─── Main Component ─────────────────────────────────────────────────────────────
@@ -168,27 +168,27 @@ export default function AdminAllRequestsPage() {
         {/* ── Header ── */}
         <div className="mb-8 flex items-start justify-between gap-4">
           <div>
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-violet-500/30 bg-violet-500/[0.12] px-3 py-1.5 text-xs font-semibold text-violet-400">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-orange-400/30 bg-orange-400/[0.12] px-3 py-1.5 text-xs font-semibold text-orange-300">
               <ClipboardList className="h-3.5 w-3.5" />
               Admin — Request Management
             </div>
-            <h1 className="text-[28px] font-extrabold tracking-[-0.02em] text-white">All Requests</h1>
-            <p className="mt-1 text-sm text-[#9a9aa6]">
+            <h1 className="text-[28px] font-extrabold tracking-[-0.02em] text-gray-900 dark:text-white">All Requests</h1>
+            <p className="mt-1 text-sm text-gray-500 dark:text-[#9a9aa6]">
               View and manage all issue requests across all statuses
             </p>
           </div>
           <button
             onClick={() => void queryClient.invalidateQueries({ queryKey: ['issue_requests'] })}
-            className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/[0.07]"
+            className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/[0.03] px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-white transition hover:bg-gray-100 dark:hover:bg-white/[0.07]"
           >
             Refresh
           </button>
         </div>
 
         {/* ── All Requests ── */}
-        <div className="mb-6 rounded-2xl border border-white/10 bg-[#111114] p-5">
+        <div className="mb-6 rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#1a1108] p-5">
           <div className="mb-5 flex items-center justify-between gap-4 flex-wrap">
-            <h2 className="text-sm font-bold text-white">All Requests</h2>
+            <h2 className="text-sm font-bold text-gray-900 dark:text-white">All Requests</h2>
             <div className="flex items-center gap-1.5">
               {(['All', 'Pending', 'Approved', 'Rejected'] as AllRequestsFilter[]).map(f => (
                 <button
@@ -196,8 +196,8 @@ export default function AdminAllRequestsPage() {
                   onClick={() => setAllFilter(f)}
                   className={`cursor-pointer rounded-full border px-3.5 py-1.5 text-[11px] font-semibold transition-all ${
                     allFilter === f
-                      ? 'border-transparent bg-[#7c3aed] text-white shadow-[0_6px_16px_-8px_rgba(124,58,237,0.8)]'
-                      : 'border-white/10 bg-transparent text-[#9a9aa6] hover:border-white/20 hover:text-white'
+                      ? 'border-transparent bg-[#f97316] text-white shadow-[0_6px_16px_-8px_rgba(124,58,237,0.8)]'
+                      : 'border-gray-200 dark:border-white/10 bg-transparent text-gray-500 dark:text-[#9a9aa6] hover:border-gray-300 dark:hover:border-white/20 hover:text-gray-900 dark:hover:text-white'
                   }`}
                 >
                   {f}
@@ -208,10 +208,10 @@ export default function AdminAllRequestsPage() {
 
           {allLoading ? (
             <div className="flex justify-center py-10">
-              <div className="h-5 w-5 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-orange-400 border-t-transparent" />
             </div>
           ) : allRequests.length === 0 ? (
-            <p className="py-8 text-center text-sm text-[#6e6e78]">No requests found.</p>
+            <p className="py-8 text-center text-sm text-gray-500 dark:text-[#6e6e78]">No requests found.</p>
           ) : (() => {
             const filtered = allRequests.filter(r => {
               if (allFilter === 'All') return true
@@ -221,29 +221,29 @@ export default function AdminAllRequestsPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-[12px]">
                   <thead>
-                    <tr className="border-b border-white/[0.08]">
+                    <tr className="border-b border-gray-200 dark:border-white/[0.08]">
                       {['Student', 'Item', 'Qty', 'Status', 'Submitted', 'Return By', 'Physical Status', 'Action'].map(h => (
-                        <th key={h} className="px-2 pb-3 text-[10px] font-semibold uppercase tracking-widest text-[#6e6e78] first:pl-0 whitespace-nowrap">{h}</th>
+                        <th key={h} className="px-2 pb-3 text-[10px] font-semibold uppercase tracking-widest text-gray-500 dark:text-[#6e6e78] first:pl-0 whitespace-nowrap">{h}</th>
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-white/[0.05]">
+                  <tbody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
                     {filtered.length === 0 ? (
-                      <tr><td colSpan={8} className="py-8 text-center text-[#6e6e78]">No {allFilter.toLowerCase()} requests.</td></tr>
+                      <tr><td colSpan={8} className="py-8 text-center text-gray-500 dark:text-[#6e6e78]">No {allFilter.toLowerCase()} requests.</td></tr>
                     ) : filtered.map(req => {
                       const ps: PhysicalStatus = req.physical_status ?? 'pending_handover'
                       const isLoading = rowActionId === req.id
                       return (
-                        <tr key={req.id} className="transition-colors hover:bg-white/[0.02]">
+                        <tr key={req.id} className="transition-colors hover:bg-gray-50 dark:hover:bg-white/[0.02]">
                           <td className="py-3 px-2 first:pl-0">
-                            <div className="font-semibold text-[#f4f4f6]">{req.student_name}</div>
-                            <div className="mt-0.5 font-mono text-[10px] text-[#6e6e78]">{req.student_email}</div>
+                            <div className="font-semibold text-gray-900 dark:text-[#f4f4f6]">{req.student_name}</div>
+                            <div className="mt-0.5 font-mono text-[10px] text-gray-500 dark:text-[#6e6e78]">{req.student_email}</div>
                           </td>
-                          <td className="py-3 px-2 text-[#f4f4f6]">{req.item_name}</td>
-                          <td className="py-3 px-2 text-[#9a9aa6]">{req.quantity_requested}</td>
+                          <td className="py-3 px-2 text-gray-900 dark:text-[#f4f4f6]">{req.item_name}</td>
+                          <td className="py-3 px-2 text-gray-500 dark:text-[#9a9aa6]">{req.quantity_requested}</td>
                           <td className="py-3 px-2"><IssueStatusBadge status={req.status} /></td>
-                          <td className="py-3 px-2 text-[#6e6e78] whitespace-nowrap">{new Date(req.created_at).toLocaleDateString()}</td>
-                          <td className="py-3 px-2 text-[#6e6e78] whitespace-nowrap">
+                          <td className="py-3 px-2 text-gray-500 dark:text-[#6e6e78] whitespace-nowrap">{new Date(req.created_at).toLocaleDateString()}</td>
+                          <td className="py-3 px-2 text-gray-500 dark:text-[#6e6e78] whitespace-nowrap">
                             {req.return_deadline ? new Date(req.return_deadline).toLocaleDateString() : '—'}
                           </td>
                           <td className="py-3 px-2"><PhysStatusBadge req={req} /></td>
@@ -252,9 +252,9 @@ export default function AdminAllRequestsPage() {
                               <button
                                 onClick={() => handleMarkIssued(req)}
                                 disabled={isLoading}
-                                className="inline-flex cursor-pointer items-center gap-1.5 rounded-[9px] border border-violet-500/30 bg-violet-500/[0.08] px-3 py-1.5 text-[11px] font-semibold text-violet-400 transition hover:bg-violet-500/[0.16] disabled:opacity-50"
+                                className="inline-flex cursor-pointer items-center gap-1.5 rounded-[9px] border border-orange-400/30 bg-orange-400/[0.08] px-3 py-1.5 text-[11px] font-semibold text-orange-300 transition hover:bg-orange-400/[0.16] disabled:opacity-50"
                               >
-                                {isLoading && <span className="h-3 w-3 animate-spin rounded-full border border-violet-400 border-t-transparent" />}
+                                {isLoading && <span className="h-3 w-3 animate-spin rounded-full border border-orange-300 border-t-transparent" />}
                                 Mark Issued
                               </button>
                             ) : req.status === 'approved' && ps === 'issued' ? (
@@ -267,7 +267,7 @@ export default function AdminAllRequestsPage() {
                                 Mark Returned
                               </button>
                             ) : (
-                              <span className="text-[#4b4b57]">—</span>
+                              <span className="text-gray-400 dark:text-[#4b4b57]">—</span>
                             )}
                           </td>
                         </tr>

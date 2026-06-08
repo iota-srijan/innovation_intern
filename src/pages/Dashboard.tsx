@@ -91,7 +91,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-[1.4fr_1fr_1fr_2fr_1.5fr] gap-4">
 
           {/* Card 1: Overview */}
-          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5 dark:border-white/8 dark:bg-[#1a1a1a]">
+          <div className="rounded-2xl border border-orange-100 bg-orange-50 p-5 dark:border-white/8 dark:bg-[#1f1509]">
             <div className="text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-4">Overview</div>
             <div className="flex flex-col gap-3">
               {[
@@ -116,7 +116,7 @@ export default function Dashboard() {
           </div>
 
           {/* Card 2: PO Count — no live data */}
-          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5 dark:border-white/8 dark:bg-[#1a1a1a] flex flex-col">
+          <div className="rounded-2xl border border-orange-100 bg-orange-50 p-5 dark:border-white/8 dark:bg-[#1f1509] flex flex-col">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-zinc-900 dark:text-white">PO Count</span>
               <ArrowUpRight className="h-3.5 w-3.5 text-zinc-400" />
@@ -127,7 +127,7 @@ export default function Dashboard() {
           </div>
 
           {/* Card 3: PR Count — no live data */}
-          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5 dark:border-white/8 dark:bg-[#1a1a1a] flex flex-col">
+          <div className="rounded-2xl border border-orange-100 bg-orange-50 p-5 dark:border-white/8 dark:bg-[#1f1509] flex flex-col">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-zinc-900 dark:text-white">PR Count</span>
               <ArrowUpRight className="h-3.5 w-3.5 text-zinc-400" />
@@ -138,13 +138,13 @@ export default function Dashboard() {
           </div>
 
           {/* Card 4: Supplier Distribution — no live data */}
-          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5 dark:border-white/8 dark:bg-[#1a1a1a] flex flex-col justify-center items-center">
+          <div className="rounded-2xl border border-orange-100 bg-orange-50 p-5 dark:border-white/8 dark:bg-[#1f1509] flex flex-col justify-center items-center">
             <span className="text-sm font-medium text-zinc-900 dark:text-white mb-2">Supplier Distribution</span>
             <span className="text-xs text-zinc-400">No data</span>
           </div>
 
           {/* Card 5: Key Suppliers — no live data */}
-          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5 dark:border-white/8 dark:bg-[#1a1a1a] flex flex-col justify-center items-center">
+          <div className="rounded-2xl border border-orange-100 bg-orange-50 p-5 dark:border-white/8 dark:bg-[#1f1509] flex flex-col justify-center items-center">
             <span className="text-sm font-medium text-zinc-900 dark:text-white mb-2">Key Suppliers</span>
             <span className="text-xs text-zinc-400">No data</span>
           </div>
@@ -154,7 +154,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-[1.1fr_1fr] gap-4" style={{ display: Object.keys(spendData).length === 0 ? 'none' : undefined }}>
 
           {/* Spend by Category */}
-          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5 dark:border-white/8 dark:bg-[#1a1a1a]">
+          <div className="rounded-2xl border border-orange-100 bg-orange-50 p-5 dark:border-white/8 dark:bg-[#1f1509]">
             <div className="flex items-center justify-between mb-4">
               <span className="text-sm font-medium text-zinc-900 dark:text-white">Spend by Category</span>
               <div className="flex items-center gap-1">
@@ -176,7 +176,7 @@ export default function Dashboard() {
             <div className="overflow-x-auto">
               <table className="w-full text-[11px]">
                 <thead>
-                  <tr className="border-b border-zinc-200 dark:border-white/8">
+                  <tr className="border-b border-orange-100 dark:border-white/8">
                     {["CATEGORY", "SPEND", "TRANS.", "SUPPLIERS", "PROC. CYCLE"].map((h) => (
                       <th key={h} className="pb-2 text-left text-[9px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500 first:pl-0 px-2">
                         {h}
@@ -186,7 +186,7 @@ export default function Dashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {spendData[spendTab].map((row) => (
+                  {(spendData[spendTab] ?? []).map((row) => (
                     <tr
                       key={row.category}
                       className="border-b border-zinc-100 dark:border-white/6 transition-colors hover:bg-zinc-100 dark:hover:bg-white/4 last:border-0"
@@ -233,7 +233,7 @@ export default function Dashboard() {
           </div>
 
           {/* Total Invoice / Discount % */}
-          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5 dark:border-white/8 dark:bg-[#1a1a1a]">
+          <div className="rounded-2xl border border-orange-100 bg-orange-50 p-5 dark:border-white/8 dark:bg-[#1f1509]">
             <div className="flex items-center justify-between mb-4">
               <span className="text-sm font-medium text-zinc-900 dark:text-white">Total Invoice, Discount %</span>
               <div className="flex items-center gap-1">

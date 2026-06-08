@@ -30,12 +30,14 @@ import AdminAllRequestsPage from './pages/AdminAllRequestsPage'
 import AdminAuditLogPage from './pages/AdminAuditLogPage'
 import AdminSettingsPage from './pages/AdminSettingsPage'
 import AdminPasswordPage from './pages/AdminPasswordPage'
+import NotificationsPage from './pages/NotificationsPage'
+import AdminNotificationsPage from './pages/AdminNotificationsPage'
 
 export default function App() {
   const { isRoleLoading } = useAuth()
 
   if (isRoleLoading) {
-    return <div className="min-h-screen bg-[#0a0a0b]" />
+    return <div className="min-h-screen bg-[#0d0a08]" />
   }
 
   return (
@@ -63,6 +65,7 @@ export default function App() {
         <Route path="/student/requests" element={<StudentRoute><StudentRequestsPage /></StudentRoute>} />
         <Route path="/faculty-dashboard" element={<FacultyRoute><FacultyDashboard /></FacultyRoute>} />
         <Route path="/faculty-requests" element={<FacultyRoute><FacultyRequestsPage /></FacultyRoute>} />
+        <Route path="/notifications" element={<StudentOrFacultyRoute><NotificationsPage /></StudentOrFacultyRoute>} />
         <Route path="/demands" element={<ProtectedRoute><DemandsPage /></ProtectedRoute>} />
 
         {/* Admin-only routes */}
@@ -72,6 +75,7 @@ export default function App() {
         <Route path="/admin/demands" element={<AdminRoute><AdminDemandsPage /></AdminRoute>} />
         <Route path="/admin/pending" element={<AdminRoute><AdminPendingPage /></AdminRoute>} />
         <Route path="/admin/requests" element={<AdminRoute><AdminAllRequestsPage /></AdminRoute>} />
+        <Route path="/admin/notifications" element={<AdminRoute><AdminNotificationsPage /></AdminRoute>} />
         <Route path="/admin/audit-log" element={<AdminRoute><AdminAuditLogPage /></AdminRoute>} />
         <Route path="/admin/settings" element={<AdminRoute><AdminSettingsPage /></AdminRoute>} />
         <Route path="/admin/settings/password" element={<AdminRoute><AdminPasswordPage /></AdminRoute>} />

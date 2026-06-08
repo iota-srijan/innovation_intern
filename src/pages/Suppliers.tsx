@@ -113,7 +113,7 @@ export default function Suppliers() {
           </div>
           <button
             onClick={() => setIsAddModalOpen(true)}
-            className="flex items-center gap-1.5 rounded-lg bg-violet-700 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-violet-600"
+            className="flex items-center gap-1.5 rounded-lg bg-orange-500 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-orange-500"
           >
             <Plus className="h-3.5 w-3.5" />
             Add Supplier
@@ -128,8 +128,8 @@ export default function Suppliers() {
               onClick={() => setFilterTab(tab)}
               className={`px-4 py-1.5 rounded-full text-xs transition-all ${
                 filterTab === tab
-                  ? "bg-violet-600 text-white font-medium"
-                  : "border border-slate-200 dark:border-zinc-700 text-zinc-500 hover:border-violet-400 dark:hover:border-violet-500 font-medium"
+                  ? "bg-orange-500 text-white font-medium"
+                  : "border border-slate-200 dark:border-zinc-700 text-zinc-500 hover:border-orange-300 dark:hover:border-orange-400 font-medium"
               }`}
             >
               {tab}
@@ -138,7 +138,7 @@ export default function Suppliers() {
         </div>
 
         {/* Table card */}
-        <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-white/8 dark:bg-[#1a1a1a]">
+        <div className="overflow-hidden rounded-2xl border border-orange-100 bg-white dark:border-white/8 dark:bg-[#1f1509]">
           <div className="border-b border-zinc-100 p-4 dark:border-white/8">
             <div className="relative w-full sm:max-w-sm">
               <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-500" />
@@ -147,14 +147,14 @@ export default function Suppliers() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search suppliers by name or ID..."
-                className="h-8 w-full rounded-lg border border-zinc-200 bg-white pl-9 pr-4 text-xs text-zinc-700 outline-none focus:border-violet-600 dark:border-white/8 dark:bg-white/6 dark:text-zinc-300"
+                className="h-8 w-full rounded-lg border border-orange-100 bg-white pl-9 pr-4 text-xs text-zinc-700 outline-none focus:border-orange-500 dark:border-white/8 dark:bg-white/6 dark:text-zinc-300"
               />
             </div>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left">
-              <thead className="border-b border-zinc-100 dark:border-white/8 bg-zinc-50 dark:bg-[#1a1a1a]">
+              <thead className="border-b border-zinc-100 dark:border-white/8 bg-orange-50 dark:bg-[#1f1509]">
                 <tr>
                   {["Supplier", "Contact Info", "Location", "Score", "Lead Time", "Last Order", "Status", ""].map((h) => (
                     <th key={h} className="px-4 py-3 text-[9px] font-semibold uppercase tracking-wide text-zinc-400">
@@ -172,11 +172,11 @@ export default function Suppliers() {
                     <tr 
                       key={supplier.id} 
                       onClick={() => setSelectedSupplier(supplier)}
-                      className="group transition-colors hover:bg-zinc-50 dark:hover:bg-white/4 cursor-pointer"
+                      className="group transition-colors hover:bg-orange-50 dark:hover:bg-white/4 cursor-pointer"
                     >
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
-                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-violet-500">
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-orange-400/10 text-orange-400">
                             <Building2 className="h-4 w-4" />
                           </div>
                           <div>
@@ -223,7 +223,7 @@ export default function Suppliers() {
                         <StatusBadge status={supplier.status} />
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <button className="text-zinc-400 hover:text-violet-600 transition-all opacity-0 group-hover:opacity-100">
+                        <button className="text-zinc-400 hover:text-orange-500 transition-all opacity-0 group-hover:opacity-100">
                           <MoreVertical className="h-4 w-4" />
                         </button>
                       </td>
@@ -240,7 +240,7 @@ export default function Suppliers() {
       {selectedSupplier && (
         <>
           <div className="fixed inset-0 z-30 bg-black/10 backdrop-blur-[1px]" onClick={() => setSelectedSupplier(null)} />
-          <div className="fixed right-0 top-0 h-full w-96 bg-white dark:bg-zinc-900 border-l border-slate-200 dark:border-zinc-800 z-40 p-6 shadow-2xl transform translate-x-0 transition-transform flex flex-col">
+          <div className="fixed right-0 top-0 h-full w-96 bg-white dark:bg-zinc-900 border-l border-slate-200 dark:border-orange-950/30 z-40 p-6 shadow-2xl transform translate-x-0 transition-transform flex flex-col">
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h3 className="text-xl font-bold text-zinc-900 dark:text-white truncate">{selectedSupplier.name}</h3>
@@ -251,7 +251,7 @@ export default function Suppliers() {
               </button>
             </div>
             
-            <div className="flex items-center justify-between bg-slate-50 dark:bg-zinc-800/50 p-4 rounded-xl border border-slate-100 dark:border-zinc-800 mb-6">
+            <div className="flex items-center justify-between bg-slate-50 dark:bg-zinc-800/50 p-4 rounded-xl border border-slate-100 dark:border-orange-950/30 mb-6">
               <div>
                 <p className="text-xs text-zinc-500 uppercase font-semibold tracking-wider mb-1">Score</p>
                 <p className={`text-2xl font-bold ${selectedSupplier.fulfillmentScore >= 90 ? 'text-green-500' : selectedSupplier.fulfillmentScore >= 70 ? 'text-amber-500' : 'text-red-500'}`}>
@@ -262,17 +262,17 @@ export default function Suppliers() {
             </div>
 
             <div className="space-y-4 text-sm mb-8">
-              <div className="flex justify-between border-b border-slate-100 dark:border-zinc-800 pb-2">
+              <div className="flex justify-between border-b border-slate-100 dark:border-orange-950/30 pb-2">
                 <span className="text-zinc-500 flex items-center gap-2"><MapPin className="w-4 h-4"/> Location</span>
                 <span className="font-medium text-zinc-900 dark:text-zinc-200">{selectedSupplier.location}</span>
               </div>
-              <div className="flex justify-between border-b border-slate-100 dark:border-zinc-800 pb-2">
+              <div className="flex justify-between border-b border-slate-100 dark:border-orange-950/30 pb-2">
                 <span className="text-zinc-500">Lead Time</span>
                 <span className="font-medium text-zinc-900 dark:text-zinc-200">{selectedSupplier.leadTime}</span>
               </div>
-              <div className="flex flex-col border-b border-slate-100 dark:border-zinc-800 pb-3 gap-2">
+              <div className="flex flex-col border-b border-slate-100 dark:border-orange-950/30 pb-3 gap-2">
                 <span className="text-zinc-500">Contact Details</span>
-                <div className="bg-white dark:bg-zinc-950 p-3 rounded-lg border border-slate-100 dark:border-zinc-800">
+                <div className="bg-white dark:bg-zinc-950 p-3 rounded-lg border border-slate-100 dark:border-orange-950/30">
                   <p className="font-bold text-zinc-900 dark:text-zinc-100 mb-1">{selectedSupplier.contact.name}</p>
                   <p className="text-xs text-zinc-600 dark:text-zinc-400 flex items-center gap-2 mb-1"><Mail className="w-3 h-3"/> {selectedSupplier.contact.email}</p>
                   <p className="text-xs text-zinc-600 dark:text-zinc-400 flex items-center gap-2"><Phone className="w-3 h-3"/> {selectedSupplier.contact.phone}</p>
@@ -288,14 +288,14 @@ export default function Suppliers() {
                   { id: "PO-089", date: "May 12, 2026", amt: "₹24.5k", status: "Delayed" },
                   { id: "PO-074", date: "Apr 02, 2026", amt: "₹18k", status: "Completed" },
                 ].map((po, idx) => (
-                  <div key={idx} className="flex justify-between items-center p-3 rounded-xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-100 dark:border-zinc-800">
+                  <div key={idx} className="flex justify-between items-center p-3 rounded-xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-100 dark:border-orange-950/30">
                     <div>
                       <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100 mb-0.5">{po.id}</p>
                       <p className="text-[10px] text-zinc-500">{po.date}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-bold text-violet-600 dark:text-violet-400 mb-1">{po.amt}</p>
-                      <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${po.status === 'Completed' ? 'bg-green-500/20 text-green-500' : po.status === 'Delayed' ? 'bg-red-500/20 text-red-500' : 'bg-violet-500/20 text-violet-500'}`}>{po.status}</span>
+                      <p className="text-sm font-bold text-orange-500 dark:text-orange-300 mb-1">{po.amt}</p>
+                      <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${po.status === 'Completed' ? 'bg-green-500/20 text-green-500' : po.status === 'Delayed' ? 'bg-red-500/20 text-red-500' : 'bg-orange-400/20 text-orange-400'}`}>{po.status}</span>
                     </div>
                   </div>
                 ))}
@@ -308,7 +308,7 @@ export default function Suppliers() {
       {/* Add Supplier Modal */}
       {isAddModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-6 dark:border-white/8 dark:bg-[#1a1a1a]">
+          <div className="w-full max-w-md rounded-2xl border border-orange-100 bg-white p-6 dark:border-white/8 dark:bg-[#1f1509]">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-bold text-zinc-900 dark:text-white">Add New Supplier</h3>
               <button onClick={() => setIsAddModalOpen(false)} className="text-zinc-400 hover:text-zinc-900">
@@ -318,43 +318,43 @@ export default function Suppliers() {
             <form onSubmit={handleAddSubmit} className="space-y-4 text-sm">
               <div>
                 <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Supplier Name</label>
-                <input required type="text" value={newSup.name} onChange={e => setNewSup({...newSup, name: e.target.value})} className="w-full rounded-lg border border-zinc-200 bg-transparent px-3 py-2 text-zinc-900 outline-none focus:border-violet-600 dark:border-zinc-700 dark:text-white" />
+                <input required type="text" value={newSup.name} onChange={e => setNewSup({...newSup, name: e.target.value})} className="w-full rounded-lg border border-orange-100 bg-transparent px-3 py-2 text-zinc-900 outline-none focus:border-orange-500 dark:border-zinc-700 dark:text-white" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Contact Name</label>
-                  <input required type="text" value={newSup.contactName} onChange={e => setNewSup({...newSup, contactName: e.target.value})} className="w-full rounded-lg border border-zinc-200 bg-transparent px-3 py-2 text-zinc-900 outline-none focus:border-violet-600 dark:border-zinc-700 dark:text-white" />
+                  <input required type="text" value={newSup.contactName} onChange={e => setNewSup({...newSup, contactName: e.target.value})} className="w-full rounded-lg border border-orange-100 bg-transparent px-3 py-2 text-zinc-900 outline-none focus:border-orange-500 dark:border-zinc-700 dark:text-white" />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Phone</label>
-                  <input required type="text" value={newSup.phone} onChange={e => setNewSup({...newSup, phone: e.target.value})} className="w-full rounded-lg border border-zinc-200 bg-transparent px-3 py-2 text-zinc-900 outline-none focus:border-violet-600 dark:border-zinc-700 dark:text-white" />
+                  <input required type="text" value={newSup.phone} onChange={e => setNewSup({...newSup, phone: e.target.value})} className="w-full rounded-lg border border-orange-100 bg-transparent px-3 py-2 text-zinc-900 outline-none focus:border-orange-500 dark:border-zinc-700 dark:text-white" />
                 </div>
               </div>
               <div>
                 <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Email</label>
-                <input required type="email" value={newSup.email} onChange={e => setNewSup({...newSup, email: e.target.value})} className="w-full rounded-lg border border-zinc-200 bg-transparent px-3 py-2 text-zinc-900 outline-none focus:border-violet-600 dark:border-zinc-700 dark:text-white" />
+                <input required type="email" value={newSup.email} onChange={e => setNewSup({...newSup, email: e.target.value})} className="w-full rounded-lg border border-orange-100 bg-transparent px-3 py-2 text-zinc-900 outline-none focus:border-orange-500 dark:border-zinc-700 dark:text-white" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Location</label>
-                  <input required type="text" value={newSup.location} onChange={e => setNewSup({...newSup, location: e.target.value})} className="w-full rounded-lg border border-zinc-200 bg-transparent px-3 py-2 text-zinc-900 outline-none focus:border-violet-600 dark:border-zinc-700 dark:text-white" />
+                  <input required type="text" value={newSup.location} onChange={e => setNewSup({...newSup, location: e.target.value})} className="w-full rounded-lg border border-orange-100 bg-transparent px-3 py-2 text-zinc-900 outline-none focus:border-orange-500 dark:border-zinc-700 dark:text-white" />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Lead Time</label>
-                  <input required type="text" placeholder="e.g. 3-5 days" value={newSup.leadTime} onChange={e => setNewSup({...newSup, leadTime: e.target.value})} className="w-full rounded-lg border border-zinc-200 bg-transparent px-3 py-2 text-zinc-900 outline-none focus:border-violet-600 dark:border-zinc-700 dark:text-white" />
+                  <input required type="text" placeholder="e.g. 3-5 days" value={newSup.leadTime} onChange={e => setNewSup({...newSup, leadTime: e.target.value})} className="w-full rounded-lg border border-orange-100 bg-transparent px-3 py-2 text-zinc-900 outline-none focus:border-orange-500 dark:border-zinc-700 dark:text-white" />
                 </div>
               </div>
               <div>
                 <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Status</label>
-                <select value={newSup.status} onChange={e => setNewSup({...newSup, status: e.target.value})} className="w-full rounded-lg border border-zinc-200 bg-transparent px-3 py-2 text-zinc-900 outline-none focus:border-violet-600 dark:border-zinc-700 dark:text-white">
+                <select value={newSup.status} onChange={e => setNewSup({...newSup, status: e.target.value})} className="w-full rounded-lg border border-orange-100 bg-transparent px-3 py-2 text-zinc-900 outline-none focus:border-orange-500 dark:border-zinc-700 dark:text-white">
                   <option value="Active">Active</option>
                   <option value="Warning">Warning</option>
                   <option value="Inactive">Inactive</option>
                 </select>
               </div>
-              <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-zinc-200 dark:border-zinc-800">
+              <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-orange-100 dark:border-orange-950/30">
                 <button type="button" onClick={() => setIsAddModalOpen(false)} className="rounded-lg px-4 py-2 font-medium text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800">Cancel</button>
-                <button type="submit" className="rounded-lg bg-violet-600 px-4 py-2 font-medium text-white hover:bg-violet-700 flex items-center gap-2"><CheckCircle2 className="w-4 h-4"/> Add Supplier</button>
+                <button type="submit" className="rounded-lg bg-orange-500 px-4 py-2 font-medium text-white hover:bg-orange-500 flex items-center gap-2"><CheckCircle2 className="w-4 h-4"/> Add Supplier</button>
               </div>
             </form>
           </div>

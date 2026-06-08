@@ -96,14 +96,14 @@ export default function AdminAuditLogPage() {
               <ScrollText className="h-3.5 w-3.5" />
               Admin — Activity Log
             </div>
-            <h1 className="text-[28px] font-extrabold tracking-[-0.02em] text-white">Audit Log</h1>
-            <p className="mt-1 text-sm text-[#9a9aa6]">
+            <h1 className="text-[28px] font-extrabold tracking-[-0.02em] text-gray-900 dark:text-white">Audit Log</h1>
+            <p className="mt-1 text-sm text-gray-500 dark:text-[#9a9aa6]">
               Track all admin actions and system events
             </p>
           </div>
           <button
             onClick={fetchAuditLog}
-            className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/[0.07]"
+            className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/[0.03] px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-white transition hover:bg-gray-100 dark:hover:bg-white/[0.07]"
           >
             Refresh
           </button>
@@ -115,32 +115,32 @@ export default function AdminAuditLogPage() {
             audit_log table not found. Run the database migration to enable this feature.
           </div>
         ) : (
-          <div className="rounded-2xl border border-white/10 bg-[#111114] p-5">
+          <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#1a1108] p-5">
             <div className="mb-5 flex items-center justify-between">
-              <h2 className="text-sm font-bold text-white">Audit Log</h2>
-              <span className="text-[10px] font-medium text-[#6e6e78]">Last 20 entries</span>
+              <h2 className="text-sm font-bold text-gray-900 dark:text-white">Audit Log</h2>
+              <span className="text-[10px] font-medium text-gray-500 dark:text-[#6e6e78]">Last 20 entries</span>
             </div>
 
             {loading ? (
               <div className="flex justify-center py-10">
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-orange-400 border-t-transparent" />
               </div>
             ) : auditLog.length === 0 ? (
-              <p className="py-8 text-center text-sm text-[#6e6e78]">No audit entries yet.</p>
+              <p className="py-8 text-center text-sm text-gray-500 dark:text-[#6e6e78]">No audit entries yet.</p>
             ) : (
               <div>
                 {auditLog.map(entry => (
                   <div
                     key={entry.id}
-                    className="flex items-start gap-3 border-b border-white/[0.06] py-3 last:border-0"
+                    className="flex items-start gap-3 border-b border-gray-100 dark:border-white/[0.06] py-3 last:border-0"
                   >
-                    <span className="w-36 shrink-0 pt-px font-mono text-[10px] leading-tight text-[#4b4b57]">
+                    <span className="w-36 shrink-0 pt-px font-mono text-[10px] leading-tight text-gray-400 dark:text-[#4b4b57]">
                       {formatTs(entry.created_at)}
                     </span>
-                    <span className="w-36 shrink-0 truncate text-[12px] font-medium text-[#9a9aa6]">
+                    <span className="w-36 shrink-0 truncate text-[12px] font-medium text-gray-500 dark:text-[#9a9aa6]">
                       {entry.actor_email ?? '—'}
                     </span>
-                    <span className="flex-1 text-[12px] text-[#f4f4f6]">{entry.action}</span>
+                    <span className="flex-1 text-[12px] text-gray-900 dark:text-[#f4f4f6]">{entry.action}</span>
                     <AuditBadge type={entry.action_type} />
                   </div>
                 ))}

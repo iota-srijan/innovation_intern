@@ -25,7 +25,7 @@ interface AddEditItemModalProps {
 }
 
 const inputCls =
-  "w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-violet-600 focus:ring-1 focus:ring-violet-600 disabled:opacity-50 dark:border-white/8 dark:bg-white/6 dark:text-zinc-900 dark:placeholder:text-zinc-500 dark:focus:border-violet-500";
+  "w-full rounded-lg border border-orange-100 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 disabled:opacity-50 dark:border-white/8 dark:bg-white/6 dark:text-zinc-900 dark:placeholder:text-zinc-500 dark:focus:border-orange-400";
 
 const labelCls = "text-xs font-medium text-zinc-700 dark:text-zinc-400";
 
@@ -83,7 +83,7 @@ export function AddEditItemModal({ open, onOpenChange, item }: AddEditItemModalP
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 max-h-[90vh] overflow-y-auto rounded-2xl border border-zinc-200 bg-white p-6 focus:outline-none scrollbar-thin dark:border-white/8 dark:bg-[#1a1a1a]">
+        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 max-h-[90vh] overflow-y-auto rounded-2xl border border-orange-100 bg-white p-6 focus:outline-none scrollbar-thin dark:border-white/8 dark:bg-[#1f1509]">
           <Dialog.Title className="mb-6 text-lg font-semibold text-zinc-900 dark:text-white">
             {isEditing ? "Edit Inventory Item" : "Add New Inventory Item"}
           </Dialog.Title>
@@ -147,14 +147,14 @@ export function AddEditItemModal({ open, onOpenChange, item }: AddEditItemModalP
                 type="button"
                 onClick={() => onOpenChange(false)}
                 disabled={isPending}
-                className="rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 disabled:opacity-50 dark:border-white/8 dark:bg-white/6 dark:text-zinc-300 dark:hover:bg-white/10"
+                className="rounded-lg border border-orange-100 bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-orange-50 disabled:opacity-50 dark:border-white/8 dark:bg-white/6 dark:text-zinc-300 dark:hover:bg-white/10"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={isPending}
-                className="flex min-w-[120px] items-center justify-center gap-2 rounded-lg bg-violet-700 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-violet-600 disabled:opacity-50"
+                className="flex min-w-[120px] items-center justify-center gap-2 rounded-lg bg-orange-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-orange-500 disabled:opacity-50"
               >
                 {isPending && (
                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />

@@ -77,7 +77,7 @@ export default function LowStockAlerts() {
           </div>
           <button
             onClick={() => setIsForecastOpen(true)}
-            className="flex items-center gap-1.5 rounded-lg bg-violet-700 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-violet-600 shadow-lg shadow-violet-700/20"
+            className="flex items-center gap-1.5 rounded-lg bg-orange-500 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-orange-500 shadow-lg shadow-orange-500/20"
           >
             <RefreshCw className="h-3.5 w-3.5" />
             Run Forecast
@@ -92,8 +92,8 @@ export default function LowStockAlerts() {
               onClick={() => setFilterTab(tab)}
               className={`px-4 py-1.5 rounded-full text-xs transition-all ${
                 filterTab === tab
-                  ? "bg-violet-600 text-white font-medium"
-                  : "border border-slate-200 dark:border-zinc-700 text-zinc-500 hover:border-violet-400 dark:hover:border-violet-500 font-medium"
+                  ? "bg-orange-500 text-white font-medium"
+                  : "border border-slate-200 dark:border-zinc-700 text-zinc-500 hover:border-orange-300 dark:hover:border-orange-400 font-medium"
               }`}
             >
               {tab}
@@ -108,7 +108,7 @@ export default function LowStockAlerts() {
             { label: "High Priority", value: highCount, color: "text-amber-500" },
             { label: "Medium Priority", value: mediumCount, color: "text-orange-500" },
           ].map((s) => (
-            <div key={s.label} className="rounded-2xl border border-zinc-200 bg-white p-4 dark:border-white/8 dark:bg-zinc-900 shadow-sm">
+            <div key={s.label} className="rounded-2xl border border-orange-100 bg-white p-4 dark:border-white/8 dark:bg-zinc-900 shadow-sm">
               <div className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-1">{s.label}</div>
               <div className={`text-3xl font-black ${s.color}`}>{s.value}</div>
             </div>
@@ -116,7 +116,7 @@ export default function LowStockAlerts() {
         </div>
 
         {/* Table card */}
-        <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-white/8 dark:bg-[#1a1a1a]">
+        <div className="overflow-hidden rounded-2xl border border-orange-100 bg-white dark:border-white/8 dark:bg-[#1f1509]">
           {/* Search bar */}
           <div className="border-b border-zinc-100 p-4 dark:border-white/8">
             <div className="relative w-full sm:max-w-sm">
@@ -126,7 +126,7 @@ export default function LowStockAlerts() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search low stock SKUs..."
-                className="h-8 w-full rounded-lg border border-zinc-200 bg-white pl-9 pr-4 text-xs text-zinc-700 outline-none focus:border-violet-600 dark:border-white/8 dark:bg-white/6 dark:text-zinc-300"
+                className="h-8 w-full rounded-lg border border-orange-100 bg-white pl-9 pr-4 text-xs text-zinc-700 outline-none focus:border-orange-500 dark:border-white/8 dark:bg-white/6 dark:text-zinc-300"
               />
             </div>
           </div>
@@ -150,7 +150,7 @@ export default function LowStockAlerts() {
               </div>
             ) : (
               <table className="w-full text-left">
-                <thead className="border-b border-zinc-100 dark:border-white/8 bg-zinc-50 dark:bg-zinc-950">
+                <thead className="border-b border-zinc-100 dark:border-white/8 bg-orange-50 dark:bg-zinc-950">
                   <tr>
                     {["Item Details", "Stock Level", "Urgency", "Velocity", "Suggested Order", "Action"].map((h) => (
                       <th key={h} className="px-4 py-3 text-[9px] font-semibold uppercase tracking-wide text-zinc-400">
@@ -165,7 +165,7 @@ export default function LowStockAlerts() {
                     const barColor = pct < 25 ? "bg-red-500" : pct < 50 ? "bg-amber-500" : "bg-green-500";
                     
                     return (
-                      <tr key={item.id} className="group transition-colors hover:bg-zinc-50 dark:hover:bg-white/4">
+                      <tr key={item.id} className="group transition-colors hover:bg-orange-50 dark:hover:bg-white/4">
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
                             <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
@@ -199,7 +199,7 @@ export default function LowStockAlerts() {
                         <td className="px-4 py-3">
                           <button
                             onClick={() => setDraftPO(item)}
-                            className="inline-flex items-center gap-1.5 rounded-lg bg-violet-700/10 px-3 py-1.5 text-[10px] font-bold text-violet-600 transition-colors hover:bg-violet-700/20 dark:text-violet-400"
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-orange-500/10 px-3 py-1.5 text-[10px] font-bold text-orange-500 transition-colors hover:bg-orange-500/20 dark:text-orange-300"
                           >
                             <ShoppingCart className="h-3 w-3" />
                             Draft PO
@@ -218,7 +218,7 @@ export default function LowStockAlerts() {
       {/* Simple Draft PO Modal */}
       {draftPO && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-6 dark:border-white/8 dark:bg-[#1a1a1a] shadow-2xl">
+          <div className="w-full max-w-md rounded-2xl border border-orange-100 bg-white p-6 dark:border-white/8 dark:bg-[#1f1509] shadow-2xl">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-bold text-zinc-900 dark:text-white">Draft Purchase Order</h3>
               <button onClick={() => setDraftPO(null)} className="text-zinc-400 hover:text-zinc-900 dark:hover:text-white">
@@ -228,19 +228,19 @@ export default function LowStockAlerts() {
             <form onSubmit={handleDraftSubmit} className="space-y-4 text-sm">
               <div>
                 <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">Supplier</label>
-                <input type="text" readOnly value={draftPO.supplier || 'Unknown'} className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-zinc-900 font-medium dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300" />
+                <input type="text" readOnly value={draftPO.supplier || 'Unknown'} className="w-full rounded-xl border border-orange-100 bg-orange-50 px-3 py-2 text-zinc-900 font-medium dark:border-orange-950/30 dark:bg-zinc-900 dark:text-zinc-300" />
               </div>
               <div>
                 <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">SKU</label>
-                <input type="text" readOnly value={`${draftPO.sku} - ${draftPO.name}`} className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-zinc-900 font-medium dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300" />
+                <input type="text" readOnly value={`${draftPO.sku} - ${draftPO.name}`} className="w-full rounded-xl border border-orange-100 bg-orange-50 px-3 py-2 text-zinc-900 font-medium dark:border-orange-950/30 dark:bg-zinc-900 dark:text-zinc-300" />
               </div>
               <div>
                 <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">Order Quantity</label>
-                <input type="number" defaultValue={draftPO.suggestedOrder} className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-zinc-900 outline-none focus:border-violet-600 font-bold dark:border-zinc-700 dark:bg-zinc-950 dark:text-white" />
+                <input type="number" defaultValue={draftPO.suggestedOrder} className="w-full rounded-xl border border-orange-100 bg-white px-3 py-2 text-zinc-900 outline-none focus:border-orange-500 font-bold dark:border-zinc-700 dark:bg-zinc-950 dark:text-white" />
               </div>
-              <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-zinc-200 dark:border-zinc-800">
+              <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-orange-100 dark:border-orange-950/30">
                 <button type="button" onClick={() => setDraftPO(null)} className="rounded-xl px-4 py-2 font-bold text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800">Cancel</button>
-                <button type="submit" className="rounded-xl bg-violet-600 px-4 py-2 font-bold text-white hover:bg-violet-700 flex items-center gap-2"><ShoppingCart className="w-4 h-4"/> Submit Draft</button>
+                <button type="submit" className="rounded-xl bg-orange-500 px-4 py-2 font-bold text-white hover:bg-orange-500 flex items-center gap-2"><ShoppingCart className="w-4 h-4"/> Submit Draft</button>
               </div>
             </form>
           </div>
@@ -250,10 +250,10 @@ export default function LowStockAlerts() {
       {/* Forecast Modal */}
       {isForecastOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-2xl rounded-2xl border border-zinc-200 bg-white p-6 dark:border-white/8 dark:bg-[#1a1a1a] shadow-2xl">
+          <div className="w-full max-w-2xl rounded-2xl border border-orange-100 bg-white p-6 dark:border-white/8 dark:bg-[#1f1509] shadow-2xl">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-xl font-bold text-zinc-900 dark:text-white flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-violet-500" /> Stockout Forecast
+                <TrendingUp className="w-5 h-5 text-orange-400" /> Stockout Forecast
               </h3>
               <button onClick={() => setIsForecastOpen(false)} className="text-zinc-400 hover:text-zinc-900 dark:hover:text-white">
                 <X className="w-5 h-5" />
@@ -275,22 +275,22 @@ export default function LowStockAlerts() {
               </ResponsiveContainer>
             </div>
 
-            <div className="space-y-2 border-t border-zinc-200 dark:border-zinc-800 pt-4">
-              <div className="flex items-center justify-between p-2 rounded-lg bg-zinc-50 dark:bg-zinc-800/50">
+            <div className="space-y-2 border-t border-orange-100 dark:border-orange-950/30 pt-4">
+              <div className="flex items-center justify-between p-2 rounded-lg bg-orange-50 dark:bg-zinc-800/50">
                 <span className="text-sm font-bold text-zinc-900 dark:text-white">MacBook Pro M3 Max</span>
                 <div className="flex items-center gap-3">
                   <span className="text-xs font-medium text-zinc-500">Stockout in ~3 days</span>
                   <UrgencyBadge urgency="Critical" />
                 </div>
               </div>
-              <div className="flex items-center justify-between p-2 rounded-lg bg-zinc-50 dark:bg-zinc-800/50">
+              <div className="flex items-center justify-between p-2 rounded-lg bg-orange-50 dark:bg-zinc-800/50">
                 <span className="text-sm font-bold text-zinc-900 dark:text-white">Dell UltraSharp 32"</span>
                 <div className="flex items-center gap-3">
                   <span className="text-xs font-medium text-zinc-500">Stockout in ~4 days</span>
                   <UrgencyBadge urgency="High" />
                 </div>
               </div>
-              <div className="flex items-center justify-between p-2 rounded-lg bg-zinc-50 dark:bg-zinc-800/50">
+              <div className="flex items-center justify-between p-2 rounded-lg bg-orange-50 dark:bg-zinc-800/50">
                 <span className="text-sm font-bold text-zinc-900 dark:text-white">Logitech MX Master 3S</span>
                 <div className="flex items-center gap-3">
                   <span className="text-xs font-medium text-zinc-500">Stockout in ~11 days</span>

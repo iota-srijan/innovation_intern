@@ -168,7 +168,7 @@ export default function CartPage() {
           </p>
           <Link
             to={backUrl}
-            className="mt-2 inline-flex items-center gap-2 rounded-xl bg-violet-700 hover:bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors"
+            className="mt-2 inline-flex items-center gap-2 rounded-xl bg-orange-500 hover:bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
             Browse Inventory
@@ -233,7 +233,7 @@ export default function CartPage() {
             return (
               <div
                 key={item.item_id}
-                className={`rounded-2xl border p-5 bg-[#1a1a1a] transition-colors ${
+                className={`rounded-2xl border p-5 bg-[#1f1509] transition-colors ${
                   hasConflict
                     ? 'border-red-500/50'
                     : 'border-white/8'
@@ -307,7 +307,7 @@ export default function CartPage() {
                       className={`w-full rounded-lg px-3 py-2 text-xs text-white placeholder:text-zinc-600 focus:outline-none transition-colors resize-none ${
                         missingPurpose
                           ? 'bg-red-950/20 border border-red-500/60 focus:border-red-400'
-                          : 'bg-zinc-800 border border-zinc-700 focus:border-violet-500'
+                          : 'bg-zinc-800 border border-zinc-700 focus:border-orange-400'
                       }`}
                     />
                     {missingPurpose && (
@@ -324,7 +324,7 @@ export default function CartPage() {
         </div>
 
         {/* Submit footer */}
-        <div className="rounded-2xl border border-white/8 bg-[#1a1a1a] p-5 flex items-center justify-between flex-wrap gap-4">
+        <div className="rounded-2xl border border-white/8 bg-[#1f1509] p-5 flex items-center justify-between flex-wrap gap-4">
           <div>
             <div className="text-sm font-semibold text-white">
               {cart.length} item{cart.length !== 1 ? 's' : ''} ready to request
@@ -336,7 +336,7 @@ export default function CartPage() {
           <button
             onClick={handleSubmit}
             disabled={submitting || submitCooldown || cart.length === 0}
-            className="inline-flex items-center gap-2 rounded-xl bg-violet-700 hover:bg-violet-600 disabled:opacity-50 disabled:cursor-not-allowed px-6 py-2.5 text-sm font-semibold text-white transition-colors cursor-pointer"
+            className="inline-flex items-center gap-2 rounded-xl bg-orange-500 hover:bg-orange-500 disabled:opacity-50 disabled:cursor-not-allowed px-6 py-2.5 text-sm font-semibold text-white transition-colors cursor-pointer"
           >
             {submitting && <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />}
             <PackageCheck className="h-4 w-4" />
@@ -348,7 +348,7 @@ export default function CartPage() {
         <div className="text-center">
           <Link
             to={requestsUrl}
-            className="text-xs text-zinc-500 hover:text-violet-400 transition-colors"
+            className="text-xs text-zinc-500 hover:text-orange-300 transition-colors"
           >
             View my previous requests →
           </Link>

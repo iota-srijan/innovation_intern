@@ -87,10 +87,10 @@ export default function StudentRequestsPage() {
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <div className="flex items-center gap-2">
-              <ClipboardList className="h-4 w-4 text-violet-400" />
+              <ClipboardList className="h-4 w-4 text-orange-300" />
               <h2 className="text-lg font-semibold text-zinc-900 dark:text-white">My Requests</h2>
               {requests.length > 0 && (
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-violet-500/20 text-violet-400">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-400/20 text-orange-300">
                   {requests.length}
                 </span>
               )}
@@ -102,14 +102,14 @@ export default function StudentRequestsPage() {
           <div className="flex items-center gap-3">
             <Link
               to="/cart"
-              className="flex items-center gap-1.5 rounded-xl border border-white/10 px-4 py-2 text-xs font-medium text-zinc-300 hover:text-white hover:border-violet-500/50 transition-colors"
+              className="flex items-center gap-1.5 rounded-xl border border-white/10 px-4 py-2 text-xs font-medium text-zinc-300 hover:text-white hover:border-orange-400/50 transition-colors"
             >
               <ShoppingCart className="h-3.5 w-3.5" />
               Go to Cart
             </Link>
             <Link
               to="/student-dashboard"
-              className="rounded-xl bg-violet-700 hover:bg-violet-600 px-4 py-2 text-xs font-semibold text-white transition-colors"
+              className="rounded-xl bg-orange-500 hover:bg-orange-500 px-4 py-2 text-xs font-semibold text-white transition-colors"
             >
               Browse Inventory
             </Link>
@@ -131,10 +131,10 @@ export default function StudentRequestsPage() {
         )}
 
         {/* Requests table */}
-        <div className="rounded-2xl border border-white/8 bg-[#1a1a1a] p-5">
+        <div className="rounded-2xl border border-gray-200 dark:border-white/8 bg-white dark:bg-[#1f1509] p-5">
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="h-6 w-6 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-orange-400 border-t-transparent" />
             </div>
           ) : requests.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-14 gap-3 text-center">
@@ -144,7 +144,7 @@ export default function StudentRequestsPage() {
               <p className="text-sm text-zinc-400">No requests yet.</p>
               <Link
                 to="/student-dashboard"
-                className="text-xs text-violet-400 hover:text-violet-300 transition-colors"
+                className="text-xs text-orange-300 hover:text-orange-200 transition-colors"
               >
                 Browse inventory and add items to your cart →
               </Link>
@@ -170,13 +170,13 @@ export default function StudentRequestsPage() {
                       key={req.id}
                       className="border-b border-white/6 hover:bg-white/4 last:border-0 transition-colors"
                     >
-                      <td className="py-3 px-2 first:pl-0 font-medium text-zinc-200">
+                      <td className="py-3 px-2 first:pl-0 font-medium text-gray-900 dark:text-zinc-200">
                         {req.item_name}
                       </td>
-                      <td className="py-3 px-2 text-zinc-400">
+                      <td className="py-3 px-2 text-gray-500 dark:text-zinc-400">
                         {req.quantity_requested}
                       </td>
-                      <td className="py-3 px-2 text-zinc-400 max-w-[200px]">
+                      <td className="py-3 px-2 text-gray-500 dark:text-zinc-400 max-w-[200px]">
                         <span className="line-clamp-2" title={req.purpose}>
                           {req.purpose}
                         </span>
@@ -184,12 +184,12 @@ export default function StudentRequestsPage() {
                       <td className="py-3 px-2">
                         <StatusBadge status={req.status} />
                       </td>
-                      <td className="py-3 px-2 text-zinc-400">
+                      <td className="py-3 px-2 text-gray-500 dark:text-zinc-400">
                         {req.return_deadline
                           ? new Date(req.return_deadline).toLocaleDateString()
                           : '—'}
                       </td>
-                      <td className="py-3 px-2 text-zinc-500">
+                      <td className="py-3 px-2 text-gray-500 dark:text-zinc-500">
                         {new Date(req.created_at).toLocaleDateString()}
                       </td>
                     </tr>

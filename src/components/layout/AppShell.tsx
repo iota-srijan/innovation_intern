@@ -36,7 +36,7 @@ export function AppShell({ title, children, isPro }: AppShellProps) {
   }, [isDark]);
 
   return (
-    <div className={`flex h-screen overflow-hidden bg-white dark:bg-[#111111] ${isPro ? "border-t-2 border-violet-600" : ""}`}>
+    <div className={`flex h-screen overflow-hidden bg-white dark:bg-[#1a1108] ${isPro ? "border-t-2 border-orange-500" : ""}`}>
       <Sidebar />
       <div className="ml-14 flex flex-1 flex-col overflow-hidden">
         <TopBar
@@ -46,7 +46,7 @@ export function AppShell({ title, children, isPro }: AppShellProps) {
           isPro={isPro}
           cartCount={cartCount}
         />
-        <main className="flex-1 overflow-y-auto scrollbar-thin bg-white dark:bg-[#111111]">
+        <main className="flex-1 overflow-y-auto scrollbar-thin bg-white dark:bg-[#1a1108]">
           {children}
         </main>
       </div>

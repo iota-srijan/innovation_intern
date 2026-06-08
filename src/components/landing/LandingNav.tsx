@@ -27,14 +27,14 @@ export function LandingNav() {
       transition={{ duration: 0.4, ease: "easeOut" }}
       className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
         scrolled
-          ? "border-b border-white/8 bg-[#0a0a0b]/90 backdrop-blur-xl"
+          ? "border-b border-white/8 bg-[#0d0a08]/90 backdrop-blur-xl"
           : "bg-transparent"
       }`}
     >
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2.5 focus-visible:outline-none">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 shadow-lg shadow-indigo-600/30">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500 shadow-lg shadow-orange-500/30">
             <svg viewBox="0 0 32 32" className="h-5 w-5" fill="none" xmlns="http://www.w3.org/2000/svg">
               <polygon points="16,4 28,11 16,18 4,11" fill="white" opacity="0.95" />
               <polygon points="4,11 16,18 16,28 4,21" fill="white" opacity="0.65" />
@@ -67,7 +67,7 @@ export function LandingNav() {
           </button>
           <button
             onClick={() => navigate('/signin')}
-            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-md shadow-indigo-600/20 transition-all hover:bg-indigo-500 hover:shadow-indigo-500/30 active:scale-[0.98]"
+            className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white shadow-md shadow-orange-500/20 transition-all hover:bg-orange-400 hover:shadow-orange-400/30 active:scale-[0.98]"
           >
             Get started
           </button>
@@ -90,7 +90,7 @@ export function LandingNav() {
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.2 }}
-            className="border-t border-white/8 bg-[#0a0a0b]/95 px-6 pb-6 backdrop-blur-xl md:hidden"
+            className="border-t border-white/8 bg-[#0d0a08]/95 px-6 pb-6 backdrop-blur-xl md:hidden"
           >
             <nav className="flex flex-col gap-1 pt-4">
               {navLinks.map((link) => (
@@ -112,7 +112,7 @@ export function LandingNav() {
                 </button>
                 <button
                   onClick={() => navigate('/signin')}
-                  className="rounded-lg bg-indigo-600 px-4 py-2.5 text-center text-sm font-semibold text-white"
+                  className="rounded-lg bg-orange-500 px-4 py-2.5 text-center text-sm font-semibold text-white"
                 >
                   Get started
                 </button>

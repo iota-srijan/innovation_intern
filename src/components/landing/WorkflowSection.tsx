@@ -96,7 +96,7 @@ export function WorkflowSection() {
                     <ul className="space-y-2.5">
                       {step.detail.map((d) => (
                         <li key={d} className="flex items-center gap-2.5 text-sm text-white/50">
-                          <CheckCircle2 className="h-4 w-4 shrink-0 text-indigo-400" />
+                          <CheckCircle2 className="h-4 w-4 shrink-0 text-orange-300" />
                           {d}
                         </li>
                       ))}

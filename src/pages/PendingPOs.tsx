@@ -11,7 +11,7 @@ export default function PendingPOs() {
             Orders requiring intervention or delayed in transit.
           </p>
         </div>
-        <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-zinc-200 bg-white py-20 dark:border-white/8 dark:bg-[#1a1a1a]">
+        <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-orange-100 bg-white py-20 dark:border-white/8 dark:bg-[#1f1509]">
           <FileText className="h-8 w-8 text-zinc-300 dark:text-zinc-600" />
           <p className="text-sm text-zinc-500 dark:text-zinc-400">No pending purchase orders.</p>
         </div>

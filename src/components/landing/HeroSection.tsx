@@ -38,8 +38,8 @@ function MiniDashboard() {
       className="relative mx-auto w-full max-w-4xl"
     >
       {/* Glow */}
-      <div className="absolute -inset-px rounded-2xl bg-gradient-to-b from-indigo-600/20 via-transparent to-transparent" />
-      <div className="absolute inset-0 rounded-2xl bg-indigo-600/5 blur-3xl" />
+      <div className="absolute -inset-px rounded-2xl bg-gradient-to-b from-orange-500/20 via-transparent to-transparent" />
+      <div className="absolute inset-0 rounded-2xl bg-orange-500/5 blur-3xl" />
 
       {/* Window chrome */}
       <div className="relative rounded-2xl border border-white/10 bg-[#111113] shadow-2xl shadow-black/60 overflow-hidden">
@@ -57,7 +57,7 @@ function MiniDashboard() {
           {/* Sidebar */}
           <div className="hidden w-[180px] flex-col border-r border-white/8 bg-[#0d0d0f] sm:flex">
             <div className="flex items-center gap-2 border-b border-white/8 px-4 py-3">
-              <div className="h-6 w-6 rounded bg-indigo-600 flex items-center justify-center">
+              <div className="h-6 w-6 rounded bg-orange-500 flex items-center justify-center">
                 <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none">
                   <polygon points="8,2 14,5.5 8,9 2,5.5" fill="white" opacity="0.95" />
                   <polygon points="2,5.5 8,9 8,14 2,10.5" fill="white" opacity="0.65" />
@@ -74,7 +74,7 @@ function MiniDashboard() {
                     i === 0 ? "bg-white/10 text-white" : "text-white/40"
                   }`}
                 >
-                  <div className={`h-1.5 w-1.5 rounded-full ${i === 0 ? "bg-indigo-400" : "bg-white/20"}`} />
+                  <div className={`h-1.5 w-1.5 rounded-full ${i === 0 ? "bg-orange-300" : "bg-white/20"}`} />
                   {item}
                 </div>
               ))}
@@ -222,7 +222,7 @@ export function HeroSection() {
       />
 
       {/* Top center glow */}
-      <div className="pointer-events-none absolute left-1/2 top-0 h-[400px] w-[700px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-600/12 blur-[120px]" />
+      <div className="pointer-events-none absolute left-1/2 top-0 h-[400px] w-[700px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-orange-500/12 blur-[120px]" />
 
       <div className="relative mx-auto max-w-6xl px-6">
         <motion.div
@@ -233,10 +233,10 @@ export function HeroSection() {
         >
           {/* Badge */}
           <motion.div variants={itemVariants} className="mb-6 inline-flex">
-            <span className="inline-flex items-center gap-2 rounded-full border border-indigo-500/25 bg-indigo-500/10 px-3.5 py-1.5 text-xs font-medium text-indigo-300">
+            <span className="inline-flex items-center gap-2 rounded-full border border-orange-400/25 bg-orange-400/10 px-3.5 py-1.5 text-xs font-medium text-orange-200">
               <span className="relative flex h-1.5 w-1.5">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-indigo-400 opacity-75" />
-                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-indigo-400" />
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-orange-300 opacity-75" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-orange-300" />
               </span>
               Now in public beta — free for 30 days
             </span>
@@ -249,7 +249,7 @@ export function HeroSection() {
           >
             Inventory operations,{" "}
             <br className="hidden sm:block" />
-            <span className="text-indigo-400">engineered for clarity</span>
+            <span className="text-orange-300">engineered for clarity</span>
           </motion.h1>
 
           {/* Sub */}
@@ -284,7 +284,7 @@ export function HeroSection() {
             </span>
             <span className="text-white/15">|</span>
             <span className="flex items-center gap-1.5">
-              <Package className="h-3.5 w-3.5 text-indigo-400" />
+              <Package className="h-3.5 w-3.5 text-orange-300" />
               Works with any warehouse stack
             </span>
             <span className="text-white/15">|</span>

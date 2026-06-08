@@ -18,7 +18,7 @@ export function StatCard({ label, value, icon: Icon, subtext, progress, isLoadin
       ? "bg-red-50 text-red-600"
       : variant === "warning"
       ? "bg-amber-50 text-amber-600"
-      : "bg-indigo-50 text-indigo-600";
+      : "bg-orange-50 text-orange-500";
 
   return (
     <div className="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-5 md:p-6 transition-colors">
@@ -49,7 +49,7 @@ export function StatCard({ label, value, icon: Icon, subtext, progress, isLoadin
         {progress !== undefined && !isLoading && (
           <div className="mt-2 h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
             <div
-              className="h-full rounded-full bg-indigo-600 transition-all duration-500"
+              className="h-full rounded-full bg-orange-500 transition-all duration-500"
               style={{ width: `${progress}%` }}
             />
           </div>

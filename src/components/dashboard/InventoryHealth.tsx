@@ -38,7 +38,7 @@ export function InventoryHealth({ items, isLoading }: InventoryHealthProps) {
           
           <div className="mb-6 h-3 w-full overflow-hidden rounded-full border border-slate-200 bg-slate-50" role="progressbar" aria-valuenow={healthyPercentage} aria-valuemin={0} aria-valuemax={100}>
             <div 
-              className="h-full bg-indigo-600 transition-all duration-1000 ease-out"
+              className="h-full bg-orange-500 transition-all duration-1000 ease-out"
               style={{ width: `${healthyPercentage}%` }}
             />
           </div>
@@ -46,7 +46,7 @@ export function InventoryHealth({ items, isLoading }: InventoryHealthProps) {
           <div className="space-y-3">
             <div className="flex items-center justify-between rounded-lg border border-slate-100 px-3 py-2">
               <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-indigo-600" aria-hidden="true" />
+                <div className="h-2 w-2 rounded-full bg-orange-500" aria-hidden="true" />
                 <span className="text-sm font-medium text-slate-700">Optimal Stock</span>
               </div>
               <span className="text-sm font-semibold text-slate-900">{healthyItems}</span>
