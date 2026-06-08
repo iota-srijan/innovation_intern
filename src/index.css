@@ -87,6 +87,7 @@ html:not(.dark) body {
 
 /* Fix dark cards in light mode */
 html:not(.dark) [class*="bg-[#1a"],
+html:not(.dark) [class*="bg-[#1f"],
 html:not(.dark) [class*="bg-[#11"],
 html:not(.dark) [class*="bg-zinc-900"],
 html:not(.dark) [class*="bg-zinc-800"],
@@ -145,6 +146,7 @@ html:not(.dark) tr {
 }
 
 html:not(.dark) [class*="bg-[#1a"],
+html:not(.dark) [class*="bg-[#1f"],
 html:not(.dark) [class*="bg-[#11"],
 html:not(.dark) [class*="bg-zinc-900"],
 html:not(.dark) [class*="bg-zinc-800"],
