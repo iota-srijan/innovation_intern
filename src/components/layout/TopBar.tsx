@@ -25,6 +25,14 @@ export function TopBar({ title, isDark, onToggleDark, isPro: _isPro, cartCount }
 
   const profileHref = userRole === 'admin' ? '/admin/settings' : '/profile';
 
+  // Ensure logos are bright and fully visible without desaturation or excessive dimming.
+  const logoFilter = isDark
+    ? "brightness(1.2)"
+    : "none";
+  const jindalFilter = isDark
+    ? "brightness(1.8)"
+    : "none";
+
   useEffect(() => {
     if (!user || (userRole !== 'student' && userRole !== 'faculty')) {
       setUnreadCount(0);
@@ -62,10 +70,32 @@ export function TopBar({ title, isDark, onToggleDark, isPro: _isPro, cartCount }
   }, [user, userRole]);
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center border-b border-orange-100 bg-white px-5 dark:border-white/8 dark:bg-[#1a1108]">
+    <header className="sticky top-0 z-30 flex h-20 shrink-0 items-center border-b border-orange-100 bg-white px-5 dark:border-white/8 dark:bg-[#1a1108]">
+      {/* OPJU IdeaLab logo bar */}
+      <div className="hidden items-center sm:flex">
+        <div className="flex items-center pr-[10px]">
+          <img src="/opju-logo.png" alt="OPJU" className="block h-[38px] w-auto" style={{ filter: logoFilter }} />
+        </div>
+        <span className="h-[28px] w-px shrink-0 bg-orange-100 dark:bg-white/[0.09]" />
+        <div className="flex items-center px-[10px]">
+          <img src="/aicte.png" alt="AICTE" className="block h-[38px] w-auto" style={{ filter: logoFilter }} />
+        </div>
+        <span className="h-[28px] w-px shrink-0 bg-orange-100 dark:bg-white/[0.09]" />
+        <div className="flex items-center px-[10px]">
+          <img src="/idealab.png" alt="IdeaLab" className="block h-[38px] w-auto" style={{ filter: logoFilter }} />
+        </div>
+        <span className="h-[28px] w-px shrink-0 bg-orange-100 dark:bg-white/[0.09]" />
+        <div className="flex items-center px-[10px]">
+          <img src="/jindal-steel.png" alt="Jindal Steel" className="block h-[30px] w-auto" style={{ filter: jindalFilter }} />
+        </div>
+      </div>
+
+      {/* Separator before page title */}
+      <span className="hidden h-[28px] w-px shrink-0 bg-orange-100 dark:bg-white/10 sm:mx-[12px] sm:block" />
+
       {/* Left: page title */}
       <div className="flex items-center gap-2">
-        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-white">
+        <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">
           {title}
         </h1>
       </div>

@@ -1,23 +1,14 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, Mail, Building, Bell, LogOut, Lock } from "lucide-react";
+import { User, Mail, Building, LogOut, Lock } from "lucide-react";
 import { AppShell } from "../components/layout/AppShell";
 import { toast } from "sonner";
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../context/AuthContext";
 
-type Section = 'account' | 'notifications';
+type Section = 'account';
 
-function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void }) {
-  return (
-    <button
-      onClick={onChange}
-      className={`relative h-6 w-11 rounded-full transition-colors duration-200 focus:outline-none ${checked ? 'bg-orange-500' : 'bg-zinc-300 dark:bg-zinc-600'}`}
-    >
-      <span className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ${checked ? 'translate-x-5' : 'translate-x-0'}`} />
-    </button>
-  );
-}
+
 
 function splitName(full: string): { firstName: string; lastName: string } {
   const parts = full.trim().split(' ')
@@ -41,7 +32,6 @@ export default function Profile() {
     }
   }, [displayName]);
 
-  const [notifs, setNotifs] = useState({ master: true, lowStock: true, poDelays: true, weeklyReports: false });
 
   const avatarInitials = displayName
     .split(' ')
@@ -88,7 +78,6 @@ export default function Profile() {
 
   const navItems: { icon: typeof User; label: string; key: Section }[] = [
     { icon: User,    label: "Account Details",   key: "account" },
-    { icon: Bell,    label: "Notifications",      key: "notifications" },
   ];
 
   return (
@@ -214,33 +203,6 @@ export default function Profile() {
               </>
             )}
 
-            {/* ── NOTIFICATIONS ── */}
-            {activeSection === 'notifications' && (
-              <div className="overflow-hidden rounded-2xl border border-orange-100 bg-white dark:border-white/8 dark:bg-[#1f1509]">
-                <div className="border-b border-zinc-100 px-5 py-4 dark:border-white/8 flex items-center justify-between">
-                  <div>
-                    <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">Notification Preferences</h3>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">Choose what we notify you about.</p>
-                  </div>
-                  <Toggle checked={notifs.master} onChange={() => setNotifs(n => ({ ...n, master: !n.master }))} />
-                </div>
-                <div className="divide-y divide-zinc-100 dark:divide-white/6">
-                  {[
-                    { key: 'lowStock' as const,      title: 'Low Stock Alerts',  desc: 'Get notified when items drop below threshold.' },
-                    { key: 'poDelays' as const,       title: 'PO Delays',         desc: 'Receive updates on delayed inbound shipments.' },
-                    { key: 'weeklyReports' as const,  title: 'Weekly Reports',    desc: 'Get a summary of procurement activity each week.' },
-                  ].map(({ key, title, desc }) => (
-                    <div key={key} className="flex items-center justify-between p-5 hover:bg-orange-50 dark:hover:bg-white/4 transition-colors">
-                      <div>
-                        <div className="text-xs font-medium text-zinc-900 dark:text-zinc-200">{title}</div>
-                        <div className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">{desc}</div>
-                      </div>
-                      <Toggle checked={notifs[key]} onChange={() => setNotifs(n => ({ ...n, [key]: !n[key] }))} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
           </div>
         </div>
