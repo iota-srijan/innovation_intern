@@ -152,8 +152,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const { error: upsertError } = await supabase
               .from('user_roles')
               .upsert(
-                { user_id: s.user.id, email, role: detectedRole, display_name: nameFromMeta },
-                { onConflict: 'user_id', ignoreDuplicates: true }
+                { user_id: s.user.id, email, role: detectedRole, display_name: nameFromMeta, last_sign_in_at: new Date().toISOString() },
+                { onConflict: 'user_id', ignoreDuplicates: false }
               )
             // For returning users whose display_name is still null (logged in before this
             // field was added), sync it from Google metadata without touching role.

@@ -15,6 +15,8 @@ export function useItems() {
       if (error) throw error
       return data as InventoryItem[]
     },
+    staleTime: 0,
+    refetchOnMount: 'always',
   })
 }
 

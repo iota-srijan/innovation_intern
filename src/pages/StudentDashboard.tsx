@@ -66,7 +66,7 @@ export default function StudentDashboard() {
 
   // Fetch student's own requests
   const { data: myRequests = [] } = useQuery<IssueRequest[]>({
-    queryKey: ["issue_requests", "mine", studentEmail],
+    queryKey: ["issue_requests"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("issue_requests")
@@ -79,6 +79,7 @@ export default function StudentDashboard() {
     enabled: !!studentEmail,
     staleTime: 0,
     refetchOnMount: "always",
+    refetchInterval: 30000,
   });
 
   const pendingCount  = myRequests.filter((r) => r.status === "pending").length;

@@ -298,9 +298,10 @@ export default function AdminInventoryPage() {
 
   const logAudit = async (action: string, actionType: 'CREATE' | 'UPDATE' | 'DELETE') => {
     try {
+      const actorEmail = user?.email ?? localStorage.getItem('sp-admin-email') ?? 'unknown-admin'
       await supabase
         .from('audit_log')
-        .insert({ actor_email: user?.email ?? null, action, action_type: actionType })
+        .insert({ actor_email: actorEmail, action, action_type: actionType })
     } catch {
       // audit failures are non-fatal
     }

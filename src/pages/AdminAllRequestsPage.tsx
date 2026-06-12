@@ -83,7 +83,7 @@ export default function AdminAllRequestsPage() {
   const logAudit = useCallback(async (action: string, actionType: ActionType) => {
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      const actorEmail = user?.email ?? session?.user?.email ?? null
+      const actorEmail = user?.email ?? session?.user?.email ?? localStorage.getItem('sp-admin-email') ?? 'unknown-admin'
       await supabase
         .from('audit_log')
         .insert({ actor_email: actorEmail, action, action_type: actionType })

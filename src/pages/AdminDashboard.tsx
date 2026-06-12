@@ -19,7 +19,7 @@ interface UserRow {
   user_id: string
   email: string
   role: RoleType | null
-  full_name: string | null
+  display_name: string | null
   last_sign_in_at: string | null
 }
 
@@ -173,7 +173,7 @@ export default function AdminDashboard() {
   const logAudit = useCallback(async (action: string, actionType: ActionType) => {
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      const actorEmail = user?.email ?? session?.user?.email ?? null
+      const actorEmail = user?.email ?? session?.user?.email ?? localStorage.getItem('sp-admin-email') ?? 'unknown-admin'
       await supabase
         .from('audit_log')
         .insert({ actor_email: actorEmail, action, action_type: actionType })
@@ -489,7 +489,7 @@ export default function AdminDashboard() {
             const filteredUsers = q
               ? users.filter(u =>
                   u.email.toLowerCase().includes(q) ||
-                  (u.full_name?.toLowerCase() ?? '').includes(q)
+                  (u.display_name?.toLowerCase() ?? '').includes(q)
                 )
               : users
             return (
@@ -517,7 +517,7 @@ export default function AdminDashboard() {
                           <tr key={row.user_id} className="transition-colors hover:bg-gray-50 dark:hover:bg-white/[0.02]">
                             <td className="py-3.5 px-2 first:pl-0">
                               <div className="text-sm font-semibold text-gray-900 dark:text-[#f4f4f6]">
-                                {row.full_name || row.email.split('@')[0]}
+                                {row.display_name || row.email.split('@')[0]}
                               </div>
                               <div className="mt-0.5 flex items-center gap-2">
                                 <span className="font-mono text-[11px] text-gray-500 dark:text-[#6e6e78]">{row.email}</span>

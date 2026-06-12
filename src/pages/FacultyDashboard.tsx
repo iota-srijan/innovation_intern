@@ -75,7 +75,7 @@ export default function FacultyDashboard() {
 
   // Fetch faculty's own requests
   const { data: myRequests = [] } = useQuery<IssueRequest[]>({
-    queryKey: ["issue_requests", "faculty-mine", facultyEmail],
+    queryKey: ["issue_requests"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("issue_requests")
@@ -88,6 +88,7 @@ export default function FacultyDashboard() {
     enabled: !!facultyEmail,
     staleTime: 0,
     refetchOnMount: "always",
+    refetchInterval: 30000,
   });
 
   const totalItemsCount = (items as any[]).length;
