@@ -31,28 +31,35 @@ export default function AdminPasswordPage() {
 
     setIsSubmitting(true)
     try {
-      // 1. Verify current password
-      const { data: match, error: verifyError } = await supabase
-        .from('admin_credentials')
-        .select('email')
-        .eq('email', adminEmail)
-        .eq('password', currentPassword)
-        .maybeSingle() // Use maybeSingle to avoid 406 on 0 rows
+      const adminAuthHeaders = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+      }
 
-      if (verifyError || !match) {
+      // 1. Verify current password
+      const verifyRes = await fetch('https://ltgqhpnfnscmweckkwye.supabase.co/functions/v1/admin-auth', {
+        method: 'POST',
+        headers: adminAuthHeaders,
+        body: JSON.stringify({ action: 'verify', email: adminEmail, currentPassword }),
+      })
+      const verifyData = await verifyRes.json()
+
+      if (!verifyData?.success) {
         toast.error('Current password is incorrect')
         setIsSubmitting(false)
         return // Stop — do not proceed with update
       }
 
       // 2. Update password
-      const { error: updateError } = await supabase
-        .from('admin_credentials')
-        .update({ password: newPassword })
-        .eq('email', adminEmail)
+      const updateRes = await fetch('https://ltgqhpnfnscmweckkwye.supabase.co/functions/v1/admin-auth', {
+        method: 'POST',
+        headers: adminAuthHeaders,
+        body: JSON.stringify({ action: 'update-password', email: adminEmail, currentPassword, newPassword }),
+      })
+      const updateData = await updateRes.json()
 
-      if (updateError) {
-        toast.error(updateError.message)
+      if (!updateData?.success) {
+        toast.error(updateData?.error ?? 'Failed to update password')
         setIsSubmitting(false)
         return
       }

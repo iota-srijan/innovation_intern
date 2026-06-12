@@ -233,14 +233,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const trimmedEmail = email.trim()
 
     try {
-      const { data, error } = await supabase
-        .from('admin_credentials')
-        .select('*')
-        .eq('email', trimmedEmail)
-        .eq('password', password)
-        .single()
+      const res = await fetch('https://ltgqhpnfnscmweckkwye.supabase.co/functions/v1/admin-auth', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({ action: 'login', email: trimmedEmail, password }),
+      })
+      const data = await res.json()
 
-      if (!error && data) {
+      if (data?.success) {
         localStorage.setItem('sp-user-type', 'admin')
         localStorage.setItem('sp-admin-email', trimmedEmail)
         setUserRole('admin')
