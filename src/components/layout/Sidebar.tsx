@@ -79,6 +79,16 @@ export function Sidebar() {
   if (isRoleLoading) return null;
   if (!userRole) return null;
 
+  if (userRole === 'banned' || userRole === 'blocked') {
+    return (
+      <aside className="fixed left-0 top-0 h-full w-14 bg-[#111111] border-r border-white/[0.06] flex flex-col items-center py-4 gap-3 z-40">
+        <div className="text-[10px] text-red-400 text-center px-1 mt-auto mb-4">
+          Account suspended
+        </div>
+      </aside>
+    )
+  }
+
   return (
     <aside className="group w-14 hover:w-48 transition-all duration-200 ease-in-out overflow-hidden bg-[#1e3a5f] dark:bg-[#0f1f35] flex flex-col h-screen fixed left-0 top-0 z-40 border-r border-white/8 py-4">
       {/* Logo mark */}

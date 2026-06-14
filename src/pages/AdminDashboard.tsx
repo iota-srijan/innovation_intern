@@ -8,6 +8,7 @@ import { AppShell } from '../components/layout/AppShell'
 import { supabase } from '../lib/supabaseClient'
 import { toast } from 'sonner'
 import { useAuth } from '../context/AuthContext'
+import { getAdminEmail } from '../lib/adminUtils'
 
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
@@ -85,7 +86,7 @@ function Modal({ onClose, children }: { onClose: () => void; children: React.Rea
 // ─── Main Component ─────────────────────────────────────────────────────────────
 
 export default function AdminDashboard() {
-  const { user } = useAuth()
+  const { adminEmail } = useAuth()
 
   const [users, setUsers]           = useState<UserRow[]>([])
   const [usersLoading, setUsersLoading] = useState(true)
@@ -172,15 +173,13 @@ export default function AdminDashboard() {
 
   const logAudit = useCallback(async (action: string, actionType: ActionType) => {
     try {
-      const { data: { session } } = await supabase.auth.getSession()
-      const actorEmail = user?.email ?? session?.user?.email ?? localStorage.getItem('sp-admin-email') ?? 'unknown-admin'
       await supabase
         .from('audit_log')
-        .insert({ actor_email: actorEmail, action, action_type: actionType })
+        .insert({ actor_email: getAdminEmail(adminEmail), action, action_type: actionType })
     } catch {
       // audit failures are non-fatal
     }
-  }, [user?.email])
+  }, [adminEmail])
 
   // ── Grant faculty ─────────────────────────────────────────────────────────────
 

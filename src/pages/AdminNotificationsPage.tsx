@@ -4,6 +4,7 @@ import { AppShell } from '../components/layout/AppShell'
 import { supabase } from '../lib/supabaseClient'
 import { toast } from 'sonner'
 import { useAuth } from '../context/AuthContext'
+import { getAdminEmail } from '../lib/adminUtils'
 
 interface SentNotification {
   id: string
@@ -24,7 +25,7 @@ function timeAgo(iso: string | null): string {
 }
 
 export default function AdminNotificationsPage() {
-  const { user, adminEmail } = useAuth()
+  const { adminEmail } = useAuth()
 
   const [notifTitle, setNotifTitle]         = useState('')
   const [notifBody, setNotifBody]           = useState('')
@@ -60,15 +61,13 @@ export default function AdminNotificationsPage() {
 
   const logAudit = useCallback(async (action: string, actionType: string) => {
     try {
-      const { data: { session } } = await supabase.auth.getSession()
-      const actorEmail = user?.email ?? session?.user?.email ?? localStorage.getItem('sp-admin-email') ?? 'unknown-admin'
       await supabase
         .from('audit_log')
-        .insert({ actor_email: actorEmail, action, action_type: actionType })
+        .insert({ actor_email: getAdminEmail(adminEmail), action, action_type: actionType })
     } catch {
       // audit failures are non-fatal
     }
-  }, [user?.email])
+  }, [adminEmail])
 
   const handleSendNotification = async () => {
     if (!notifTitle.trim() || !notifBody.trim() || notifSending) return
@@ -79,7 +78,7 @@ export default function AdminNotificationsPage() {
         .insert({
           title: notifTitle.trim(),
           body: notifBody.trim(),
-          created_by_email: adminEmail ?? 'admin',
+          created_by_email: getAdminEmail(adminEmail),
           is_active: true,
         })
       if (error) {

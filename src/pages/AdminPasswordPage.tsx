@@ -5,6 +5,7 @@ import { AppShell } from '../components/layout/AppShell'
 import { supabase } from '../lib/supabaseClient'
 import { toast } from 'sonner'
 import { useAuth } from '../context/AuthContext'
+import { getAdminEmail } from '../lib/adminUtils'
 
 export default function AdminPasswordPage() {
   const { adminEmail: contextAdminEmail } = useAuth()
@@ -68,7 +69,7 @@ export default function AdminPasswordPage() {
       await supabase
         .from('audit_log')
         .insert({
-          actor_email: adminEmail,
+          actor_email: getAdminEmail(contextAdminEmail),
           action: 'Changed admin password',
           action_type: 'admin_action',
         })

@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { AppShell } from "../components/layout/AppShell";
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../context/AuthContext";
+import { getAdminEmail } from "../lib/adminUtils";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -410,7 +411,7 @@ function FacultyCard({
 // ─── Main Page ─────────────────────────────────────────────────────────────
 
 export default function DemandsPage() {
-  const { user, userRole } = useAuth();
+  const { user, userRole, adminEmail } = useAuth();
   const isFaculty = userRole === "faculty" || userRole === "admin";
   const isAdmin = userRole === "admin";
 
@@ -640,7 +641,7 @@ export default function DemandsPage() {
         toast.success("Marked as Under Review");
         try {
           await supabase.from('audit_log').insert({
-            actor_email: user?.email ?? null,
+            actor_email: getAdminEmail(adminEmail),
             action: `Marked demand under review: ${demand.title}`,
             action_type: 'UPDATE',
           });
@@ -678,7 +679,7 @@ export default function DemandsPage() {
             ? `Approved demand: ${actionModal.demand.title}`
             : `Rejected demand: ${actionModal.demand.title}`;
           await supabase.from('audit_log').insert({
-            actor_email: user?.email ?? null,
+            actor_email: getAdminEmail(adminEmail),
             action: auditAction,
             action_type: 'UPDATE',
           });
@@ -708,7 +709,7 @@ export default function DemandsPage() {
         toast.success("Demand deleted");
         try {
           await supabase.from("audit_log").insert({
-            actor_email: user?.email ?? null,
+            actor_email: getAdminEmail(adminEmail),
             action: `Deleted demand: ${deleteTarget.title}`,
             action_type: "admin_action",
           });

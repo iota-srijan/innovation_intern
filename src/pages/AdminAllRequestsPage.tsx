@@ -2,6 +2,8 @@ import { useCallback, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ClipboardList } from 'lucide-react'
 import { AppShell } from '../components/layout/AppShell'
+import { RequestTypeTabs, type RequestTypeTab } from '../components/admin/RequestTypeTabs'
+import { ServiceRequestsPanel } from '../components/admin/ServiceRequestsPanel'
 import { supabase } from '../lib/supabaseClient'
 import { toast } from 'sonner'
 import { useAuth } from '../context/AuthContext'
@@ -59,13 +61,14 @@ export default function AdminAllRequestsPage() {
   const { user } = useAuth()
   const queryClient = useQueryClient()
 
+  const [activeTab, setActiveTab]     = useState<RequestTypeTab>('equipment')
   const [allFilter, setAllFilter]     = useState<AllRequestsFilter>('All')
   const [rowActionId, setRowActionId] = useState<string | null>(null)
 
   // ── Fetch all requests via React Query ────────────────────────────────────────
 
   const { data, isLoading: allLoading } = useQuery({
-    queryKey: ['issue_requests'],
+    queryKey: ['issue_requests', 'all'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('issue_requests')
@@ -178,14 +181,20 @@ export default function AdminAllRequestsPage() {
             </p>
           </div>
           <button
-            onClick={() => void queryClient.invalidateQueries({ queryKey: ['issue_requests'] })}
+            onClick={() => {
+              void queryClient.invalidateQueries({ queryKey: ['issue_requests'] })
+              void queryClient.invalidateQueries({ queryKey: ['service_requests'] })
+            }}
             className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/[0.03] px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-white transition hover:bg-gray-100 dark:hover:bg-white/[0.07]"
           >
             Refresh
           </button>
         </div>
 
+        <RequestTypeTabs active={activeTab} onChange={setActiveTab} />
+
         {/* ── All Requests ── */}
+        {activeTab === 'equipment' && (
         <div className="mb-6 rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#1a1108] p-5">
           <div className="mb-5 flex items-center justify-between gap-4 flex-wrap">
             <h2 className="text-sm font-bold text-gray-900 dark:text-white">All Requests</h2>
@@ -279,6 +288,16 @@ export default function AdminAllRequestsPage() {
             )
           })()}
         </div>
+        )}
+
+        {/* ── All Service Requests ── */}
+        {activeTab === 'service' && (
+          <ServiceRequestsPanel
+            title="All Service Requests"
+            onlyPending={false}
+            emptyMessage="No service requests found."
+          />
+        )}
 
       </div>
     </AppShell>

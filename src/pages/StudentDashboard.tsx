@@ -2,14 +2,18 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { AppShell } from "../components/layout/AppShell";
 import { useItems } from "../hooks/useItems";
+import { useServiceRequests } from "../hooks/useServiceRequests";
+import { useConsumables } from "../hooks/useConsumables";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 import { supabase } from "../lib/supabaseClient";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
+import type { Consumable } from "../types";
 import {
   X, BookOpen, ShoppingCart, Package,
   Clock, CheckCircle, RotateCcw, Search,
+  Wrench, FlaskConical, ChevronDown,
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -62,11 +66,32 @@ export default function StudentDashboard() {
   const [requestQty, setRequestQty] = useState<number | "">(1);
   const [purpose, setPurpose] = useState("");
 
+  // Service request state
+  const { machines, submitServiceRequest, isSubmitting } = useServiceRequests();
+  const [showServiceModal, setShowServiceModal] = useState(false);
+  const [serviceMachineId, setServiceMachineId] = useState("");
+  const [serviceMaterial, setServiceMaterial] = useState("PLA");
+  const [serviceDimL, setServiceDimL] = useState<number | "">("");
+  const [serviceDimW, setServiceDimW] = useState<number | "">("");
+  const [serviceDimH, setServiceDimH] = useState<number | "">("");
+  const [serviceInfill, setServiceInfill] = useState(20);
+  const [serviceCopies, setServiceCopies] = useState<number | "">(1);
+  const [servicePurpose, setServicePurpose] = useState("");
+  const [serviceStlFile, setServiceStlFile] = useState<File | null>(null);
+
+  // Consumables state
+  const { consumables } = useConsumables();
+  const [consumableModalItem, setConsumableModalItem] = useState<Consumable | null>(null);
+  const [consumableQty, setConsumableQty] = useState<number | "">(1);
+  const [consumablePurpose, setConsumablePurpose] = useState("");
+  const [isSubmittingConsumable, setIsSubmittingConsumable] = useState(false);
+
   const studentEmail = user?.email ?? "";
+  const studentName = (user?.user_metadata?.full_name as string | undefined) ?? studentEmail;
 
   // Fetch student's own requests
   const { data: myRequests = [] } = useQuery<IssueRequest[]>({
-    queryKey: ["issue_requests"],
+    queryKey: ["issue_requests", "mine", studentEmail],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("issue_requests")
@@ -96,8 +121,8 @@ export default function StudentDashboard() {
 
   const filtered = (items as any[]).filter((item) => {
     const matchSearch =
-      item.name.toLowerCase().includes(search.toLowerCase()) ||
-      item.sku.toLowerCase().includes(search.toLowerCase());
+      (item.name ?? '').toLowerCase().includes(search.toLowerCase()) ||
+      (item.sku ?? '').toLowerCase().includes(search.toLowerCase());
     const matchCat =
       categoryFilter === "All" ||
       (item.category?.name ?? "").includes(categoryFilter);
@@ -145,6 +170,96 @@ export default function StudentDashboard() {
     },
   ] as const;
 
+  // ── Service request helpers ──────────────────────────────────────────────
+
+  function resetServiceForm() {
+    setServiceMachineId("");
+    setServiceMaterial("PLA");
+    setServiceDimL("");
+    setServiceDimW("");
+    setServiceDimH("");
+    setServiceInfill(20);
+    setServiceCopies(1);
+    setServicePurpose("");
+    setServiceStlFile(null);
+  }
+
+  const selectedMachine = machines.find((m) => m.id === serviceMachineId);
+  const isPrinter = selectedMachine?.type === "3d_printer";
+
+  async function handleServiceSubmit() {
+    if (!selectedMachine) {
+      toast.error("Please select a machine.");
+      return;
+    }
+    if (!servicePurpose.trim()) {
+      toast.error("Please describe the purpose of your request.");
+      return;
+    }
+    try {
+      await submitServiceRequest({
+        student_id: user?.id ?? null,
+        student_email: studentEmail,
+        student_name: studentName,
+        machine_id: selectedMachine.id,
+        machine_name: selectedMachine.name,
+        material_type: isPrinter ? serviceMaterial : null,
+        dim_l: serviceDimL === "" ? null : Number(serviceDimL),
+        dim_w: serviceDimW === "" ? null : Number(serviceDimW),
+        dim_h: serviceDimH === "" ? null : Number(serviceDimH),
+        infill_percent: isPrinter ? serviceInfill : null,
+        copies: Math.max(1, Number(serviceCopies) || 1),
+        purpose: servicePurpose.trim(),
+        stlFile: serviceStlFile,
+      });
+      toast.success("Service request submitted. Admin will assign your slot.");
+      setShowServiceModal(false);
+      resetServiceForm();
+    } catch {
+      toast.error("Failed to submit service request. Please try again.");
+    }
+  }
+
+  // ── Consumable request helper ────────────────────────────────────────────
+
+  async function handleConsumableSubmit() {
+    if (!consumableModalItem) return;
+    const qty = Math.max(1, Number(consumableQty) || 1);
+    setIsSubmittingConsumable(true);
+
+    const baseRow = {
+      item_id: consumableModalItem.id,
+      item_name: consumableModalItem.name,
+      quantity_requested: qty,
+      purpose: consumablePurpose.trim(),
+      status: "pending",
+      student_id: user?.id,
+      student_email: studentEmail,
+      student_name: studentName,
+    };
+
+    let { error } = await supabase
+      .from("issue_requests")
+      .insert({ ...baseRow, item_type: "consumable" });
+
+    if (error?.code === "42703") {
+      // item_type column doesn't exist yet — retry without it
+      ({ error } = await supabase.from("issue_requests").insert(baseRow));
+    }
+
+    setIsSubmittingConsumable(false);
+
+    if (error) {
+      toast.error("Failed to submit request. Please try again.");
+      return;
+    }
+
+    toast.success(`Request for "${consumableModalItem.name}" submitted.`);
+    setConsumableModalItem(null);
+    setConsumableQty(1);
+    setConsumablePurpose("");
+  }
+
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
@@ -173,6 +288,13 @@ export default function StudentDashboard() {
             >
               My Requests →
             </Link>
+            <button
+              onClick={() => setShowServiceModal(true)}
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5 text-[13px] font-semibold text-[#9a9aa6] transition hover:bg-white/[0.07] hover:text-white"
+            >
+              <Wrench className="h-3.5 w-3.5" />
+              Request a Service
+            </button>
             <Link
               to="/cart"
               className="relative inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-gradient-to-b from-orange-400 to-orange-500 px-4 py-2.5 text-[13px] font-semibold text-white shadow-[0_1px_0_rgba(255,255,255,0.14)_inset,0_8px_20px_-10px_rgba(124,58,237,0.6)] transition-transform hover:-translate-y-px active:translate-y-px"
@@ -345,6 +467,95 @@ export default function StudentDashboard() {
           )}
         </div>
 
+        {/* ── Consumables ── */}
+        <div className="mb-6 rounded-2xl border border-white/10 bg-[#1a1108]">
+          {/* Section header */}
+          <div className="flex items-center justify-between gap-4 border-b border-white/[0.08] px-5 py-4">
+            <h2 className="text-sm font-bold text-white">Consumables</h2>
+          </div>
+
+          {/* Table */}
+          {consumables.length === 0 ? (
+            <div className="flex flex-col items-center gap-3 py-16 text-center">
+              <FlaskConical className="h-8 w-8 text-[#4b4b57]" />
+              <p className="text-sm text-[#6e6e78]">No consumables available.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-[13px]">
+                <thead>
+                  <tr className="border-b border-white/[0.06]">
+                    {["Item", "Category", "Quantity", "Status", "Action"].map((h) => (
+                      <th
+                        key={h}
+                        className="px-5 py-3.5 text-[10px] font-semibold uppercase tracking-widest text-[#6e6e78]"
+                      >
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/[0.05]">
+                  {consumables.map((c) => {
+                    const qty       = c.quantity;
+                    const threshold = c.reorder_threshold ?? 0;
+                    const unavail   = qty === 0;
+                    const catName   = c.category?.name ?? "Uncategorized";
+
+                    return (
+                      <tr key={c.id} className="transition-colors hover:bg-white/[0.02]">
+                        {/* Name */}
+                        <td className="px-5 py-3.5">
+                          <div className="font-semibold text-gray-900 dark:text-white">{c.name}</div>
+                        </td>
+
+                        {/* Category */}
+                        <td className="px-5 py-3.5">
+                          <span className="inline-flex items-center rounded-full border border-orange-300/20 bg-orange-300/10 px-2.5 py-0.5 text-[11px] font-semibold text-orange-300">
+                            {catName}
+                          </span>
+                        </td>
+
+                        {/* Quantity + unit */}
+                        <td className="px-5 py-3.5">
+                          <span className="text-[12px] font-bold tabular-nums text-gray-900 dark:text-white">
+                            {qty}{" "}
+                            <span className="font-normal text-gray-500 dark:text-zinc-400">{c.unit}</span>
+                          </span>
+                        </td>
+
+                        {/* Status */}
+                        <td className="px-5 py-3.5">
+                          <AvailBadge qty={qty} threshold={threshold} />
+                        </td>
+
+                        {/* Action */}
+                        <td className="px-5 py-3.5">
+                          <button
+                            disabled={unavail}
+                            onClick={() => {
+                              setConsumableModalItem(c);
+                              setConsumableQty(1);
+                              setConsumablePurpose("");
+                            }}
+                            className={`inline-flex cursor-pointer items-center gap-1.5 rounded-[9px] px-3 py-1.5 text-[12px] font-semibold transition ${
+                              unavail
+                                ? "cursor-not-allowed border border-white/[0.06] bg-white/[0.03] text-[#4b4b57] opacity-50"
+                                : "border border-orange-400/40 bg-orange-400/[0.1] text-orange-300 hover:bg-orange-400/[0.2]"
+                            }`}
+                          >
+                            Request
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
       </div>
 
       {/* ── Add to Cart Modal ── */}
@@ -385,11 +596,9 @@ export default function StudentDashboard() {
                       setRequestQty(Number(e.target.value));
                     }
                   }}
+                  onKeyDown={(e) => { if (e.key === '-' || e.key === 'e') e.preventDefault() }}
                   onBlur={() => {
-                    let val = Number(requestQty);
-                    if (isNaN(val) || val < 1) val = 1;
-                    if (val > modalItem.quantity) val = modalItem.quantity;
-                    setRequestQty(val);
+                    if (requestQty === "" || requestQty === undefined) setRequestQty(1);
                   }}
                   className="w-full rounded-[11px] border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#0d0a08] px-3 py-[11px] text-[14px] text-gray-900 dark:text-white outline-none transition focus:border-orange-400 focus:shadow-[0_0_0_3px_rgba(124,58,237,0.16)]"
                 />
@@ -413,14 +622,20 @@ export default function StudentDashboard() {
               {/* Submit */}
               <button
                 onClick={() => {
+                  const qty = parseInt(String(requestQty), 10);
+                  if (isNaN(qty) || qty < 1 || qty === 0) {
+                    toast.error("Quantity must be at least 1");
+                    return;
+                  }
+                  if (qty > modalItem.quantity) {
+                    toast.error("Quantity exceeds available stock");
+                    return;
+                  }
                   addToCart({
                     item_id: modalItem.id,
                     item_name: modalItem.name,
                     sku: modalItem.sku ?? "",
-                    quantity_requested: Math.min(
-                      modalItem.quantity,
-                      Math.max(1, Number(requestQty) || 1)
-                    ),
+                    quantity_requested: Math.max(1, Math.floor(Number(requestQty))),
                     available_quantity: modalItem.quantity,
                     purpose,
                   });
@@ -432,6 +647,267 @@ export default function StudentDashboard() {
                 className="w-full cursor-pointer rounded-xl bg-gradient-to-b from-orange-400 to-orange-500 py-3 text-[14px] font-semibold text-white shadow-[0_1px_0_rgba(255,255,255,0.14)_inset] transition-opacity hover:opacity-90"
               >
                 Add to Cart
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Request a Service Modal ── */}
+      {showServiceModal && (
+        <div
+          className="fixed inset-0 z-50 grid place-items-center bg-[rgba(5,5,7,0.75)] p-6 backdrop-blur-[6px]"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget && !isSubmitting) setShowServiceModal(false);
+          }}
+        >
+          <div className="max-h-[90vh] w-full max-w-[520px] overflow-y-auto rounded-[18px] border border-gray-200 dark:border-white/10 bg-white dark:bg-[#16161b] p-6 shadow-xl dark:shadow-[0_40px_90px_-30px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.04)]">
+            {/* Modal header */}
+            <div className="mb-1 flex items-center justify-between">
+              <h3 className="text-[17px] font-bold text-gray-900 dark:text-white">Request a Service</h3>
+              <button
+                onClick={() => setShowServiceModal(false)}
+                disabled={isSubmitting}
+                className="grid h-8 w-8 cursor-pointer place-items-center rounded-[9px] border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/[0.04] text-gray-500 dark:text-[#9a9aa6] transition hover:bg-gray-100 dark:hover:bg-white/[0.08] hover:text-gray-900 dark:hover:text-white disabled:opacity-50"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <p className="mb-5 text-[13px] text-gray-600 dark:text-[#9a9aa6]">
+              Submit a fabrication or lab service request — an admin will review and assign a slot.
+            </p>
+
+            <div className="space-y-4">
+              {/* Machine selector */}
+              <div>
+                <label className="mb-1.5 block text-[12.5px] font-semibold text-gray-900 dark:text-[#f4f4f6]">
+                  Machine
+                </label>
+                <div className="relative">
+                  <select
+                    value={serviceMachineId}
+                    onChange={(e) => setServiceMachineId(e.target.value)}
+                    className="w-full appearance-none rounded-[11px] border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#0d0a08] px-3 py-[11px] pr-9 text-[14px] text-gray-900 dark:text-white outline-none transition focus:border-orange-400 focus:shadow-[0_0_0_3px_rgba(124,58,237,0.16)]"
+                  >
+                    <option value="">Select a machine…</option>
+                    {machines.map((m) => (
+                      <option key={m.id} value={m.id}>{m.name}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-[#6e6e78]" />
+                </div>
+              </div>
+
+              {/* Material type — 3D printers only */}
+              {isPrinter && (
+                <div>
+                  <label className="mb-1.5 block text-[12.5px] font-semibold text-gray-900 dark:text-[#f4f4f6]">
+                    Material Type
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={serviceMaterial}
+                      onChange={(e) => setServiceMaterial(e.target.value)}
+                      className="w-full appearance-none rounded-[11px] border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#0d0a08] px-3 py-[11px] pr-9 text-[14px] text-gray-900 dark:text-white outline-none transition focus:border-orange-400 focus:shadow-[0_0_0_3px_rgba(124,58,237,0.16)]"
+                    >
+                      {["PLA", "ABS", "PETG", "Resin"].map((m) => (
+                        <option key={m} value={m}>{m}</option>
+                      ))}
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-[#6e6e78]" />
+                  </div>
+                </div>
+              )}
+
+              {/* Dimensions */}
+              <div>
+                <label className="mb-1.5 block text-[12.5px] font-semibold text-gray-900 dark:text-[#f4f4f6]">
+                  Dimensions (mm){" "}
+                  <span className="font-normal text-gray-500 dark:text-[#6e6e78]">— L × W × H</span>
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  <input
+                    type="number"
+                    min={0}
+                    placeholder="L"
+                    value={serviceDimL}
+                    onChange={(e) => setServiceDimL(e.target.value === "" ? "" : Number(e.target.value))}
+                    className="w-full rounded-[11px] border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#0d0a08] px-3 py-[11px] text-[14px] text-gray-900 dark:text-white outline-none transition focus:border-orange-400 focus:shadow-[0_0_0_3px_rgba(124,58,237,0.16)]"
+                  />
+                  <input
+                    type="number"
+                    min={0}
+                    placeholder="W"
+                    value={serviceDimW}
+                    onChange={(e) => setServiceDimW(e.target.value === "" ? "" : Number(e.target.value))}
+                    className="w-full rounded-[11px] border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#0d0a08] px-3 py-[11px] text-[14px] text-gray-900 dark:text-white outline-none transition focus:border-orange-400 focus:shadow-[0_0_0_3px_rgba(124,58,237,0.16)]"
+                  />
+                  <input
+                    type="number"
+                    min={0}
+                    placeholder="H"
+                    value={serviceDimH}
+                    onChange={(e) => setServiceDimH(e.target.value === "" ? "" : Number(e.target.value))}
+                    className="w-full rounded-[11px] border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#0d0a08] px-3 py-[11px] text-[14px] text-gray-900 dark:text-white outline-none transition focus:border-orange-400 focus:shadow-[0_0_0_3px_rgba(124,58,237,0.16)]"
+                  />
+                </div>
+              </div>
+
+              {/* Infill % — 3D printers only */}
+              {isPrinter && (
+                <div>
+                  <label className="mb-1.5 block text-[12.5px] font-semibold text-gray-900 dark:text-[#f4f4f6]">
+                    Infill %
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={serviceInfill}
+                      onChange={(e) => setServiceInfill(Number(e.target.value))}
+                      className="w-full appearance-none rounded-[11px] border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#0d0a08] px-3 py-[11px] pr-9 text-[14px] text-gray-900 dark:text-white outline-none transition focus:border-orange-400 focus:shadow-[0_0_0_3px_rgba(124,58,237,0.16)]"
+                    >
+                      {[10, 20, 50, 100].map((v) => (
+                        <option key={v} value={v}>{v}%</option>
+                      ))}
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-[#6e6e78]" />
+                  </div>
+                </div>
+              )}
+
+              {/* Number of copies */}
+              <div>
+                <label className="mb-1.5 block text-[12.5px] font-semibold text-gray-900 dark:text-[#f4f4f6]">
+                  Number of Copies
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  value={serviceCopies}
+                  onChange={(e) => setServiceCopies(e.target.value === "" ? "" : Number(e.target.value))}
+                  onBlur={() => {
+                    let val = Number(serviceCopies);
+                    if (isNaN(val) || val < 1) val = 1;
+                    setServiceCopies(val);
+                  }}
+                  className="w-full rounded-[11px] border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#0d0a08] px-3 py-[11px] text-[14px] text-gray-900 dark:text-white outline-none transition focus:border-orange-400 focus:shadow-[0_0_0_3px_rgba(124,58,237,0.16)]"
+                />
+              </div>
+
+              {/* Purpose */}
+              <div>
+                <label className="mb-1.5 block text-[12.5px] font-semibold text-gray-900 dark:text-[#f4f4f6]">
+                  Purpose <span className="text-red-400">*</span>
+                </label>
+                <textarea
+                  value={servicePurpose}
+                  onChange={(e) => setServicePurpose(e.target.value)}
+                  placeholder="Describe your project or what you need this service for…"
+                  rows={3}
+                  className="w-full resize-none rounded-[11px] border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#0d0a08] px-3 py-[11px] text-[14px] leading-relaxed text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-[#6e6e78] outline-none transition focus:border-orange-400 focus:shadow-[0_0_0_3px_rgba(124,58,237,0.16)]"
+                />
+              </div>
+
+              {/* STL upload */}
+              <div>
+                <label className="mb-1.5 block text-[12.5px] font-semibold text-gray-900 dark:text-[#f4f4f6]">
+                  STL File <span className="font-normal text-gray-500 dark:text-[#6e6e78]">(optional)</span>
+                </label>
+                <input
+                  type="file"
+                  accept=".stl"
+                  onChange={(e) => setServiceStlFile(e.target.files?.[0] ?? null)}
+                  className="w-full cursor-pointer rounded-[11px] border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#0d0a08] text-[13px] text-gray-500 dark:text-[#9a9aa6] outline-none transition file:my-1.5 file:ml-1 file:cursor-pointer file:rounded-[8px] file:border-0 file:bg-orange-400/20 file:px-3 file:py-2 file:text-[12px] file:font-semibold file:text-orange-300 hover:file:bg-orange-400/30"
+                />
+              </div>
+
+              {/* Submit */}
+              <button
+                onClick={handleServiceSubmit}
+                disabled={isSubmitting}
+                className="w-full cursor-pointer rounded-xl bg-gradient-to-b from-orange-400 to-orange-500 py-3 text-[14px] font-semibold text-white shadow-[0_1px_0_rgba(255,255,255,0.14)_inset] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isSubmitting ? "Submitting…" : "Submit Request"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Request Consumable Modal ── */}
+      {consumableModalItem && (
+        <div
+          className="fixed inset-0 z-50 grid place-items-center bg-[rgba(5,5,7,0.75)] p-6 backdrop-blur-[6px]"
+          onMouseDown={(e) => { if (e.target === e.currentTarget) setConsumableModalItem(null); }}
+        >
+          <div className="w-full max-w-[440px] rounded-[18px] border border-gray-200 dark:border-white/10 bg-white dark:bg-[#16161b] p-6 shadow-xl dark:shadow-[0_40px_90px_-30px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.04)]">
+            {/* Modal header */}
+            <div className="mb-1 flex items-center justify-between">
+              <h3 className="text-[17px] font-bold text-gray-900 dark:text-white">Request Consumable</h3>
+              <button
+                onClick={() => setConsumableModalItem(null)}
+                className="grid h-8 w-8 cursor-pointer place-items-center rounded-[9px] border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/[0.04] text-gray-500 dark:text-[#9a9aa6] transition hover:bg-gray-100 dark:hover:bg-white/[0.08] hover:text-gray-900 dark:hover:text-white"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <p className="mb-5 text-[13px] text-gray-600 dark:text-[#9a9aa6]">{consumableModalItem.name}</p>
+
+            <div className="space-y-4">
+              {/* Item name (read only) */}
+              <div>
+                <label className="mb-1.5 block text-[12.5px] font-semibold text-gray-900 dark:text-[#f4f4f6]">
+                  Item
+                </label>
+                <input
+                  type="text"
+                  value={consumableModalItem.name}
+                  readOnly
+                  disabled
+                  className="w-full cursor-not-allowed rounded-[11px] border border-gray-200 dark:border-white/10 bg-gray-100 dark:bg-[#0d0a08]/60 px-3 py-[11px] text-[14px] text-gray-500 dark:text-[#9a9aa6] outline-none"
+                />
+              </div>
+
+              {/* Quantity needed */}
+              <div>
+                <label className="mb-1.5 block text-[12.5px] font-semibold text-gray-900 dark:text-[#f4f4f6]">
+                  Quantity Needed{" "}
+                  <span className="font-normal text-gray-500 dark:text-[#6e6e78]">({consumableModalItem.unit})</span>
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  value={consumableQty}
+                  onChange={(e) => setConsumableQty(e.target.value === "" ? "" : Number(e.target.value))}
+                  onBlur={() => {
+                    let val = Number(consumableQty);
+                    if (isNaN(val) || val < 1) val = 1;
+                    setConsumableQty(val);
+                  }}
+                  className="w-full rounded-[11px] border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#0d0a08] px-3 py-[11px] text-[14px] text-gray-900 dark:text-white outline-none transition focus:border-orange-400 focus:shadow-[0_0_0_3px_rgba(124,58,237,0.16)]"
+                />
+              </div>
+
+              {/* Purpose */}
+              <div>
+                <label className="mb-1.5 block text-[12.5px] font-semibold text-gray-900 dark:text-[#f4f4f6]">
+                  Purpose
+                </label>
+                <textarea
+                  value={consumablePurpose}
+                  onChange={(e) => setConsumablePurpose(e.target.value)}
+                  placeholder="Describe your project or purpose for this consumable…"
+                  rows={3}
+                  className="w-full resize-none rounded-[11px] border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#0d0a08] px-3 py-[11px] text-[14px] leading-relaxed text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-[#6e6e78] outline-none transition focus:border-orange-400 focus:shadow-[0_0_0_3px_rgba(124,58,237,0.16)]"
+                />
+              </div>
+
+              {/* Submit */}
+              <button
+                onClick={handleConsumableSubmit}
+                disabled={isSubmittingConsumable}
+                className="w-full cursor-pointer rounded-xl bg-gradient-to-b from-orange-400 to-orange-500 py-3 text-[14px] font-semibold text-white shadow-[0_1px_0_rgba(255,255,255,0.14)_inset] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isSubmittingConsumable ? "Submitting…" : "Submit Request"}
               </button>
             </div>
           </div>

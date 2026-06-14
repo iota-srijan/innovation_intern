@@ -34,8 +34,9 @@ export default function PurchaseOrders() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newPO, setNewPO] = useState({ supplier: "Robocraze", eta: "" });
   const [newPOLines, setNewPOLines] = useState([{ id: 1, sku: "", name: "", qty: 1, price: 0 }]);
-  const { userRole } = useAuth();
+  const { userRole, isRoleLoading } = useAuth();
 
+  if (isRoleLoading) return null;
   if (userRole === "faculty") {
     return <Navigate to="/faculty-dashboard" replace />;
   }

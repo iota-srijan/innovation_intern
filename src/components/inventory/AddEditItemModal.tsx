@@ -14,7 +14,7 @@ const schema = z.object({
   sku: z.string().min(1, "SKU is required").max(50, "SKU is too long"),
   category_id: z.string().min(1, "Please select a category"),
   quantity: z.number().int().nonnegative("Must be a positive number"),
-  reorder_threshold: z.number().int().nonnegative("Must be a positive number"),
+  reorder_threshold: z.number().int().nonnegative("Must be a positive number").nullable(),
   supplier: z.string().min(1, "Supplier is required").max(100, "Supplier name is too long"),
 });
 

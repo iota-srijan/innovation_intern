@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { AppShell } from "../components/layout/AppShell";
 import { supabase } from "../lib/supabaseClient";
+import { isLowStock } from "../lib/inventoryUtils";
 import { Package, AlertTriangle, FileText, TrendingUp } from "lucide-react";
 import {
   Line,
@@ -43,9 +44,7 @@ export default function AdminLogisticsPage() {
     const totalSkus = items.length;
 
     // Items at or below their reorder threshold
-    const lowStock = items.filter(
-      i => (i.quantity || 0) <= (i.reorder_threshold || 0)
-    ).length;
+    const lowStock = items.filter(isLowStock).length;
 
     // Sum of quantity * unit_price; unit_price may arrive as a string
     const totalValue = items.reduce(

@@ -8,9 +8,12 @@ const Spinner = () => (
 )
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuth()
+  const { isAuthenticated, isLoading, userRole } = useAuth()
 
   if (isLoading) return <Spinner />
+  if (userRole === 'banned' || userRole === 'blocked') {
+    return <Navigate to="/signin?error=blocked" replace />
+  }
   if (!isAuthenticated) return <Navigate to="/signin" replace />
   return <>{children}</>
 }
@@ -19,6 +22,9 @@ export function AdminRoute({ children }: { children: React.ReactNode }) {
   const { userRole, isLoading } = useAuth()
 
   if (isLoading) return <Spinner />
+  if (userRole === 'banned' || userRole === 'blocked') {
+    return <Navigate to="/signin?error=blocked" replace />
+  }
   if (!userRole) return <Navigate to="/signin" replace />
   if (userRole !== 'admin') return <Navigate to="/dashboard" replace />
   return <>{children}</>
@@ -28,8 +34,10 @@ export function StudentRoute({ children }: { children: React.ReactNode }) {
   const { userRole, isLoading } = useAuth()
 
   if (isLoading) return <Spinner />
+  if (userRole === 'banned' || userRole === 'blocked') {
+    return <Navigate to="/signin?error=blocked" replace />
+  }
   if (!userRole) return <Navigate to="/signin" replace />
-  if (userRole === 'banned') return <Navigate to="/signin" replace />
   if (userRole === 'faculty') return <Navigate to="/faculty-dashboard" replace />
   if (userRole === 'admin') return <Navigate to="/admin" replace />
   return <>{children}</>
@@ -39,6 +47,9 @@ export function FacultyRoute({ children }: { children: React.ReactNode }) {
   const { userRole, isLoading } = useAuth()
 
   if (isLoading) return <Spinner />
+  if (userRole === 'banned' || userRole === 'blocked') {
+    return <Navigate to="/signin?error=blocked" replace />
+  }
   if (!userRole) return <Navigate to="/signin" replace />
   if (userRole === 'student') return <Navigate to="/student-dashboard" replace />
   if (userRole === 'admin') return <Navigate to="/admin" replace />
@@ -49,6 +60,9 @@ export function StudentOrFacultyRoute({ children }: { children: React.ReactNode 
   const { userRole, isLoading } = useAuth()
 
   if (isLoading) return <Spinner />
+  if (userRole === 'banned' || userRole === 'blocked') {
+    return <Navigate to="/signin?error=blocked" replace />
+  }
   if (!userRole) return <Navigate to="/signin" replace />
   if (userRole === 'admin') return <Navigate to="/admin" replace />
   return <>{children}</>

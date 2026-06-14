@@ -37,7 +37,19 @@
 
   ::selection {
     background-color: #f9731640;
+  }
+
+  html.dark ::selection {
     color: #fed7aa;
+  }
+
+  html:not(.dark) ::selection {
+    color: #0f172a;
+  }
+
+  html.dark select option {
+    background-color: #111827;
+    color: #ffffff;
   }
 
   *:focus-visible {

@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ClipboardList, ShoppingCart } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { ClipboardList, ShoppingCart, Wrench } from 'lucide-react';
 import { AppShell } from '../components/layout/AppShell';
+import { RequestTypeTabs, type RequestTypeTab } from '../components/admin/RequestTypeTabs';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabaseClient';
-import type { IssueRequest } from '../types';
+import type { IssueRequest, ServiceRequest } from '../types';
 
 function StatusBadge({ status }: { status: string }) {
   if (status === 'pending')
@@ -28,30 +30,36 @@ function StatusBadge({ status }: { status: string }) {
   return null;
 }
 
+function truncate(text: string, max = 60): string {
+  return text.length > max ? `${text.slice(0, max)}...` : text;
+}
+
 export default function StudentRequestsPage() {
   const { user } = useAuth();
-  const [requests, setRequests] = useState<IssueRequest[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState<RequestTypeTab>('equipment');
+  const [serviceRequests, setServiceRequests] = useState<ServiceRequest[]>([]);
+  const [serviceLoading, setServiceLoading] = useState(true);
 
   const studentEmail = user?.email ?? '';
 
-  // Initial fetch
-  useEffect(() => {
-    if (!studentEmail) return;
-
-    async function fetchRequests() {
-      setLoading(true);
+  // Fetch + realtime
+  const { data: requests = [], isLoading: loading } = useQuery<IssueRequest[]>({
+    queryKey: ['issue_requests', 'mine', studentEmail],
+    queryFn: async () => {
       const { data, error } = await supabase
         .from('issue_requests')
         .select('*')
         .eq('student_email', studentEmail)
         .order('created_at', { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as IssueRequest[];
+    },
+    enabled: !!studentEmail,
+  });
 
-      if (!error && data) setRequests(data as IssueRequest[]);
-      setLoading(false);
-    }
-
-    void fetchRequests();
+  useEffect(() => {
+    if (!studentEmail) return;
 
     // ── Real-time subscription ──────────────────────────────────────
     const channel = supabase
@@ -66,7 +74,46 @@ export default function StudentRequestsPage() {
         },
         () => {
           // Re-fetch on any change (insert/update/delete)
-          void fetchRequests();
+          void queryClient.invalidateQueries({ queryKey: ['issue_requests', 'mine', studentEmail] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [studentEmail, queryClient]);
+
+  // Service requests fetch + real-time subscription
+  useEffect(() => {
+    if (!studentEmail) return;
+
+    async function fetchServiceRequests() {
+      setServiceLoading(true);
+      const { data, error } = await supabase
+        .from('service_requests')
+        .select('*')
+        .eq('student_email', studentEmail)
+        .order('created_at', { ascending: false });
+
+      if (!error && data) setServiceRequests(data as ServiceRequest[]);
+      setServiceLoading(false);
+    }
+
+    void fetchServiceRequests();
+
+    const channel = supabase
+      .channel(`student-service-requests-${studentEmail}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'service_requests',
+          filter: `student_email=eq.${studentEmail}`,
+        },
+        () => {
+          void fetchServiceRequests();
         }
       )
       .subscribe();
@@ -116,89 +163,176 @@ export default function StudentRequestsPage() {
           </div>
         </div>
 
-        {/* Mini stat pills */}
-        {requests.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1 text-[11px] font-medium text-amber-400">
-              <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
-              {pending} pending
-            </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-green-500/20 bg-green-500/10 px-3 py-1 text-[11px] font-medium text-green-400">
-              <span className="h-1.5 w-1.5 rounded-full bg-green-400" />
-              {approved} approved
-            </span>
-          </div>
+        <RequestTypeTabs active={activeTab} onChange={setActiveTab} />
+
+        {activeTab === 'equipment' && (
+          <>
+            {/* Mini stat pills */}
+            {requests.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1 text-[11px] font-medium text-amber-400">
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+                  {pending} pending
+                </span>
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-green-500/20 bg-green-500/10 px-3 py-1 text-[11px] font-medium text-green-400">
+                  <span className="h-1.5 w-1.5 rounded-full bg-green-400" />
+                  {approved} approved
+                </span>
+              </div>
+            )}
+
+            {/* Requests table */}
+            <div className="rounded-2xl border border-gray-200 dark:border-white/8 bg-white dark:bg-[#1f1509] p-5">
+              {loading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-orange-400 border-t-transparent" />
+                </div>
+              ) : requests.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-14 gap-3 text-center">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-zinc-800/60 border border-white/8">
+                    <ClipboardList className="h-6 w-6 text-zinc-500" />
+                  </div>
+                  <p className="text-sm text-zinc-400">No requests yet.</p>
+                  <Link
+                    to="/student-dashboard"
+                    className="text-xs text-orange-300 hover:text-orange-200 transition-colors"
+                  >
+                    Browse inventory and add items to your cart →
+                  </Link>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-[11px]">
+                    <thead>
+                      <tr className="border-b border-white/8">
+                        {['ITEM NAME', 'QTY', 'PURPOSE', 'STATUS', 'RETURN BY', 'SUBMITTED'].map((h) => (
+                          <th
+                            key={h}
+                            className="pb-2 text-left text-[9px] font-semibold uppercase tracking-wide text-zinc-500 px-2 first:pl-0"
+                          >
+                            {h}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {requests.map((req) => (
+                        <tr
+                          key={req.id}
+                          className="border-b border-white/6 hover:bg-white/4 last:border-0 transition-colors"
+                        >
+                          <td className="py-3 px-2 first:pl-0 font-medium text-gray-900 dark:text-zinc-200">
+                            {req.item_name}
+                          </td>
+                          <td className="py-3 px-2 text-gray-500 dark:text-zinc-400">
+                            {req.quantity_requested}
+                          </td>
+                          <td className="py-3 px-2 text-gray-500 dark:text-zinc-400 max-w-[200px]">
+                            <span className="line-clamp-2" title={req.purpose}>
+                              {req.purpose}
+                            </span>
+                          </td>
+                          <td className="py-3 px-2">
+                            <StatusBadge status={req.status} />
+                          </td>
+                          <td className="py-3 px-2 text-gray-500 dark:text-zinc-400">
+                            {req.return_deadline
+                              ? new Date(req.return_deadline).toLocaleDateString()
+                              : '—'}
+                          </td>
+                          <td className="py-3 px-2 text-gray-500 dark:text-zinc-500">
+                            {new Date(req.created_at).toLocaleDateString()}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </>
         )}
 
-        {/* Requests table */}
-        <div className="rounded-2xl border border-gray-200 dark:border-white/8 bg-white dark:bg-[#1f1509] p-5">
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="h-6 w-6 animate-spin rounded-full border-2 border-orange-400 border-t-transparent" />
-            </div>
-          ) : requests.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-14 gap-3 text-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-zinc-800/60 border border-white/8">
-                <ClipboardList className="h-6 w-6 text-zinc-500" />
+        {activeTab === 'service' && (
+          <div className="rounded-2xl border border-gray-200 dark:border-white/8 bg-white dark:bg-[#1f1509] p-5">
+            {serviceLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-orange-400 border-t-transparent" />
               </div>
-              <p className="text-sm text-zinc-400">No requests yet.</p>
-              <Link
-                to="/student-dashboard"
-                className="text-xs text-orange-300 hover:text-orange-200 transition-colors"
-              >
-                Browse inventory and add items to your cart →
-              </Link>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-[11px]">
-                <thead>
-                  <tr className="border-b border-white/8">
-                    {['ITEM NAME', 'QTY', 'PURPOSE', 'STATUS', 'RETURN BY', 'SUBMITTED'].map((h) => (
-                      <th
-                        key={h}
-                        className="pb-2 text-left text-[9px] font-semibold uppercase tracking-wide text-zinc-500 px-2 first:pl-0"
-                      >
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {requests.map((req) => (
-                    <tr
-                      key={req.id}
-                      className="border-b border-white/6 hover:bg-white/4 last:border-0 transition-colors"
-                    >
-                      <td className="py-3 px-2 first:pl-0 font-medium text-gray-900 dark:text-zinc-200">
-                        {req.item_name}
-                      </td>
-                      <td className="py-3 px-2 text-gray-500 dark:text-zinc-400">
-                        {req.quantity_requested}
-                      </td>
-                      <td className="py-3 px-2 text-gray-500 dark:text-zinc-400 max-w-[200px]">
-                        <span className="line-clamp-2" title={req.purpose}>
-                          {req.purpose}
-                        </span>
-                      </td>
-                      <td className="py-3 px-2">
-                        <StatusBadge status={req.status} />
-                      </td>
-                      <td className="py-3 px-2 text-gray-500 dark:text-zinc-400">
-                        {req.return_deadline
-                          ? new Date(req.return_deadline).toLocaleDateString()
-                          : '—'}
-                      </td>
-                      <td className="py-3 px-2 text-gray-500 dark:text-zinc-500">
-                        {new Date(req.created_at).toLocaleDateString()}
-                      </td>
+            ) : serviceRequests.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-14 gap-3 text-center">
+                <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-zinc-800/60 border border-white/8">
+                  <Wrench className="h-6 w-6 text-zinc-500" />
+                </div>
+                <p className="text-sm text-zinc-400">No service requests yet.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-[11px]">
+                  <thead>
+                    <tr className="border-b border-white/8">
+                      {['MACHINE', 'DIMENSIONS', 'MATERIAL', 'INFILL', 'COPIES', 'PURPOSE', 'STATUS', 'ASSIGNED SLOT', 'NOTE'].map((h) => (
+                        <th
+                          key={h}
+                          className="pb-2 text-left text-[9px] font-semibold uppercase tracking-wide text-zinc-500 px-2 first:pl-0"
+                        >
+                          {h}
+                        </th>
+                      ))}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+                  </thead>
+                  <tbody>
+                    {serviceRequests.map((req) => {
+                      const dims = req.dim_l != null && req.dim_w != null && req.dim_h != null
+                        ? `${req.dim_l}×${req.dim_w}×${req.dim_h} mm`
+                        : '—';
+                      return (
+                        <tr
+                          key={req.id}
+                          className="border-b border-white/6 hover:bg-white/4 last:border-0 transition-colors"
+                        >
+                          <td className="py-3 px-2 first:pl-0 font-medium text-gray-900 dark:text-zinc-200">
+                            {req.machine_name}
+                          </td>
+                          <td className="py-3 px-2 text-gray-500 dark:text-zinc-400 whitespace-nowrap">
+                            {dims}
+                          </td>
+                          <td className="py-3 px-2 text-gray-500 dark:text-zinc-400">
+                            {req.material_type ?? '—'}
+                          </td>
+                          <td className="py-3 px-2 text-gray-500 dark:text-zinc-400">
+                            {req.infill_percent != null ? `${req.infill_percent}%` : '—'}
+                          </td>
+                          <td className="py-3 px-2 text-gray-500 dark:text-zinc-400">
+                            {req.copies}
+                          </td>
+                          <td className="py-3 px-2 text-gray-500 dark:text-zinc-400 max-w-[200px]">
+                            <span className="line-clamp-2" title={req.purpose}>
+                              {truncate(req.purpose)}
+                            </span>
+                          </td>
+                          <td className="py-3 px-2">
+                            <StatusBadge status={req.status} />
+                          </td>
+                          <td className="py-3 px-2 text-gray-500 dark:text-zinc-400 whitespace-nowrap">
+                            {req.status === 'approved' && req.assigned_slot
+                              ? new Date(req.assigned_slot).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })
+                              : '—'}
+                          </td>
+                          <td className="py-3 px-2 text-gray-500 dark:text-zinc-400 max-w-[200px]">
+                            <span className="line-clamp-2" title={req.review_note ?? undefined}>
+                              {req.review_note ?? '—'}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </AppShell>
   );

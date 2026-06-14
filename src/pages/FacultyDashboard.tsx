@@ -75,7 +75,7 @@ export default function FacultyDashboard() {
 
   // Fetch faculty's own requests
   const { data: myRequests = [] } = useQuery<IssueRequest[]>({
-    queryKey: ["issue_requests"],
+    queryKey: ["issue_requests", "faculty-mine", facultyEmail],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("issue_requests")
@@ -106,8 +106,8 @@ export default function FacultyDashboard() {
 
   const filtered = (items as any[]).filter((item) => {
     const matchSearch =
-      item.name.toLowerCase().includes(search.toLowerCase()) ||
-      item.sku.toLowerCase().includes(search.toLowerCase());
+      (item.name ?? '').toLowerCase().includes(search.toLowerCase()) ||
+      (item.sku ?? '').toLowerCase().includes(search.toLowerCase());
     const matchCat =
       categoryFilter === "All" ||
       (item.category?.name ?? "").includes(categoryFilter);
@@ -394,11 +394,9 @@ export default function FacultyDashboard() {
                       setRequestQty(Number(e.target.value));
                     }
                   }}
+                  onKeyDown={(e) => { if (e.key === '-' || e.key === 'e') e.preventDefault() }}
                   onBlur={() => {
-                    let val = Number(requestQty);
-                    if (isNaN(val) || val < 1) val = 1;
-                    if (val > modalItem.quantity) val = modalItem.quantity;
-                    setRequestQty(val);
+                    if (requestQty === "" || requestQty === undefined) setRequestQty(1);
                   }}
                   className="w-full rounded-[11px] border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#0d0a08] px-3 py-[11px] text-[14px] text-gray-900 dark:text-white outline-none transition focus:border-orange-400 focus:shadow-[0_0_0_3px_rgba(124,58,237,0.16)]"
                 />
@@ -422,14 +420,20 @@ export default function FacultyDashboard() {
               {/* Submit */}
               <button
                 onClick={() => {
+                  const qty = parseInt(String(requestQty), 10);
+                  if (isNaN(qty) || qty < 1 || qty === 0) {
+                    toast.error("Quantity must be at least 1");
+                    return;
+                  }
+                  if (qty > modalItem.quantity) {
+                    toast.error("Quantity exceeds available stock");
+                    return;
+                  }
                   addToCart({
                     item_id: modalItem.id,
                     item_name: modalItem.name,
                     sku: modalItem.sku ?? "",
-                    quantity_requested: Math.min(
-                      modalItem.quantity,
-                      Math.max(1, Number(requestQty) || 1)
-                    ),
+                    quantity_requested: Math.max(1, Math.floor(Number(requestQty))),
                     available_quantity: modalItem.quantity,
                     purpose,
                   });

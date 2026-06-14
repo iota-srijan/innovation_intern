@@ -5,6 +5,7 @@ import { AppShell } from "../components/layout/AppShell";
 import { useUserType } from "../context/UserTypeContext";
 import { useAuth } from "../context/AuthContext";
 import { useItems } from "../hooks/useItems";
+import { isLowStock } from "../lib/inventoryUtils";
 import {
   AreaChart,
   Area,
@@ -23,7 +24,7 @@ interface ExtendedItem {
   sku: string;
   quantity: number;
   unit_price?: number;
-  reorder_threshold: number;
+  reorder_threshold: number | null;
   supplier: string;
   created_at: string;
 }
@@ -201,7 +202,7 @@ export default function ProDashboard() {
   const items = data as any[] as ExtendedItem[];
 
   const totalSKUs = items.length;
-  const lowStockItems = items.filter(i => i.quantity <= i.reorder_threshold);
+  const lowStockItems = items.filter(isLowStock);
   const lowStockCount = lowStockItems.length;
 
   const handleLowStockCardClick = useCallback(() => {
@@ -218,15 +219,22 @@ export default function ProDashboard() {
     : `₹${(totalValue / 1000).toFixed(1)}K`;
 
   const restockItems = items
-    .filter(i => i.quantity <= i.reorder_threshold)
-    .sort((a, b) => (a.quantity / a.reorder_threshold) - (b.quantity / b.reorder_threshold))
+    .filter(isLowStock)
+    .sort((a, b) => {
+      const aRatio = a.reorder_threshold ? a.quantity / a.reorder_threshold : 1
+      const bRatio = b.reorder_threshold ? b.quantity / b.reorder_threshold : 1
+      return aRatio - bRatio
+    })
     .slice(0, 4)
-    .map(i => ({
-      sku: i.sku,
-      name: i.name,
-      qty: i.quantity,
-      urgency: i.quantity === 0 ? 'Critical' : i.quantity <= i.reorder_threshold * 0.3 ? 'Critical' : i.quantity <= i.reorder_threshold * 0.6 ? 'Low' : 'Healthy'
-    }));
+    .map(i => {
+      const threshold = i.reorder_threshold ?? 0
+      return {
+        sku: i.sku,
+        name: i.name,
+        qty: i.quantity,
+        urgency: i.quantity === 0 ? 'Critical' : i.quantity <= threshold * 0.3 ? 'Critical' : i.quantity <= threshold * 0.6 ? 'Low' : 'Healthy'
+      }
+    });
 
   const maxQty = items.length > 0 ? Math.max(1, ...items.map(i => i.quantity || 0)) * 10 : 6000;
 

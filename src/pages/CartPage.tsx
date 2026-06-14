@@ -47,13 +47,20 @@ export default function CartPage() {
       return;
     }
     if (submitting || submitCooldown) return;
+
+    const validCart = cart.filter((c) => c.quantity_requested >= 1);
+    if (validCart.length === 0) {
+      toast.error("No valid items in cart");
+      return;
+    }
+
     setShowPurposeError(false);
     setStockConflicts([]);
     setSubmitting(true);
 
     try {
       // ── 1. Live stock check ──────────────────────────────────────────
-      const itemIds = cart.map((c) => c.item_id);
+      const itemIds = validCart.map((c) => c.item_id);
       const { data: liveItems, error: stockError } = await supabase
         .from('inventory_items')
         .select('id, name, quantity')
@@ -62,7 +69,7 @@ export default function CartPage() {
       if (stockError) throw stockError;
 
       const conflicts: StockConflict[] = [];
-      for (const cartItem of cart) {
+      for (const cartItem of validCart) {
         const live = liveItems?.find((i) => i.id === cartItem.item_id);
         if (live && cartItem.quantity_requested > live.quantity) {
           conflicts.push({
@@ -89,8 +96,8 @@ export default function CartPage() {
         .in('item_id', itemIds);
 
       const pendingItemIds = new Set((existingPending ?? []).map((r: { item_id: string }) => r.item_id));
-      const itemsToSubmit = cart.filter((c) => !pendingItemIds.has(c.item_id));
-      const skipped = cart.filter((c) => pendingItemIds.has(c.item_id));
+      const itemsToSubmit = validCart.filter((c) => !pendingItemIds.has(c.item_id));
+      const skipped = validCart.filter((c) => pendingItemIds.has(c.item_id));
 
       if (skipped.length > 0) {
         skipped.forEach((s) =>
@@ -140,10 +147,8 @@ export default function CartPage() {
       toast.success(
         `${itemsToSubmit.length} request${itemsToSubmit.length > 1 ? 's' : ''} submitted! Awaiting approval.`
       );
-      // Invalidate appropriate queries
+      // Invalidate all issue_requests queries (prefix match covers 'mine', 'faculty-mine', 'pending', 'all')
       await queryClient.invalidateQueries({ queryKey: ['issue_requests'] });
-      await queryClient.invalidateQueries({ queryKey: ['issue_requests', 'mine', studentEmail] });
-      await queryClient.invalidateQueries({ queryKey: ['issue_requests', 'faculty-mine', studentEmail] });
       navigate(isFaculty ? '/faculty-requests' : '/student-dashboard');
     } catch {
       toast.error('Submission failed. Please try again.');

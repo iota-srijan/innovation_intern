@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { AppShell } from "../components/layout/AppShell";
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip as RechartsTooltip, CartesianGrid } from 'recharts';
 import { useItems } from "../hooks/useItems";
+import { isLowStock } from "../lib/inventoryUtils";
 
 const forecastData: { day: string; qty: number }[] = [];
 
@@ -33,23 +34,26 @@ export default function LowStockAlerts() {
   const { data: items = [], isLoading } = useItems()
 
   const lowStockItems = items
-    .filter(i => i.quantity <= i.reorder_threshold)
-    .map(i => ({
-      id: i.id,
-      name: i.name,
-      sku: i.sku,
-      quantity: i.quantity,
-      reorder_threshold: i.reorder_threshold,
-      supplier: i.supplier,
-      urgency: i.quantity === 0 ? 'Critical'
-        : i.quantity <= i.reorder_threshold * 0.3 ? 'Critical'
-        : i.quantity <= i.reorder_threshold * 0.6 ? 'High'
-        : 'Medium',
-      suggestedOrder: Math.max(i.reorder_threshold * 3 - i.quantity, 50),
-    }))
+    .filter(isLowStock)
+    .map(i => {
+      const threshold = i.reorder_threshold ?? 0
+      return {
+        id: i.id,
+        name: i.name,
+        sku: i.sku,
+        quantity: i.quantity,
+        reorder_threshold: i.reorder_threshold,
+        supplier: i.supplier,
+        urgency: i.quantity === 0 ? 'Critical'
+          : i.quantity <= threshold * 0.3 ? 'Critical'
+          : i.quantity <= threshold * 0.6 ? 'High'
+          : 'Medium',
+        suggestedOrder: Math.max(threshold * 3 - i.quantity, 50),
+      }
+    })
 
   const filtered = lowStockItems.filter((item) => {
-    const matchesSearch = item.name.toLowerCase().includes(search.toLowerCase()) || item.sku.toLowerCase().includes(search.toLowerCase());
+    const matchesSearch = (item.name ?? '').toLowerCase().includes(search.toLowerCase()) || (item.sku ?? '').toLowerCase().includes(search.toLowerCase());
     const matchesTab = filterTab === "All" || item.urgency === filterTab;
     return matchesSearch && matchesTab;
   });
@@ -161,7 +165,10 @@ export default function LowStockAlerts() {
                 </thead>
                 <tbody className="divide-y divide-zinc-100 dark:divide-white/6">
                   {filtered.map((item) => {
-                    const pct = (item.quantity / item.reorder_threshold) * 100;
+                    const threshold = item.reorder_threshold
+                    const pct = threshold && threshold > 0
+                      ? Math.min(100, Math.round((item.quantity / threshold) * 100))
+                      : 0
                     const barColor = pct < 25 ? "bg-red-500" : pct < 50 ? "bg-amber-500" : "bg-green-500";
                     
                     return (
@@ -185,7 +192,7 @@ export default function LowStockAlerts() {
                             <span className="text-[10px] font-bold text-zinc-400">/ {item.reorder_threshold}</span>
                           </div>
                           <div className="h-1.5 w-32 bg-slate-100 dark:bg-zinc-800 rounded-full overflow-hidden">
-                            <div className={`h-full rounded-full ${barColor}`} style={{ width: `${Math.min(pct, 100)}%` }} />
+                            <div className={`h-full rounded-full ${barColor}`} style={{ width: `${pct}%` }} />
                           </div>
                         </td>
                         <td className="px-4 py-3">

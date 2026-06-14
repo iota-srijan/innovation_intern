@@ -3,12 +3,13 @@ import { Settings, User, Mail, Building, LogOut, Lock } from 'lucide-react'
 import { AppShell } from '../components/layout/AppShell'
 import { useAuth } from '../context/AuthContext'
 import { toast } from 'sonner'
+import { getAdminEmail } from '../lib/adminUtils'
 
 export default function AdminSettingsPage() {
   const { adminEmail: contextAdminEmail, signOut } = useAuth()
   const navigate = useNavigate()
-  
-  const adminEmail = contextAdminEmail ?? localStorage.getItem('sp-admin-email') ?? 'admin'
+
+  const adminEmail = getAdminEmail(contextAdminEmail)
 
   const handleSignOut = async () => {
     try {

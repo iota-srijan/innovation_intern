@@ -70,8 +70,9 @@ export default function Suppliers() {
   // Add Modal State
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newSup, setNewSup] = useState({ name: "", contactName: "", email: "", phone: "", location: "", leadTime: "", status: "Active" });
-  const { userRole } = useAuth();
+  const { userRole, isRoleLoading } = useAuth();
 
+  if (isRoleLoading) return null;
   if (userRole === "faculty") {
     return <Navigate to="/faculty-dashboard" replace />;
   }

@@ -1,9 +1,12 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
-import { Search, ChevronDown, ArrowUpDown, Edit2, Trash2, X } from "lucide-react";
+import { Search, ChevronDown, ArrowUpDown, Edit2, Trash2, X, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useItems, useDeleteItem } from "../../hooks/useItems";
 import { useCategories } from "../../hooks/useCategories";
-import type { InventoryItem } from "../../types";
+import { supabase } from "../../lib/supabaseClient";
+import { isLowStock } from "../../lib/inventoryUtils";
+import { QtyChangeBadge } from "../common/QtyChangeBadge";
+import type { AuditLogEntry, InventoryItem } from "../../types";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../../context/AuthContext";
@@ -38,12 +41,33 @@ export function InventoryTable({ onEdit, lowStockFilter = false }: InventoryTabl
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 5;
 
+  // History drawer
+  const [historyItem, setHistoryItem] = useState<InventoryItem | null>(null);
+  const [historyEntries, setHistoryEntries] = useState<AuditLogEntry[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+
+  useEffect(() => {
+    if (!historyItem) return;
+    let cancelled = false;
+    supabase
+      .from('audit_log')
+      .select('*')
+      .eq('item_id', historyItem.id)
+      .order('created_at', { ascending: false })
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (!error && data) setHistoryEntries(data as AuditLogEntry[]);
+        setHistoryLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [historyItem]);
+
   const filteredAndSortedItems = useMemo(() => {
     if (!items) return [];
     let result = items.filter((item) => {
       const matchesSearch =
-        item.name.toLowerCase().includes(search.toLowerCase()) ||
-        item.sku.toLowerCase().includes(search.toLowerCase());
+        (item.name ?? '').toLowerCase().includes(search.toLowerCase()) ||
+        (item.sku ?? '').toLowerCase().includes(search.toLowerCase());
       const matchesCategory =
         categoryFilter === "all" || item.category_id === categoryFilter;
       if (!matchesSearch || !matchesCategory) return false;
@@ -97,18 +121,40 @@ export function InventoryTable({ onEdit, lowStockFilter = false }: InventoryTabl
     }
   };
 
-  const handleBulkDelete = () => {
-    queryClient.setQueryData(['items'], (old: InventoryItem[] | undefined) => 
+  const handleBulkDelete = async () => {
+    if (userRole !== 'admin' && userRole !== 'faculty') return;
+    const { error } = await supabase
+      .from('inventory_items')
+      .delete()
+      .in('id', selectedRows);
+    if (error) {
+      toast.error('Failed to delete items');
+      return;
+    }
+    queryClient.setQueryData(['items'], (old: InventoryItem[] | undefined) =>
       old ? old.filter(i => !selectedRows.includes(i.id)) : []
     );
     toast.success(`Deleted ${selectedRows.length} items`);
     setSelectedRows([]);
   };
 
-  const saveQty = (id: string) => {
+  const saveQty = async (id: string) => {
+    if (userRole !== 'admin') {
+      setEditingQtyId(null);
+      return;
+    }
     const newQty = parseInt(tempQty, 10);
     if (!isNaN(newQty) && newQty >= 0) {
-      queryClient.setQueryData(['items'], (old: InventoryItem[] | undefined) => 
+      const { error } = await supabase
+        .from('inventory_items')
+        .update({ quantity: newQty })
+        .eq('id', id);
+      if (error) {
+        toast.error('Failed to update quantity');
+        setEditingQtyId(null);
+        return;
+      }
+      queryClient.setQueryData(['items'], (old: InventoryItem[] | undefined) =>
         old ? old.map(i => i.id === id ? { ...i, quantity: newQty } : i) : []
       );
       toast.success("Quantity updated");
@@ -222,6 +268,46 @@ export function InventoryTable({ onEdit, lowStockFilter = false }: InventoryTabl
         </>
       )}
 
+      {/* History Drawer */}
+      <div className={`fixed inset-0 z-40 transition-opacity ${historyItem ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
+        <div className="absolute inset-0 bg-black/40" onClick={() => setHistoryItem(null)} />
+        <div className={`fixed right-0 top-0 h-full w-96 bg-[#111111] border-l border-white/10 z-50 p-6 shadow-2xl transform transition-transform duration-300 ${historyItem ? 'translate-x-0' : 'translate-x-full'}`}>
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-bold text-white truncate pr-4">
+              {historyItem?.name} — History
+            </h3>
+            <button onClick={() => setHistoryItem(null)} className="text-zinc-400 hover:text-white transition-colors">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          {historyLoading ? (
+            <div className="flex justify-center py-10">
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-orange-400 border-t-transparent" />
+            </div>
+          ) : historyEntries.length === 0 ? (
+            <p className="py-8 text-center text-sm text-zinc-500">No history for this item yet.</p>
+          ) : (
+            <div className="space-y-3 overflow-y-auto" style={{ maxHeight: 'calc(100% - 4rem)' }}>
+              {historyEntries.map(entry => (
+                <div key={entry.id} className="rounded-lg border border-white/10 bg-[#1a1a1a] p-3">
+                  <div className="mb-1 flex items-center justify-between gap-2">
+                    <span className="font-mono text-[10px] text-zinc-500">
+                      {new Date(entry.created_at).toLocaleString()}
+                    </span>
+                    <span className="text-[11px]">
+                      <QtyChangeBadge value={entry.quantity_change} />
+                    </span>
+                  </div>
+                  <p className="text-sm text-zinc-200">{entry.action}</p>
+                  <p className="mt-1 text-[11px] text-zinc-500">{entry.actor_email ?? '—'}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Filters & Bulk Action Row */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center justify-between">
         <div className="flex gap-3">
@@ -287,12 +373,12 @@ export function InventoryTable({ onEdit, lowStockFilter = false }: InventoryTabl
           <table className="w-full whitespace-nowrap text-left text-xs">
             <thead className="border-b border-orange-100 dark:border-white/8 bg-orange-50 dark:bg-[#1f1509]">
               <tr>
-                <th className="px-4 py-3 w-10">
+                <th className="px-4 py-3 w-12">
                   <input
                     type="checkbox"
                     checked={selectedRows.length > 0 && selectedRows.length === paginatedItems.length}
                     onChange={toggleSelectAll}
-                    className="rounded border-zinc-300 text-orange-500 focus:ring-orange-500 bg-white dark:bg-zinc-800 dark:border-zinc-600"
+                    className="h-4 w-4 rounded border-2 border-zinc-400 dark:border-zinc-500 bg-white dark:bg-zinc-800 text-orange-500 focus:ring-2 focus:ring-orange-400 focus:ring-offset-0 accent-orange-500 cursor-pointer"
                   />
                 </th>
                 <SortHeader field="name" label="Item Name" />
@@ -329,7 +415,7 @@ export function InventoryTable({ onEdit, lowStockFilter = false }: InventoryTabl
                           type="checkbox"
                           checked={selectedRows.includes(item.id)}
                           onChange={() => toggleRow(item.id)}
-                          className="rounded border-zinc-300 text-orange-500 focus:ring-orange-500 bg-white dark:bg-zinc-800 dark:border-zinc-600"
+                          className="h-4 w-4 rounded border-2 border-zinc-400 dark:border-zinc-500 bg-white dark:bg-zinc-800 text-orange-500 focus:ring-2 focus:ring-orange-400 focus:ring-offset-0 accent-orange-500 cursor-pointer"
                         />
                       </td>
                       <td className="px-4 py-2.5 font-medium text-zinc-900 dark:text-zinc-200">
@@ -356,8 +442,8 @@ export function InventoryTable({ onEdit, lowStockFilter = false }: InventoryTabl
                           />
                         ) : (
                           <div className="flex flex-col w-16">
-                            <span 
-                              onClick={() => { setEditingQtyId(item.id); setTempQty(item.quantity.toString()); }}
+                            <span
+                              onClick={() => { if (userRole === 'admin') { setEditingQtyId(item.id); setTempQty(item.quantity.toString()); } }}
                               className="font-medium text-zinc-900 dark:text-zinc-200 hover:text-orange-500 dark:hover:text-orange-300 cursor-text"
                             >
                               {item.quantity}
@@ -374,15 +460,22 @@ export function InventoryTable({ onEdit, lowStockFilter = false }: InventoryTabl
                       <td className="px-4 py-2.5">
                         <span className={`inline-flex items-center rounded-full px-2 py-px text-[9px] font-medium ${
                           item.quantity === 0 ? "bg-red-500/15 text-red-400" :
-                          item.quantity <= item.reorder_threshold ? "bg-amber-500/15 text-amber-400" :
+                          isLowStock(item) ? "bg-amber-500/15 text-amber-400" :
                           "bg-green-500/15 text-green-400"
                         }`}>
-                          {item.quantity === 0 ? "Out of Stock" : item.quantity <= item.reorder_threshold ? "Low Stock" : "In Stock"}
+                          {item.quantity === 0 ? "Out of Stock" : isLowStock(item) ? "Low Stock" : "In Stock"}
                         </span>
                       </td>
                       {userRole === 'admin' && (
                         <td className="px-4 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
                           <div className="relative inline-block text-left">
+                            <button
+                              onClick={() => { setHistoryItem(item); setHistoryLoading(true); }}
+                              className="text-zinc-400 hover:text-orange-500 transition-colors mr-3"
+                              title="History"
+                            >
+                              <Clock className="h-3.5 w-3.5" />
+                            </button>
                             <button
                               onClick={() => { onEdit(item); }}
                               className="text-zinc-400 hover:text-orange-500 transition-colors mr-3"

@@ -137,7 +137,7 @@ export default function SignIn() {
         {/* Blocked error from redirect */}
         {showBlockedError && (
           <p className="text-xs text-red-400 text-center mb-4">
-            Access restricted to OPJU college emails only.
+            Your account has been suspended. Contact lab administration.
           </p>
         )}
 

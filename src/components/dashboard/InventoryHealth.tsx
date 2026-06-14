@@ -2,6 +2,7 @@ import { Activity } from "lucide-react";
 import type { InventoryItem } from "../../types";
 import { SectionCard } from "../common/SectionCard";
 import { Skeleton } from "../common/Skeleton";
+import { isLowStock } from "../../lib/inventoryUtils";
 
 interface InventoryHealthProps {
   items: InventoryItem[];
@@ -10,7 +11,7 @@ interface InventoryHealthProps {
 
 export function InventoryHealth({ items, isLoading }: InventoryHealthProps) {
   const totalItems = items.length;
-  const lowStockItems = items.filter((i) => i.quantity < i.reorder_threshold).length;
+  const lowStockItems = items.filter(isLowStock).length;
   const healthyItems = totalItems - lowStockItems;
 
   const healthyPercentage = totalItems === 0 ? 0 : Math.round((healthyItems / totalItems) * 100);

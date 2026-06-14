@@ -2,6 +2,8 @@ import { useCallback, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Clock, X } from 'lucide-react'
 import { AppShell } from '../components/layout/AppShell'
+import { RequestTypeTabs, type RequestTypeTab } from '../components/admin/RequestTypeTabs'
+import { ServiceRequestsPanel } from '../components/admin/ServiceRequestsPanel'
 import { supabase } from '../lib/supabaseClient'
 import { toast } from 'sonner'
 import { useAuth } from '../context/AuthContext'
@@ -30,6 +32,14 @@ interface IssueRequest {
   returned_at?: string | null
 }
 
+interface AuditExtra {
+  item_id?: string
+  item_name?: string
+  quantity_change?: number
+  previous_quantity?: number
+  new_quantity?: number
+}
+
 // ─── Modal ──────────────────────────────────────────────────────────────────────
 
 function Modal({ onClose, children }: { onClose: () => void; children: React.ReactNode }) {
@@ -49,10 +59,13 @@ export default function AdminPendingPage() {
   const { user } = useAuth()
   const queryClient = useQueryClient()
 
+  const [activeTab, setActiveTab] = useState<RequestTypeTab>('equipment')
+
   // Approve modal
   const tomorrow = new Date()
   tomorrow.setDate(tomorrow.getDate() + 1)
   const tomorrowStr = tomorrow.toISOString().split('T')[0]
+  const today = new Date().toISOString().split('T')[0]
   const [approveTarget, setApproveTarget]     = useState<IssueRequest | null>(null)
   const [approveDeadline, setApproveDeadline] = useState(tomorrowStr)
   const [approveNote, setApproveNote]         = useState('')
@@ -66,7 +79,7 @@ export default function AdminPendingPage() {
   // ── Fetch all requests via React Query, filter pending client-side ────────────
 
   const { data: allData, isLoading: pendingLoading } = useQuery({
-    queryKey: ['issue_requests'],
+    queryKey: ['issue_requests', 'pending'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('issue_requests')
@@ -82,13 +95,13 @@ export default function AdminPendingPage() {
 
   // ── Audit log helper ──────────────────────────────────────────────────────────
 
-  const logAudit = useCallback(async (action: string, actionType: ActionType) => {
+  const logAudit = useCallback(async (action: string, actionType: ActionType, extra?: AuditExtra) => {
     try {
       const { data: { session } } = await supabase.auth.getSession()
       const actorEmail = user?.email ?? session?.user?.email ?? localStorage.getItem('sp-admin-email') ?? 'unknown-admin'
       await supabase
         .from('audit_log')
-        .insert({ actor_email: actorEmail, action, action_type: actionType })
+        .insert({ actor_email: actorEmail, action, action_type: actionType, ...extra })
     } catch {
       // audit failures are non-fatal
     }
@@ -98,8 +111,49 @@ export default function AdminPendingPage() {
 
   const handleApprove = async () => {
     if (!approveTarget || approveLoading) return
+    if (approveDeadline && approveDeadline < today) {
+      toast.error('Return deadline cannot be in the past.')
+      return
+    }
     setApproveLoading(true)
     try {
+      // Fetch current inventory stock for this item
+      const { data: invItem, error: fetchErr } = await supabase
+        .from('inventory_items')
+        .select('id, quantity, reorder_threshold')
+        .eq('id', approveTarget.item_id)
+        .single()
+
+      if (fetchErr || !invItem) {
+        toast.error('Could not fetch item stock. Approval cancelled.')
+        return
+      }
+
+      const previousQuantity = invItem.quantity ?? 0
+      const newQuantity = previousQuantity - approveTarget.quantity_requested
+
+      if (newQuantity < 0) {
+        toast.error('Insufficient stock. Cannot approve.')
+        return
+      }
+
+      const newStatus =
+        newQuantity <= 0 ? 'out_of_stock'
+        : newQuantity <= (invItem.reorder_threshold ?? 0) ? 'low_stock'
+        : 'in_stock'
+
+      // Deduct inventory quantity
+      const { error: invUpdateErr } = await supabase
+        .from('inventory_items')
+        .update({ quantity: newQuantity, status: newStatus, updated_at: new Date().toISOString() })
+        .eq('id', approveTarget.item_id)
+
+      if (invUpdateErr) {
+        toast.error('Failed to update stock. Approval cancelled.')
+        return
+      }
+
+      // Only mark the request approved once stock has been deducted
       const { error: updateErr } = await supabase
         .from('issue_requests')
         .update({
@@ -111,36 +165,28 @@ export default function AdminPendingPage() {
         })
         .eq('id', approveTarget.id)
 
-      if (updateErr) throw updateErr
-
-      // Decrement inventory quantity
-      const { data: invItem } = await supabase
-        .from('inventory_items')
-        .select('quantity, reorder_threshold')
-        .eq('id', approveTarget.item_id)
-        .single()
-
-      if (invItem) {
-        const newQty = Math.max(0, (invItem.quantity ?? 0) - approveTarget.quantity_requested)
-        const newStatus =
-          newQty <= 0 ? 'out_of_stock'
-          : newQty <= (invItem.reorder_threshold ?? 0) ? 'low_stock'
-          : 'in_stock'
-        await supabase
-          .from('inventory_items')
-          .update({ quantity: newQty, status: newStatus, updated_at: new Date().toISOString() })
-          .eq('id', approveTarget.item_id)
+      if (updateErr) {
+        toast.error('Stock updated but failed to mark approved. Check manually.')
+        return
       }
 
       await logAudit(
         `Approved request for ${approveTarget.item_name} by ${approveTarget.student_email}`,
         'admin_action',
+        {
+          item_id: invItem.id,
+          item_name: approveTarget.item_name,
+          quantity_change: -approveTarget.quantity_requested,
+          previous_quantity: previousQuantity,
+          new_quantity: newQuantity,
+        },
       )
 
       toast.success('Request approved')
       setApproveTarget(null)
       setApproveNote('')
       setApproveDeadline(tomorrowStr)
+      void queryClient.invalidateQueries({ queryKey: ['items'] })
       void queryClient.invalidateQueries({ queryKey: ['issue_requests'] })
     } catch {
       toast.error('Failed to approve request')
@@ -169,6 +215,11 @@ export default function AdminPendingPage() {
       await logAudit(
         `Rejected request for ${rejectTarget.item_name} by ${rejectTarget.student_email}`,
         'admin_action',
+        {
+          item_id: rejectTarget.item_id,
+          item_name: rejectTarget.item_name,
+          quantity_change: 0,
+        },
       )
 
       toast.success('Request rejected')
@@ -201,14 +252,20 @@ export default function AdminPendingPage() {
             </p>
           </div>
           <button
-            onClick={() => void queryClient.invalidateQueries({ queryKey: ['issue_requests'] })}
+            onClick={() => {
+              void queryClient.invalidateQueries({ queryKey: ['issue_requests'] })
+              void queryClient.invalidateQueries({ queryKey: ['service_requests'] })
+            }}
             className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/[0.03] px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-white transition hover:bg-gray-100 dark:hover:bg-white/[0.07]"
           >
             Refresh
           </button>
         </div>
 
+        <RequestTypeTabs active={activeTab} onChange={setActiveTab} />
+
         {/* ── Pending Issue Requests ── */}
+        {activeTab === 'equipment' && (
         <div className="mb-6 rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#1a1108] p-5">
           <div className="mb-5 flex items-center gap-3">
             <h2 className="text-sm font-bold text-gray-900 dark:text-white">Pending Issue Requests</h2>
@@ -267,6 +324,16 @@ export default function AdminPendingPage() {
             </div>
           )}
         </div>
+        )}
+
+        {/* ── Pending Service Requests ── */}
+        {activeTab === 'service' && (
+          <ServiceRequestsPanel
+            title="Pending Service Requests"
+            onlyPending
+            emptyMessage="No pending service requests — all clear!"
+          />
+        )}
 
       </div>
 
@@ -294,7 +361,7 @@ export default function AdminPendingPage() {
               </label>
               <input
                 type="date"
-                min={tomorrowStr}
+                min={today}
                 value={approveDeadline}
                 onChange={e => setApproveDeadline(e.target.value)}
                 className="w-full rounded-[11px] border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#0d0a08] px-3 py-[11px] text-[14px] text-gray-900 dark:text-white outline-none transition focus:border-orange-400 focus:bg-white dark:focus:bg-[#0d0a08]"

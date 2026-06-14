@@ -2,7 +2,25 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { supabase } from '../lib/supabaseClient'
 import { sendLowStockAlert } from '../lib/sendLowStockAlert'
+import { isLowStock } from '../lib/inventoryUtils'
 import type { InventoryItem, ItemFormData } from '../types'
+
+async function logItemAudit(payload: {
+  action: string
+  action_type: 'CREATE' | 'UPDATE' | 'DELETE'
+  item_id: string
+  item_name: string
+  quantity_change?: number
+  previous_quantity?: number
+  new_quantity?: number
+}) {
+  try {
+    const actorEmail = localStorage.getItem('sp-admin-email') ?? 'system'
+    await supabase.from('audit_log').insert({ actor_email: actorEmail, ...payload })
+  } catch {
+    // audit failures are non-fatal
+  }
+}
 
 export function useItems() {
   return useQuery({
@@ -36,7 +54,13 @@ export function useCreateItem() {
     onSuccess: async (newItem) => {
       queryClient.invalidateQueries({ queryKey: ['items'] })
       toast.success('Item added successfully')
-      if (newItem.quantity <= newItem.reorder_threshold) {
+      await logItemAudit({
+        action: `Item created: ${newItem.name}`,
+        action_type: 'CREATE',
+        item_id: newItem.id,
+        item_name: newItem.name,
+      })
+      if (isLowStock(newItem)) {
         await sendLowStockAlert(newItem)
         toast.warning(`Low stock alert sent for ${newItem.name}`)
       }
@@ -50,28 +74,42 @@ export function useUpdateItem() {
 
   return useMutation({
     mutationFn: async ({ id, ...item }: ItemFormData & { id: string }) => {
-      console.log('Update payload:', JSON.stringify(item))
-      console.log('Item ID:', id)
       const { data, error } = await supabase
         .from('inventory_items')
         .update({ ...item, updated_at: new Date().toISOString() })
         .eq('id', id)
         .select(`*, category:categories(*)`)
         .single()
-      console.log('Update response:', data, error)
       if (error) throw error
       return data
     },
     onSuccess: async (updatedItem) => {
-      console.log('Update succeeded, invalidating queries')
+      const previousItem = queryClient.getQueryData<InventoryItem[]>(['items'])?.find(i => i.id === updatedItem.id)
+
       queryClient.invalidateQueries({ queryKey: ['items'] })
       toast.success('Item updated')
-      if (updatedItem.quantity <= updatedItem.reorder_threshold) {
+
+      const auditExtra = previousItem && previousItem.quantity !== updatedItem.quantity
+        ? {
+            quantity_change: updatedItem.quantity - previousItem.quantity,
+            previous_quantity: previousItem.quantity,
+            new_quantity: updatedItem.quantity,
+          }
+        : {}
+      await logItemAudit({
+        action: `Item updated: ${updatedItem.name}`,
+        action_type: 'UPDATE',
+        item_id: updatedItem.id,
+        item_name: updatedItem.name,
+        ...auditExtra,
+      })
+
+      if (isLowStock(updatedItem)) {
         await sendLowStockAlert(updatedItem)
         toast.warning(`Low stock alert sent for ${updatedItem.name}`)
       }
     },
-    onError: (error) => { console.log('Update failed:', error); toast.error('Failed to update item') },
+    onError: () => toast.error('Failed to update item'),
   })
 }
 
@@ -86,9 +124,20 @@ export function useDeleteItem() {
         .eq('id', id)
       if (error) throw error
     },
-    onSuccess: () => {
+    onSuccess: async (_data, id) => {
+      const deletedItem = queryClient.getQueryData<InventoryItem[]>(['items'])?.find(i => i.id === id)
+
       queryClient.invalidateQueries({ queryKey: ['items'] })
       toast.success('Item deleted')
+
+      if (deletedItem) {
+        await logItemAudit({
+          action: `Item deleted: ${deletedItem.name}`,
+          action_type: 'DELETE',
+          item_id: deletedItem.id,
+          item_name: deletedItem.name,
+        })
+      }
     },
     onError: () => toast.error('Failed to delete item'),
   })

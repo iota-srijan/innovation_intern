@@ -152,9 +152,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const { error: upsertError } = await supabase
               .from('user_roles')
               .upsert(
-                { user_id: s.user.id, email, role: detectedRole, display_name: nameFromMeta, last_sign_in_at: new Date().toISOString() },
-                { onConflict: 'user_id', ignoreDuplicates: false }
+                {
+                  user_id: s.user.id,
+                  email,
+                  role: detectedRole,
+                  display_name: nameFromMeta,
+                  last_sign_in_at: new Date().toISOString(),
+                },
+                { onConflict: 'user_id', ignoreDuplicates: true }
               )
+
+            // Always update last_sign_in_at separately — safe to overwrite
+            // since it's just a timestamp, not a role.
+            if (!upsertError) {
+              await supabase
+                .from('user_roles')
+                .update({ last_sign_in_at: new Date().toISOString() })
+                .eq('user_id', s.user.id)
+            }
+
             // For returning users whose display_name is still null (logged in before this
             // field was added), sync it from Google metadata without touching role.
             if (!upsertError && nameFromMeta) {
@@ -261,7 +277,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     await supabase.auth.signOut()
     localStorage.removeItem('sp-user-type')
-    localStorage.removeItem('sp-auth-user')
     localStorage.removeItem('sp-admin-email')
     clearCartRef.current?.()
     setUserRole(null)
