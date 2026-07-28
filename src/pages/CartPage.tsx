@@ -7,7 +7,13 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabaseClient';
 import { useQueryClient } from '@tanstack/react-query';
-import type { CartItem } from '../types';
+import type { CartItem, TeamMember } from '../types';
+import { RequestSubmittedModal } from '../components/requests/RequestSubmittedModal';
+import { TeamMembersInput, getValidTeamMembers } from '../components/requests/TeamMembersInput';
+import { composeWithTruncation, type GmailComposeParams } from '../lib/gmail';
+import { DEFAULT_APPROVER_EMAIL } from '../lib/roleConfig';
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 interface StockConflict {
   item_id: string;
@@ -26,6 +32,10 @@ export default function CartPage() {
   const [submitCooldown, setSubmitCooldown] = useState(false);
   const [stockConflicts, setStockConflicts] = useState<StockConflict[]>([]);
   const [showPurposeError, setShowPurposeError] = useState(false);
+  const [professorEmail, setProfessorEmail] = useState('');
+  const [showProfessorError, setShowProfessorError] = useState(false);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [submittedGmail, setSubmittedGmail] = useState<GmailComposeParams | null>(null);
 
   const isFaculty = userRole === 'faculty';
   const backUrl    = isFaculty ? '/faculty-dashboard' : '/student-dashboard';
@@ -39,11 +49,13 @@ export default function CartPage() {
     .filter((c) => !c.purpose.trim())
     .map((c) => c.item_id);
 
-  const canSubmit = cart.length > 0 && emptyPurposeIds.length === 0;
+  const professorEmailValid = EMAIL_RE.test(professorEmail.trim());
+  const canSubmit = cart.length > 0 && emptyPurposeIds.length === 0 && professorEmailValid;
 
   async function handleSubmit() {
     if (!canSubmit) {
       setShowPurposeError(true);
+      setShowProfessorError(true);
       return;
     }
     if (submitting || submitCooldown) return;
@@ -112,6 +124,8 @@ export default function CartPage() {
       }
 
       // ── 3. Batch insert ───────────────────────────────────────────────
+      const trimmedProfessorEmail = professorEmail.trim();
+      const validTeamMembers = getValidTeamMembers(teamMembers, studentEmail);
       const rows = itemsToSubmit.map((c: CartItem) => ({
         item_id: c.item_id,
         item_name: c.item_name,
@@ -121,6 +135,8 @@ export default function CartPage() {
         student_id: user?.id,
         student_email: studentEmail,
         student_name: studentName,
+        professor_email: trimmedProfessorEmail,
+        team_members: validTeamMembers,
       }));
 
       const { error: insertError } = await supabase
@@ -149,7 +165,17 @@ export default function CartPage() {
       );
       // Invalidate all issue_requests queries (prefix match covers 'mine', 'faculty-mine', 'pending', 'all')
       await queryClient.invalidateQueries({ queryKey: ['issue_requests'] });
-      navigate(isFaculty ? '/faculty-requests' : '/student-dashboard');
+
+      const lines = itemsToSubmit.map((c: CartItem) => `• ${c.item_name} x${c.quantity_requested} — ${c.purpose.trim()}`);
+      const teamLine = validTeamMembers.length > 0
+        ? `\nTeam: ${validTeamMembers.map(m => `${m.name} (${m.email})`).join(', ')}`
+        : '';
+      setSubmittedGmail(composeWithTruncation(
+        { to: DEFAULT_APPROVER_EMAIL, subject: `IdeaLab Equipment Request — ${studentName}` },
+        `New equipment request from ${studentName} (${studentEmail}):${teamLine}`,
+        lines,
+        `Please CC the requester's professor (${trimmedProfessorEmail}) before sending this email.`,
+      ));
     } catch {
       toast.error('Submission failed. Please try again.');
     } finally {
@@ -160,7 +186,10 @@ export default function CartPage() {
   }
 
   // ── Empty state ─────────────────────────────────────────────────────
-  if (cart.length === 0) {
+  // Note: cart becomes empty as soon as a successful submit clears it, so
+  // this branch must still render the confirmation modal below rather than
+  // skip straight past it.
+  if (cart.length === 0 && !submittedGmail) {
     return (
       <AppShell title="Your Cart">
         <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 p-8 text-center">
@@ -329,24 +358,52 @@ export default function CartPage() {
         </div>
 
         {/* Submit footer */}
-        <div className="rounded-2xl border border-gray-200 dark:border-white/8 bg-white dark:bg-[#1f1509] p-5 flex items-center justify-between flex-wrap gap-4">
+        <div className="rounded-2xl border border-gray-200 dark:border-white/8 bg-white dark:bg-[#1f1509] p-5 flex flex-col gap-4">
           <div>
-            <div className="text-sm font-semibold text-gray-900 dark:text-white">
-              {cart.length} item{cart.length !== 1 ? 's' : ''} ready to request
-            </div>
-            <div className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">
-              All requests go to admin for approval
-            </div>
+            <label className="text-[10px] text-gray-500 dark:text-zinc-400 uppercase tracking-widest block mb-1.5">
+              Professor's Email
+              <span className="text-red-500 ml-1">*</span>
+            </label>
+            <input
+              type="email"
+              value={professorEmail}
+              onChange={(e) => { setProfessorEmail(e.target.value); setShowProfessorError(false); }}
+              placeholder="professor@opju.ac.in"
+              className={`w-full max-w-xs rounded-lg px-3 py-2 text-xs text-gray-900 placeholder:text-gray-400 dark:text-white dark:placeholder:text-zinc-600 focus:outline-none transition-colors ${
+                showProfessorError && !professorEmailValid
+                  ? 'bg-red-50 dark:bg-red-950/20 border border-red-300 dark:border-red-500/60 focus:border-red-400'
+                  : 'bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 focus:border-orange-400 dark:focus:border-orange-400'
+              }`}
+            />
+            {showProfessorError && !professorEmailValid && (
+              <p className="mt-1 text-[10px] text-red-400 flex items-center gap-1">
+                <AlertCircle className="h-3 w-3 flex-shrink-0" />
+                A valid professor email is required so they can be CC'd on approval.
+              </p>
+            )}
           </div>
-          <button
-            onClick={handleSubmit}
-            disabled={submitting || submitCooldown || cart.length === 0}
-            className="inline-flex items-center gap-2 rounded-xl bg-orange-500 hover:bg-orange-500 disabled:opacity-50 disabled:cursor-not-allowed px-6 py-2.5 text-sm font-semibold text-white transition-colors cursor-pointer"
-          >
-            {submitting && <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />}
-            <PackageCheck className="h-4 w-4" />
-            {submitting ? 'Submitting…' : submitCooldown ? 'Submitted' : 'Submit All Requests'}
-          </button>
+
+          <TeamMembersInput members={teamMembers} onChange={setTeamMembers} ownEmail={studentEmail} />
+
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div>
+              <div className="text-sm font-semibold text-gray-900 dark:text-white">
+                {cart.length} item{cart.length !== 1 ? 's' : ''} ready to request
+              </div>
+              <div className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">
+                All requests go to admin for approval
+              </div>
+            </div>
+            <button
+              onClick={handleSubmit}
+              disabled={submitting || submitCooldown || cart.length === 0}
+              className="inline-flex items-center gap-2 rounded-xl bg-orange-500 hover:bg-orange-500 disabled:opacity-50 disabled:cursor-not-allowed px-6 py-2.5 text-sm font-semibold text-white transition-colors cursor-pointer"
+            >
+              {submitting && <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />}
+              <PackageCheck className="h-4 w-4" />
+              {submitting ? 'Submitting…' : submitCooldown ? 'Submitted' : 'Submit All Requests'}
+            </button>
+          </div>
         </div>
 
         {/* Link to existing requests */}
@@ -359,6 +416,18 @@ export default function CartPage() {
           </Link>
         </div>
       </div>
+
+      {submittedGmail && (
+        <RequestSubmittedModal
+          title="Request submitted"
+          description="A record of your request is ready to email to the IdeaLab. Open the draft, add your professor in CC, and hit send."
+          gmail={submittedGmail}
+          onClose={() => {
+            setSubmittedGmail(null);
+            navigate(isFaculty ? '/faculty-requests' : '/student-dashboard');
+          }}
+        />
+      )}
     </AppShell>
   );
 }

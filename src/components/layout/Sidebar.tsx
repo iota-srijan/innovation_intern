@@ -2,9 +2,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Package,
-  Truck,
   FileText,
-  GitBranch,
   Megaphone,
   Settings,
   Layers,
@@ -18,16 +16,13 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../../context/AuthContext";
+import { homePathForRole } from "../../lib/roleConfig";
 
 const navItems = [
   { icon: LayoutDashboard,  path: "/dashboard",               label: "Dashboard" },
   { icon: BarChart2,        path: "/admin/logistics",         label: "Logistics" },
   { icon: Package,          path: "/admin/inventory",         label: "Inventory" },   // admin only
   { icon: Megaphone,        path: "/admin/demands",           label: "IdeaBoard" }, // admin only
-  { icon: Package,          path: "/inventory",               label: "Inventory" },
-  { icon: Truck,            path: "/suppliers",               label: "Suppliers" },
-  { icon: FileText,         path: "/purchase-orders",         label: "Purchase Orders" },
-  { icon: GitBranch,        path: "/alerts/low-stock",        label: "Low Stock Alerts" },
   { icon: Megaphone,        path: "/demands",                 label: "IdeaBoard" },
   { icon: FileText,         path: "/student/requests",        label: "My Requests" },
   { icon: ListOrdered,      path: "/faculty-requests",        label: "My Requests" },  // faculty
@@ -39,6 +34,7 @@ const navItems = [
   { icon: ScrollText,       path: "/admin/audit-log",         label: "Audit Log" },        // admin only
   { icon: Settings,         path: "/profile",                 label: "Settings" },
   { icon: Settings,         path: "/admin/settings",          label: "Settings" },
+  { icon: ClipboardList,    path: "/mentor-dashboard",        label: "Assigned Requests", to: "/mentor-dashboard?section=assigned" }, // mentor only
 ];
 
 export function Sidebar() {
@@ -47,29 +43,16 @@ export function Sidebar() {
   const navigate = useNavigate();
 
   const goToDashboard = () => {
-    if (userRole === 'admin') {
-      navigate('/admin')
-    } else if (userRole === 'faculty') {
-      navigate('/faculty-dashboard')
-    } else if (userRole === 'student') {
-      navigate('/student-dashboard')
-    } else {
-      navigate('/dashboard')
-    }
+    navigate(homePathForRole(userRole))
   };
 
   const isActive = (path: string) => {
-    if (path === "/purchase-orders") {
-      return (
-        location.pathname === "/purchase-orders" ||
-        location.pathname === "/purchase-orders/pending"
-      );
-    }
     if (path === "/dashboard" && (
-      location.pathname === "/pro-dashboard" ||
       location.pathname === "/student-dashboard" ||
       location.pathname === "/faculty-dashboard" ||
-      location.pathname === "/admin"
+      location.pathname === "/admin" ||
+      location.pathname === "/super-admin" ||
+      location.pathname === "/mentor-dashboard"
     )) {
       return true;
     }
@@ -98,7 +81,7 @@ export function Sidebar() {
 
       {/* Nav icons */}
       <nav className="flex flex-1 flex-col gap-2 w-full px-2">
-        {navItems.map(({ icon: Icon, path, label }) => {
+        {navItems.map(({ icon: Icon, path, label, to }) => {
           if (path === "/dashboard") {
             return (
               <button
@@ -118,8 +101,13 @@ export function Sidebar() {
             );
           }
 
-          // /admin/ routes are admin-only — hide for everyone else
-          if (path.startsWith('/admin/') && userRole !== 'admin') {
+          // /admin/ routes are admin-only (super_admin reuses them; mentor only reuses Inventory) — hide for everyone else
+          if (
+            path.startsWith('/admin/') &&
+            userRole !== 'admin' &&
+            userRole !== 'super_admin' &&
+            !(userRole === 'mentor' && path === '/admin/inventory')
+          ) {
             return null;
           }
 
@@ -139,6 +127,22 @@ export function Sidebar() {
             return null;
           }
 
+          // Super admin sees the same /admin/* routes as admin (Dashboard handled above),
+          // except Pending/All Requests/Audit Log — those are consolidated as tabs inside
+          // /super-admin itself (with mentor-assignment support the legacy pages lack).
+          if (userRole === 'super_admin' && !path.startsWith('/admin/')) {
+            return null;
+          }
+          if (userRole === 'super_admin' && ['/admin/pending', '/admin/requests', '/admin/audit-log'].includes(path)) {
+            return null;
+          }
+
+          // Mentor sees Inventory (reused), IdeaBoard (vote/raise query), and Notifications
+          // (Dashboard + Assigned Requests are handled inside /mentor-dashboard itself)
+          if (userRole === 'mentor' && !['/admin/inventory', '/mentor-dashboard', '/demands', '/notifications'].includes(path)) {
+            return null;
+          }
+
           // Hide student/faculty specific routes from others
           if (userRole !== 'student' && userRole !== 'faculty' && (path === '/student/requests' || path === '/cart' || path === '/faculty-requests')) {
             return null;
@@ -147,7 +151,7 @@ export function Sidebar() {
           return (
             <Link
               key={path}
-              to={path}
+              to={to ?? path}
               className={`flex items-center gap-3 px-2.5 py-2.5 rounded-lg cursor-pointer transition-colors duration-150 w-full ${
                 isActive(path)
                   ? "bg-orange-500/20 text-orange-400"

@@ -25,7 +25,7 @@ create policy "Admin can insert items"
   with check (
     exists (
       select 1 from user_roles
-      where user_id = auth.uid() and role = 'admin'
+      where user_id = auth.uid() and role in ('admin', 'super_admin', 'mentor')
     )
   );
 
@@ -34,7 +34,7 @@ create policy "Admin can update items"
   using (
     exists (
       select 1 from user_roles
-      where user_id = auth.uid() and role = 'admin'
+      where user_id = auth.uid() and role in ('admin', 'super_admin', 'mentor')
     )
   );
 
@@ -43,7 +43,7 @@ create policy "Admin can delete items"
   using (
     exists (
       select 1 from user_roles
-      where user_id = auth.uid() and role = 'admin'
+      where user_id = auth.uid() and role in ('admin', 'super_admin', 'mentor')
     )
   );
 
@@ -67,8 +67,12 @@ create policy "Users can read own requests"
   using (
     auth.uid() = student_id
     or exists (
+      select 1 from jsonb_array_elements(team_members) m
+      where lower(m->>'email') = lower(auth.jwt()->>'email')
+    )
+    or exists (
       select 1 from user_roles
-      where user_id = auth.uid() and role = 'admin'
+      where user_id = auth.uid() and role in ('admin', 'super_admin', 'mentor')
     )
   );
 
@@ -77,7 +81,7 @@ create policy "Admin can update requests"
   using (
     exists (
       select 1 from user_roles
-      where user_id = auth.uid() and role = 'admin'
+      where user_id = auth.uid() and role in ('admin', 'super_admin', 'mentor')
     )
   );
 
@@ -105,7 +109,7 @@ create policy "Admin can update demands"
   using (
     exists (
       select 1 from user_roles
-      where user_id = auth.uid() and role = 'admin'
+      where user_id = auth.uid() and role in ('admin', 'super_admin')
     )
   );
 
@@ -114,7 +118,7 @@ create policy "Admin can delete demands"
   using (
     exists (
       select 1 from user_roles
-      where user_id = auth.uid() and role = 'admin'
+      where user_id = auth.uid() and role in ('admin', 'super_admin')
     )
   );
 
@@ -160,7 +164,7 @@ create policy "Admin can read all roles"
   using (
     exists (
       select 1 from user_roles ur2
-      where ur2.user_id = auth.uid() and ur2.role = 'admin'
+      where ur2.user_id = auth.uid() and ur2.role in ('admin', 'super_admin', 'mentor')
     )
   );
 
@@ -169,7 +173,7 @@ create policy "Admin can insert roles"
   with check (
     exists (
       select 1 from user_roles
-      where user_id = auth.uid() and role = 'admin'
+      where user_id = auth.uid() and role in ('admin', 'super_admin')
     )
   );
 
@@ -178,7 +182,7 @@ create policy "Admin can update roles"
   using (
     exists (
       select 1 from user_roles
-      where user_id = auth.uid() and role = 'admin'
+      where user_id = auth.uid() and role in ('admin', 'super_admin', 'mentor')
     )
   );
 
@@ -196,7 +200,7 @@ create policy "Admin can read audit log"
   using (
     exists (
       select 1 from user_roles
-      where user_id = auth.uid() and role = 'admin'
+      where user_id = auth.uid() and role in ('admin', 'super_admin', 'mentor')
     )
   );
 
@@ -226,7 +230,7 @@ create policy "Admin can insert categories"
   with check (
     exists (
       select 1 from user_roles
-      where user_id = auth.uid() and role = 'admin'
+      where user_id = auth.uid() and role in ('admin', 'super_admin', 'mentor')
     )
   );
 
@@ -235,7 +239,7 @@ create policy "Admin can update categories"
   using (
     exists (
       select 1 from user_roles
-      where user_id = auth.uid() and role = 'admin'
+      where user_id = auth.uid() and role in ('admin', 'super_admin', 'mentor')
     )
   );
 
@@ -244,7 +248,7 @@ create policy "Admin can delete categories"
   using (
     exists (
       select 1 from user_roles
-      where user_id = auth.uid() and role = 'admin'
+      where user_id = auth.uid() and role in ('admin', 'super_admin', 'mentor')
     )
   );
 
@@ -261,20 +265,43 @@ create policy "Admin only: faculty_emails"
   using (
     exists (
       select 1 from user_roles
-      where user_id = auth.uid() and role = 'admin'
+      where user_id = auth.uid() and role in ('admin', 'super_admin')
     )
   );
 
 
 -- ────────────────────────────────────────────────────────────
--- admin_credentials
--- RLS remains DISABLED on this table intentionally.
--- Access is controlled by the application layer:
---   - signInAsAdmin queries with exact email + password match
---   - The anon key cannot enumerate rows because the WHERE
---     clause requires both email and password to match
--- Do NOT enable RLS here — doing so would require a
--- service-role policy that exposes the secret key in the
--- frontend build.
+-- service_requests
 -- ────────────────────────────────────────────────────────────
--- (no policy changes — leave RLS disabled)
+alter table service_requests enable row level security;
+
+drop policy if exists "Users can insert own requests" on service_requests;
+drop policy if exists "Users can read own requests" on service_requests;
+drop policy if exists "Admin can update requests" on service_requests;
+
+create policy "Users can insert own requests"
+  on service_requests for insert
+  with check (auth.uid() = student_id or student_id is null);
+
+create policy "Users can read own requests"
+  on service_requests for select
+  using (
+    auth.uid() = student_id
+    or exists (
+      select 1 from jsonb_array_elements(team_members) m
+      where lower(m->>'email') = lower(auth.jwt()->>'email')
+    )
+    or exists (
+      select 1 from user_roles
+      where user_id = auth.uid() and role in ('admin', 'super_admin', 'mentor')
+    )
+  );
+
+create policy "Admin can update requests"
+  on service_requests for update
+  using (
+    exists (
+      select 1 from user_roles
+      where user_id = auth.uid() and role in ('admin', 'super_admin', 'mentor')
+    )
+  );

@@ -25,7 +25,7 @@ function timeAgo(iso: string | null): string {
 }
 
 export default function AdminNotificationsPage() {
-  const { adminEmail } = useAuth()
+  const { user } = useAuth()
 
   const [notifTitle, setNotifTitle]         = useState('')
   const [notifBody, setNotifBody]           = useState('')
@@ -63,11 +63,11 @@ export default function AdminNotificationsPage() {
     try {
       await supabase
         .from('audit_log')
-        .insert({ actor_email: getAdminEmail(adminEmail), action, action_type: actionType })
+        .insert({ actor_email: getAdminEmail(user?.email), action, action_type: actionType })
     } catch {
       // audit failures are non-fatal
     }
-  }, [adminEmail])
+  }, [user])
 
   const handleSendNotification = async () => {
     if (!notifTitle.trim() || !notifBody.trim() || notifSending) return
@@ -78,7 +78,7 @@ export default function AdminNotificationsPage() {
         .insert({
           title: notifTitle.trim(),
           body: notifBody.trim(),
-          created_by_email: getAdminEmail(adminEmail),
+          created_by_email: getAdminEmail(user?.email),
           is_active: true,
         })
       if (error) {

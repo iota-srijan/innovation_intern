@@ -34,6 +34,14 @@ function truncate(text: string, max = 60): string {
   return text.length > max ? `${text.slice(0, max)}...` : text;
 }
 
+function TaggedBadge() {
+  return (
+    <span className="ml-1.5 inline-flex items-center rounded-full border border-violet-400/25 bg-violet-400/[0.08] px-1.5 py-0.5 text-[9px] font-semibold text-violet-300">
+      Tagged
+    </span>
+  );
+}
+
 export default function StudentRequestsPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -42,15 +50,17 @@ export default function StudentRequestsPage() {
   const [serviceLoading, setServiceLoading] = useState(true);
 
   const studentEmail = user?.email ?? '';
+  const studentEmailLower = studentEmail.trim().toLowerCase();
 
-  // Fetch + realtime
+  // Fetch + realtime — matches own requests OR requests where this email is
+  // tagged as a team member (mirrors the RLS select policy on issue_requests).
   const { data: requests = [], isLoading: loading } = useQuery<IssueRequest[]>({
     queryKey: ['issue_requests', 'mine', studentEmail],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('issue_requests')
         .select('*')
-        .eq('student_email', studentEmail)
+        .or(`student_email.eq.${studentEmail},team_members.cs.${JSON.stringify([{ email: studentEmailLower }])}`)
         .order('created_at', { ascending: false });
       if (error) throw error;
       return (data ?? []) as IssueRequest[];
@@ -62,18 +72,16 @@ export default function StudentRequestsPage() {
     if (!studentEmail) return;
 
     // ── Real-time subscription ──────────────────────────────────────
+    // Unfiltered: postgres_changes filters can't express the OR-across-columns
+    // match above, so we just listen for any change on the table and let the
+    // query itself decide what belongs to this user. Request volume is low
+    // enough that this is cheap.
     const channel = supabase
       .channel(`student-requests-${studentEmail}`)
       .on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'issue_requests',
-          filter: `student_email=eq.${studentEmail}`,
-        },
+        { event: '*', schema: 'public', table: 'issue_requests' },
         () => {
-          // Re-fetch on any change (insert/update/delete)
           void queryClient.invalidateQueries({ queryKey: ['issue_requests', 'mine', studentEmail] });
         }
       )
@@ -93,7 +101,7 @@ export default function StudentRequestsPage() {
       const { data, error } = await supabase
         .from('service_requests')
         .select('*')
-        .eq('student_email', studentEmail)
+        .or(`student_email.eq.${studentEmail},team_members.cs.${JSON.stringify([{ email: studentEmailLower }])}`)
         .order('created_at', { ascending: false });
 
       if (!error && data) setServiceRequests(data as ServiceRequest[]);
@@ -106,12 +114,7 @@ export default function StudentRequestsPage() {
       .channel(`student-service-requests-${studentEmail}`)
       .on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'service_requests',
-          filter: `student_email=eq.${studentEmail}`,
-        },
+        { event: '*', schema: 'public', table: 'service_requests' },
         () => {
           void fetchServiceRequests();
         }
@@ -223,6 +226,7 @@ export default function StudentRequestsPage() {
                         >
                           <td className="py-3 px-2 first:pl-0 font-medium text-gray-900 dark:text-zinc-200">
                             {req.item_name}
+                            {req.student_email?.trim().toLowerCase() !== studentEmailLower && <TaggedBadge />}
                           </td>
                           <td className="py-3 px-2 text-gray-500 dark:text-zinc-400">
                             {req.quantity_requested}
@@ -293,6 +297,7 @@ export default function StudentRequestsPage() {
                         >
                           <td className="py-3 px-2 first:pl-0 font-medium text-gray-900 dark:text-zinc-200">
                             {req.machine_name}
+                            {req.student_email?.trim().toLowerCase() !== studentEmailLower && <TaggedBadge />}
                           </td>
                           <td className="py-3 px-2 text-gray-500 dark:text-zinc-400 whitespace-nowrap">
                             {dims}

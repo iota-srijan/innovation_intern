@@ -2,38 +2,10 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from '
 import { type User, type Session } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabaseClient'
 import { clearCartRef } from './CartContext'
-
-function isAdminEmail(email: string): boolean {
-  return email.endsWith('@stockpilot.inc')
-}
-
-type UserRole = 'student' | 'faculty' | 'admin' | 'blocked' | 'banned' | null
-
-// Detect student vs faculty for @opju.ac.in emails.
-// Student local parts contain a department-code segment after the dot:
-//   e.g. kesh.bt24me14 → second segment starts with 2 letters + 2 digits → student
-// Faculty local parts are plain name.surname (no embedded code) → faculty
-function inferOpjuRole(email: string): 'student' | 'faculty' {
-  const local = email.split('@')[0]
-  const dotIndex = local.indexOf('.')
-  if (dotIndex !== -1 && /^[a-zA-Z]{2}\d{2}/.test(local.slice(dotIndex + 1))) {
-    return 'student'
-  }
-  return 'faculty'
-}
-
-// Fallback rules when user_roles table has no row for this email
-function getDefaultRole(email: string): UserRole {
-  if (isAdminEmail(email)) return 'admin'
-  if (email === 'srijanmishra1669@gmail.com') return 'student'
-  if (email === 'mishrasrijan2305@gmail.com') return 'faculty'
-  if (email.endsWith('@opju.ac.in')) return inferOpjuRole(email)
-  return 'blocked'
-}
+import { getDefaultRole, type UserRole } from '../lib/roleConfig'
 
 // Queries user_roles for both role and display_name in one round-trip.
 async function fetchUserData(email: string): Promise<{ role: UserRole; displayName: string | null }> {
-  if (isAdminEmail(email)) return { role: 'admin', displayName: null }
   try {
     const { data } = await supabase
       .from('user_roles')
@@ -77,10 +49,8 @@ interface AuthContextValue {
   isLoading: boolean
   isRoleLoading: boolean
   signInWithGoogle: () => Promise<void>
-  signInAsAdmin: (email: string, password: string) => Promise<boolean>
   signOut: () => Promise<void>
   userRole: UserRole
-  adminEmail: string | null
   displayName: string
   setDisplayName: (name: string) => void
   authError: string | null
@@ -94,10 +64,8 @@ const AuthContext = createContext<AuthContextValue>({
   isLoading: true,
   isRoleLoading: true,
   signInWithGoogle: async () => {},
-  signInAsAdmin: async () => false,
   signOut: async () => {},
   userRole: null,
-  adminEmail: null,
   displayName: '',
   setDisplayName: () => {},
   authError: null,
@@ -109,15 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isRoleLoading, setIsRoleLoading] = useState(true)
-  const [userRole, setUserRole] = useState<UserRole>(() => {
-    // Synchronously seed from localStorage so the first render already has the
-    // correct role — eliminates the null-flash on page load for admin sessions.
-    const stored = localStorage.getItem('sp-user-type') as UserRole
-    return stored === 'admin' ? 'admin' : null
-  })
-  const [adminEmail, setAdminEmail] = useState<string | null>(() =>
-    localStorage.getItem('sp-admin-email')
-  )
+  const [userRole, setUserRole] = useState<UserRole>(null)
   const [displayName, setDisplayName] = useState('')
   const [authError, setAuthError] = useState<string | null>(null)
 
@@ -140,7 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // ignoreDuplicates: true → ON CONFLICT DO NOTHING so admin-granted roles are preserved.
         // A second UPDATE syncs display_name from Google metadata for returning users
         // whose display_name column is still null.
-        if (email && !isAdminEmail(email)) {
+        if (email) {
           const meta = s.user.user_metadata as Record<string, unknown>
           const nameFromMeta: string | null =
             (typeof meta?.full_name === 'string' && meta.full_name ? meta.full_name : null) ??
@@ -205,16 +165,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setDisplayName(getDisplayName(s.user, dbName))
         }
       } else {
-        // No Supabase session — restore admin role and email from localStorage
-        const stored = localStorage.getItem('sp-user-type') as UserRole
-        setUserRole(stored === 'admin' ? 'admin' : null)
-        if (stored === 'admin') {
-          const storedEmail = localStorage.getItem('sp-admin-email')
-          setAdminEmail(storedEmail)
-          setDisplayName(storedEmail ?? '')
-        } else {
-          setDisplayName('')
-        }
+        setUserRole(null)
+        setDisplayName('')
       }
 
       if (!cancelled) {
@@ -245,42 +197,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
   }
 
-  const signInAsAdmin = async (email: string, password: string): Promise<boolean> => {
-    const trimmedEmail = email.trim()
-
-    try {
-      const res = await fetch('https://ltgqhpnfnscmweckkwye.supabase.co/functions/v1/admin-auth', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-        },
-        body: JSON.stringify({ action: 'login', email: trimmedEmail, password }),
-      })
-      const data = await res.json()
-
-      if (data?.success) {
-        localStorage.setItem('sp-user-type', 'admin')
-        localStorage.setItem('sp-admin-email', trimmedEmail)
-        setUserRole('admin')
-        setAdminEmail(trimmedEmail)
-        setDisplayName(trimmedEmail)
-        return true
-      }
-    } catch {
-      // network error
-    }
-
-    return false
-  }
-
   const signOut = async () => {
     await supabase.auth.signOut()
     localStorage.removeItem('sp-user-type')
-    localStorage.removeItem('sp-admin-email')
     clearCartRef.current?.()
     setUserRole(null)
-    setAdminEmail(null)
     setDisplayName('')
   }
 
@@ -289,14 +210,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         user,
         session,
-        isAuthenticated: !!user || userRole === 'admin',
+        isAuthenticated: !!user,
         isLoading,
         isRoleLoading,
         signInWithGoogle,
-        signInAsAdmin,
         signOut,
         userRole,
-        adminEmail,
         displayName,
         setDisplayName,
         authError,

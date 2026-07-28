@@ -15,6 +15,13 @@ import {
   Clock, CheckCircle, RotateCcw, Search,
   Wrench, FlaskConical, ChevronDown,
 } from "lucide-react";
+import { RequestSubmittedModal } from "../components/requests/RequestSubmittedModal";
+import { TeamMembersInput, getValidTeamMembers } from "../components/requests/TeamMembersInput";
+import { composeWithTruncation, type GmailComposeParams } from "../lib/gmail";
+import { DEFAULT_APPROVER_EMAIL } from "../lib/roleConfig";
+import type { TeamMember } from "../types";
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -78,6 +85,9 @@ export default function StudentDashboard() {
   const [serviceCopies, setServiceCopies] = useState<number | "">(1);
   const [servicePurpose, setServicePurpose] = useState("");
   const [serviceStlFile, setServiceStlFile] = useState<File | null>(null);
+  const [serviceProfessorEmail, setServiceProfessorEmail] = useState("");
+  const [serviceTeamMembers, setServiceTeamMembers] = useState<TeamMember[]>([]);
+  const [submittedGmail, setSubmittedGmail] = useState<GmailComposeParams | null>(null);
 
   // Consumables state
   const { consumables } = useConsumables();
@@ -182,6 +192,8 @@ export default function StudentDashboard() {
     setServiceCopies(1);
     setServicePurpose("");
     setServiceStlFile(null);
+    setServiceProfessorEmail("");
+    setServiceTeamMembers([]);
   }
 
   const selectedMachine = machines.find((m) => m.id === serviceMachineId);
@@ -194,6 +206,11 @@ export default function StudentDashboard() {
     }
     if (!servicePurpose.trim()) {
       toast.error("Please describe the purpose of your request.");
+      return;
+    }
+    const trimmedProfessorEmail = serviceProfessorEmail.trim();
+    if (!EMAIL_RE.test(trimmedProfessorEmail)) {
+      toast.error("Please enter a valid professor email.");
       return;
     }
     try {
@@ -211,9 +228,35 @@ export default function StudentDashboard() {
         copies: Math.max(1, Number(serviceCopies) || 1),
         purpose: servicePurpose.trim(),
         stlFile: serviceStlFile,
+        professor_email: trimmedProfessorEmail,
+        team_members: getValidTeamMembers(serviceTeamMembers, studentEmail),
       });
       toast.success("Service request submitted. Admin will assign your slot.");
       setShowServiceModal(false);
+
+      const dims = serviceDimL !== "" && serviceDimW !== "" && serviceDimH !== ""
+        ? `${serviceDimL}x${serviceDimW}x${serviceDimH} mm`
+        : null;
+      const lines = [
+        `Machine: ${selectedMachine.name}`,
+        isPrinter ? `Material: ${serviceMaterial}` : null,
+        dims ? `Dimensions: ${dims}` : null,
+        isPrinter ? `Infill: ${serviceInfill}%` : null,
+        `Copies: ${Math.max(1, Number(serviceCopies) || 1)}`,
+        `Purpose: ${servicePurpose.trim()}`,
+        serviceStlFile ? `STL file: ${serviceStlFile.name}` : null,
+      ].filter((l): l is string => l !== null);
+      const validTeam = getValidTeamMembers(serviceTeamMembers, studentEmail);
+      const teamLine = validTeam.length > 0
+        ? `\nTeam: ${validTeam.map(m => `${m.name} (${m.email})`).join(', ')}`
+        : '';
+      setSubmittedGmail(composeWithTruncation(
+        { to: DEFAULT_APPROVER_EMAIL, subject: `IdeaLab Service Request — ${studentName}` },
+        `New service request from ${studentName} (${studentEmail}):${teamLine}`,
+        lines,
+        `Please CC the requester's professor (${trimmedProfessorEmail}) before sending this email.`,
+      ));
+
       resetServiceForm();
     } catch {
       toast.error("Failed to submit service request. Please try again.");
@@ -820,6 +863,23 @@ export default function StudentDashboard() {
                 />
               </div>
 
+              {/* Professor email */}
+              <div>
+                <label className="mb-1.5 block text-[12.5px] font-semibold text-gray-900 dark:text-[#f4f4f6]">
+                  Professor's Email <span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="email"
+                  value={serviceProfessorEmail}
+                  onChange={(e) => setServiceProfessorEmail(e.target.value)}
+                  placeholder="professor@opju.ac.in"
+                  className="w-full rounded-[11px] border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#0d0a08] px-3 py-[11px] text-[14px] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-[#6e6e78] outline-none transition focus:border-orange-400 focus:shadow-[0_0_0_3px_rgba(124,58,237,0.16)]"
+                />
+              </div>
+
+              {/* Team members */}
+              <TeamMembersInput members={serviceTeamMembers} onChange={setServiceTeamMembers} ownEmail={studentEmail} />
+
               {/* Submit */}
               <button
                 onClick={handleServiceSubmit}
@@ -912,6 +972,15 @@ export default function StudentDashboard() {
             </div>
           </div>
         </div>
+      )}
+
+      {submittedGmail && (
+        <RequestSubmittedModal
+          title="Request submitted"
+          description="A record of your request is ready to email to the IdeaLab. Open the draft, add your professor in CC, and hit send."
+          gmail={submittedGmail}
+          onClose={() => setSubmittedGmail(null)}
+        />
       )}
     </AppShell>
   );

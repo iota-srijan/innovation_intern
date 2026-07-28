@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../lib/supabaseClient'
-import type { ServiceMachine } from '../types'
+import type { ServiceMachine, TeamMember } from '../types'
 
 export interface SubmitServiceRequestInput {
   student_id: string | null
@@ -17,6 +17,8 @@ export interface SubmitServiceRequestInput {
   copies: number
   purpose: string
   stlFile: File | null
+  professor_email: string
+  team_members: TeamMember[]
 }
 
 export function useServiceRequests() {
@@ -74,6 +76,8 @@ export function useServiceRequests() {
         stl_file_url,
         stl_file_name,
         status: 'pending',
+        professor_email: input.professor_email,
+        team_members: input.team_members,
       })
       if (insertError) throw insertError
 

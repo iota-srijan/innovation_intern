@@ -15,7 +15,8 @@ async function logItemAudit(payload: {
   new_quantity?: number
 }) {
   try {
-    const actorEmail = localStorage.getItem('sp-admin-email') ?? 'system'
+    const { data: { session } } = await supabase.auth.getSession()
+    const actorEmail = session?.user?.email ?? 'system'
     await supabase.from('audit_log').insert({ actor_email: actorEmail, ...payload })
   } catch {
     // audit failures are non-fatal

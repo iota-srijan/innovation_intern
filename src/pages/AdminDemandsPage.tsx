@@ -327,7 +327,7 @@ export default function AdminDemandsPage() {
   const logAudit = useCallback(async (action: string) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const actorEmail = user?.email ?? session?.user?.email ?? localStorage.getItem('sp-admin-email') ?? 'unknown-admin';
+      const actorEmail = user?.email ?? session?.user?.email ?? 'unknown-admin';
       await supabase.from("audit_log").insert({
         actor_email: actorEmail,
         action,

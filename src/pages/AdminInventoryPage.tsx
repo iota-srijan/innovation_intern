@@ -265,9 +265,11 @@ function ItemFormModal({ title, form, categories, submitting, onChange, onSubmit
   )
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+// ─── Reusable panel (no AppShell) ──────────────────────────────────────────────
+// Extracted so other role dashboards (e.g. Mentor) can embed full inventory
+// CRUD inside their own AppShell-wrapped page instead of duplicating this logic.
 
-export default function AdminInventoryPage() {
+export function InventoryManagementPanel() {
   const { user } = useAuth()
   const [items, setItems] = useState<InventoryItem[]>([])
   const [categories, setCategories] = useState<Category[]>([])
@@ -298,7 +300,7 @@ export default function AdminInventoryPage() {
 
   const logAudit = async (action: string, actionType: 'CREATE' | 'UPDATE' | 'DELETE') => {
     try {
-      const actorEmail = user?.email ?? localStorage.getItem('sp-admin-email') ?? 'unknown-admin'
+      const actorEmail = user?.email ?? 'unknown-admin'
       await supabase
         .from('audit_log')
         .insert({ actor_email: actorEmail, action, action_type: actionType })
@@ -544,7 +546,7 @@ export default function AdminInventoryPage() {
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <AppShell title="Inventory">
+    <>
       <div className="mx-auto max-w-[1200px] px-6 pb-24 pt-6">
 
         {/* Header */}
@@ -846,6 +848,16 @@ export default function AdminInventoryPage() {
           </div>
         </ModalBackdrop>
       )}
+    </>
+  )
+}
+
+// ─── Routed page (admin/super_admin/mentor via AdminOrMentorRoute) ─────────────
+
+export default function AdminInventoryPage() {
+  return (
+    <AppShell title="Inventory">
+      <InventoryManagementPanel />
     </AppShell>
   )
 }

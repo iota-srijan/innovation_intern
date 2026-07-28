@@ -4,9 +4,11 @@ import { ClipboardList } from 'lucide-react'
 import { AppShell } from '../components/layout/AppShell'
 import { RequestTypeTabs, type RequestTypeTab } from '../components/admin/RequestTypeTabs'
 import { ServiceRequestsPanel } from '../components/admin/ServiceRequestsPanel'
+import { TeamMembersBadgeList } from '../components/requests/TeamMembersBadgeList'
 import { supabase } from '../lib/supabaseClient'
 import { toast } from 'sonner'
 import { useAuth } from '../context/AuthContext'
+import type { TeamMember } from '../types'
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -31,6 +33,7 @@ interface IssueRequest {
   physical_status?: PhysicalStatus | null
   issued_at?: string | null
   returned_at?: string | null
+  team_members?: TeamMember[]
 }
 
 // ─── Badges ────────────────────────────────────────────────────────────────────
@@ -86,7 +89,7 @@ export default function AdminAllRequestsPage() {
   const logAudit = useCallback(async (action: string, actionType: ActionType) => {
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      const actorEmail = user?.email ?? session?.user?.email ?? localStorage.getItem('sp-admin-email') ?? 'unknown-admin'
+      const actorEmail = user?.email ?? session?.user?.email ?? 'unknown-admin'
       await supabase
         .from('audit_log')
         .insert({ actor_email: actorEmail, action, action_type: actionType })
@@ -231,7 +234,7 @@ export default function AdminAllRequestsPage() {
                 <table className="w-full text-left text-[12px]">
                   <thead>
                     <tr className="border-b border-gray-200 dark:border-white/[0.08]">
-                      {['Student', 'Item', 'Qty', 'Status', 'Submitted', 'Return By', 'Physical Status', 'Action'].map(h => (
+                      {['Student', 'Item', 'Qty', 'Status', 'Team', 'Submitted', 'Return By', 'Physical Status', 'Action'].map(h => (
                         <th key={h} className="px-2 pb-3 text-[10px] font-semibold uppercase tracking-widest text-gray-500 dark:text-[#6e6e78] first:pl-0 whitespace-nowrap">{h}</th>
                       ))}
                     </tr>
@@ -251,6 +254,7 @@ export default function AdminAllRequestsPage() {
                           <td className="py-3 px-2 text-gray-900 dark:text-[#f4f4f6]">{req.item_name}</td>
                           <td className="py-3 px-2 text-gray-500 dark:text-[#9a9aa6]">{req.quantity_requested}</td>
                           <td className="py-3 px-2"><IssueStatusBadge status={req.status} /></td>
+                          <td className="py-3 px-2 max-w-[160px]"><TeamMembersBadgeList members={req.team_members} /></td>
                           <td className="py-3 px-2 text-gray-500 dark:text-[#6e6e78] whitespace-nowrap">{new Date(req.created_at).toLocaleDateString()}</td>
                           <td className="py-3 px-2 text-gray-500 dark:text-[#6e6e78] whitespace-nowrap">
                             {req.return_deadline ? new Date(req.return_deadline).toLocaleDateString() : '—'}

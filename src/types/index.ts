@@ -28,6 +28,11 @@ export interface CartItem {
   purpose: string;
 }
 
+export interface TeamMember {
+  name: string;
+  email: string;
+}
+
 export interface IssueRequest {
   id: string;
   student_id?: string;
@@ -41,6 +46,9 @@ export interface IssueRequest {
   reviewed_by?: string;
   review_note?: string;
   return_deadline?: string | null;
+  professor_email?: string | null;
+  team_members?: TeamMember[];
+  assigned_mentor_email?: string | null;
   created_at: string;
   updated_at?: string;
 }
@@ -74,6 +82,9 @@ export interface ServiceRequest {
   slot_duration_mins: number | null;
   review_note: string | null;
   reviewed_by: string | null;
+  professor_email?: string | null;
+  team_members?: TeamMember[];
+  assigned_mentor_email?: string | null;
   created_at: string;
   updated_at: string;
 }

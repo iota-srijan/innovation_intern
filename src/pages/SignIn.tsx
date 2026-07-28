@@ -1,22 +1,15 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Shield, ArrowRight } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-import { useUserType } from '../context/UserTypeContext'
 
 export default function SignIn() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { setUserType } = useUserType()
   const params = new URLSearchParams(location.search)
   const errorParam = params.get('error')
 
-  const { signInWithGoogle, signInAsAdmin, authError, clearAuthError } = useAuth()
+  const { signInWithGoogle, authError, clearAuthError } = useAuth()
 
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
   const [showBlockedError, setShowBlockedError] = useState(false)
 
   useEffect(() => {
@@ -30,20 +23,6 @@ export default function SignIn() {
     clearAuthError()
     await signInWithGoogle()
     // Page will redirect to Google — no navigate() needed here
-  }
-
-  const handleAdminSignIn = async () => {
-    clearAuthError()
-    setError('')
-    setIsLoading(true)
-    const success = await signInAsAdmin(email, password)
-    setIsLoading(false)
-    if (success) {
-      setUserType('admin' as any)
-      window.location.href = '/admin'
-    } else {
-      setError('Invalid admin credentials')
-    }
   }
 
   return (
@@ -187,62 +166,6 @@ export default function SignIn() {
           </svg>
           Continue with Microsoft (coming soon)
         </button>
-
-        {/* Divider */}
-        <div className="flex items-center gap-3 mb-[18px]">
-          <div className="flex-1 h-px" style={{ backgroundColor: 'rgba(255,255,255,0.08)' }} />
-          <span className="text-[11.5px] whitespace-nowrap" style={{ color: 'rgba(255,255,255,0.28)' }}>or</span>
-          <div className="flex-1 h-px" style={{ backgroundColor: 'rgba(255,255,255,0.08)' }} />
-        </div>
-
-        {/* Admin Login Section */}
-        <div
-          className="rounded-[13px] p-[18px] mb-5"
-          style={{ backgroundColor: 'rgba(0,0,0,0.22)', border: '1px solid rgba(255,255,255,0.07)' }}
-        >
-          <div
-            className="flex items-center gap-[7px] text-[11px] font-semibold uppercase tracking-[0.06em] mb-[14px]"
-            style={{ color: 'rgba(255,255,255,0.35)' }}
-          >
-            <Shield className="w-3 h-3" />
-            Admin access
-          </div>
-
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => { setEmail(e.target.value); setError('') }}
-            placeholder="Admin email"
-            autoComplete="off"
-            className="block w-full h-11 rounded-[9px] px-[14px] text-sm text-[#eeeef5] placeholder:text-[rgba(255,255,255,0.28)] bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.1)] focus:border-[rgba(249,115,22,0.45)] outline-none transition-colors mb-[10px]"
-          />
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => { setPassword(e.target.value); setError('') }}
-            placeholder="Password"
-            autoComplete="new-password"
-            onKeyDown={(e) => { if (e.key === 'Enter') handleAdminSignIn() }}
-            className="block w-full h-11 rounded-[9px] px-[14px] text-sm text-[#eeeef5] placeholder:text-[rgba(255,255,255,0.28)] bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.1)] focus:border-[rgba(249,115,22,0.45)] outline-none transition-colors mb-[14px]"
-          />
-
-          <button
-            onClick={handleAdminSignIn}
-            disabled={isLoading}
-            className="w-full flex items-center justify-center gap-2 h-[46px] bg-[#f97316] hover:bg-[#fb923c] disabled:opacity-60 disabled:cursor-not-allowed text-[#ffffff] text-[14.5px] font-bold tracking-[-0.01em] rounded-[10px] transition-colors cursor-pointer"
-          >
-            {isLoading ? 'Signing in…' : (
-              <>
-                Sign In
-                <ArrowRight className="w-3.5 h-3.5" />
-              </>
-            )}
-          </button>
-
-          {error && (
-            <p className="text-xs text-red-400 mt-2 text-center">{error}</p>
-          )}
-        </div>
 
         {/* Footer */}
         <p className="text-[11.5px] text-center leading-[1.6]" style={{ color: 'rgba(255,255,255,0.25)' }}>

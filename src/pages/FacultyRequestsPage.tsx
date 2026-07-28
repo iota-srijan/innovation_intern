@@ -10,6 +10,11 @@ import { toast } from 'sonner';
 
 // ── Types ─────────────────────────────────────────────────────────
 
+interface TeamMember {
+  name: string;
+  email: string;
+}
+
 interface IssueRequest {
   id: string;
   item_id: string;
@@ -23,6 +28,7 @@ interface IssueRequest {
   return_deadline?: string | null;
   review_note?: string | null;
   physical_status?: string | null;
+  team_members?: TeamMember[];
 }
 
 // ── Badges ────────────────────────────────────────────────────────
@@ -37,6 +43,14 @@ function StatusBadge({ status }: { status: string }) {
   return null;
 }
 
+function TaggedBadge() {
+  return (
+    <span className="ml-1.5 inline-flex items-center rounded-full border border-violet-400/25 bg-violet-400/[0.08] px-1.5 py-0.5 text-[9px] font-semibold text-violet-300">
+      Tagged
+    </span>
+  );
+}
+
 // ── Main Component ────────────────────────────────────────────────
 
 export default function FacultyRequestsPage() {
@@ -44,6 +58,7 @@ export default function FacultyRequestsPage() {
   const { data: items = [] } = useItems();
 
   const facultyEmail = user?.email ?? '';
+  const facultyEmailLower = facultyEmail.trim().toLowerCase();
   const facultyName  = user?.user_metadata?.full_name ?? user?.email?.split('@')[0] ?? 'Faculty';
 
   const queryClient = useQueryClient();
@@ -64,7 +79,7 @@ export default function FacultyRequestsPage() {
       const { data, error } = await supabase
         .from('issue_requests')
         .select('*')
-        .eq('student_email', facultyEmail)
+        .or(`student_email.eq.${facultyEmail},team_members.cs.${JSON.stringify([{ email: facultyEmailLower }])}`)
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data as IssueRequest[];
@@ -75,11 +90,13 @@ export default function FacultyRequestsPage() {
   useEffect(() => {
     if (!facultyEmail) return;
 
+    // Unfiltered: postgres_changes can't express the OR-across-columns match
+    // above, so we listen for any change and let the query decide relevance.
     const channel = supabase
       .channel(`faculty-requests-page-${facultyEmail}`)
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'issue_requests', filter: `student_email=eq.${facultyEmail}` },
+        { event: '*', schema: 'public', table: 'issue_requests' },
         () => { void queryClient.invalidateQueries({ queryKey: ["issue_requests", "faculty-mine", facultyEmail] }); }
       )
       .subscribe();
@@ -307,6 +324,7 @@ export default function FacultyRequestsPage() {
                     <tr key={req.id} className="border-b border-gray-100 dark:border-white/6 hover:bg-gray-50 dark:hover:bg-white/4 last:border-0 transition-colors">
                       <td className="py-3 px-2 first:pl-5 font-medium text-gray-900 dark:text-white">
                         {req.item_name}
+                        {req.student_email?.trim().toLowerCase() !== facultyEmailLower && <TaggedBadge />}
                       </td>
                       <td className="py-3 px-2 text-gray-500 dark:text-zinc-400">
                         {req.quantity_requested}
@@ -392,7 +410,10 @@ export default function FacultyRequestsPage() {
                       key={req.id}
                       className="border-b border-gray-100 dark:border-white/6 hover:bg-gray-50 dark:hover:bg-white/4 last:border-0 transition-colors"
                     >
-                      <td className="py-3 px-2 first:pl-5 font-medium text-gray-900 dark:text-white">{req.item_name}</td>
+                      <td className="py-3 px-2 first:pl-5 font-medium text-gray-900 dark:text-white">
+                        {req.item_name}
+                        {req.student_email?.trim().toLowerCase() !== facultyEmailLower && <TaggedBadge />}
+                      </td>
                       <td className="py-3 px-2 text-gray-500 dark:text-zinc-400">{req.quantity_requested}</td>
                       <td className="py-3 px-2 text-gray-500 dark:text-zinc-400 max-w-[200px]">
                         <span className="line-clamp-2" title={req.purpose}>{req.purpose}</span>

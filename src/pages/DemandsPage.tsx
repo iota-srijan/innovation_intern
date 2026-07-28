@@ -411,7 +411,7 @@ function FacultyCard({
 // ─── Main Page ─────────────────────────────────────────────────────────────
 
 export default function DemandsPage() {
-  const { user, userRole, adminEmail } = useAuth();
+  const { user, userRole } = useAuth();
   const isFaculty = userRole === "faculty" || userRole === "admin";
   const isAdmin = userRole === "admin";
 
@@ -641,7 +641,7 @@ export default function DemandsPage() {
         toast.success("Marked as Under Review");
         try {
           await supabase.from('audit_log').insert({
-            actor_email: getAdminEmail(adminEmail),
+            actor_email: getAdminEmail(user?.email),
             action: `Marked demand under review: ${demand.title}`,
             action_type: 'UPDATE',
           });
@@ -679,7 +679,7 @@ export default function DemandsPage() {
             ? `Approved demand: ${actionModal.demand.title}`
             : `Rejected demand: ${actionModal.demand.title}`;
           await supabase.from('audit_log').insert({
-            actor_email: getAdminEmail(adminEmail),
+            actor_email: getAdminEmail(user?.email),
             action: auditAction,
             action_type: 'UPDATE',
           });
@@ -709,7 +709,7 @@ export default function DemandsPage() {
         toast.success("Demand deleted");
         try {
           await supabase.from("audit_log").insert({
-            actor_email: getAdminEmail(adminEmail),
+            actor_email: getAdminEmail(user?.email),
             action: `Deleted demand: ${deleteTarget.title}`,
             action_type: "admin_action",
           });

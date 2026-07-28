@@ -2,8 +2,12 @@ import { useState } from 'react'
 import { X } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAdminServiceRequests } from '../../hooks/useAdminServiceRequests'
+import { useMentors } from '../../hooks/useMentors'
 import { getStlPathFromUrl, getStlSignedUrl } from '../../lib/stlFiles'
 import type { ServiceRequest } from '../../types'
+import { RequestSubmittedModal } from '../requests/RequestSubmittedModal'
+import { TeamMembersBadgeList } from '../requests/TeamMembersBadgeList'
+import type { GmailComposeParams } from '../../lib/gmail'
 
 function Modal({ onClose, children }: { onClose: () => void; children: React.ReactNode }) {
   return (
@@ -32,19 +36,24 @@ interface ServiceRequestsPanelProps {
   title: string
   onlyPending: boolean
   emptyMessage: string
+  // Only Super Admin assigns mentors on approve; plain Admin sees a
+  // read-only mentor column instead once a mentor has been assigned.
+  canAssignMentor?: boolean
 }
 
-export function ServiceRequestsPanel({ title, onlyPending, emptyMessage }: ServiceRequestsPanelProps) {
-  const { requests, isLoading, approveServiceRequest, rejectServiceRequest } = useAdminServiceRequests({
+export function ServiceRequestsPanel({ title, onlyPending, emptyMessage, canAssignMentor = false }: ServiceRequestsPanelProps) {
+  const { requests, isLoading, approveServiceRequest, rejectServiceRequest, reassignMentor } = useAdminServiceRequests({
     onlyPending,
     refetchInterval: onlyPending ? 10000 : undefined,
   })
+  const { mentors } = useMentors()
 
   // Approve modal
   const [approveTarget, setApproveTarget] = useState<ServiceRequest | null>(null)
   const [approveSlot, setApproveSlot] = useState('')
   const [approveDuration, setApproveDuration] = useState<number | ''>(30)
   const [approveNote, setApproveNote] = useState('')
+  const [approveMentorEmail, setApproveMentorEmail] = useState('')
   const [approveLoading, setApproveLoading] = useState(false)
 
   // Reject modal
@@ -52,13 +61,20 @@ export function ServiceRequestsPanel({ title, onlyPending, emptyMessage }: Servi
   const [rejectNote, setRejectNote] = useState('')
   const [rejectLoading, setRejectLoading] = useState(false)
 
+  // Reassign mentor modal (already-approved requests)
+  const [reassignTarget, setReassignTarget] = useState<ServiceRequest | null>(null)
+  const [reassignMentorEmail, setReassignMentorEmail] = useState('')
+  const [reassignLoading, setReassignLoading] = useState(false)
+
   const [stlLoadingId, setStlLoadingId] = useState<string | null>(null)
+  const [submittedGmail, setSubmittedGmail] = useState<GmailComposeParams | null>(null)
 
   const closeApprove = () => {
     setApproveTarget(null)
     setApproveSlot('')
     setApproveDuration(30)
     setApproveNote('')
+    setApproveMentorEmail('')
   }
 
   const closeReject = () => {
@@ -70,12 +86,32 @@ export function ServiceRequestsPanel({ title, onlyPending, emptyMessage }: Servi
     if (!approveTarget || !approveSlot || approveLoading) return
     setApproveLoading(true)
     try {
+      const slotIso = new Date(approveSlot).toISOString()
+      const durationMins = Math.max(1, Number(approveDuration) || 30)
       await approveServiceRequest(approveTarget, {
-        assignedSlot: new Date(approveSlot).toISOString(),
-        durationMins: Math.max(1, Number(approveDuration) || 30),
+        assignedSlot: slotIso,
+        durationMins,
         reviewNote: approveNote,
+        assignedMentorEmail: canAssignMentor ? approveMentorEmail : undefined,
       })
       toast.success('Service request approved')
+
+      if (approveTarget.professor_email) {
+        setSubmittedGmail({
+          to: approveTarget.student_email,
+          cc: approveTarget.professor_email,
+          subject: `IdeaLab Service Request Approved — ${approveTarget.machine_name}`,
+          body: [
+            `Hi ${approveTarget.student_name},`,
+            `Your service request on ${approveTarget.machine_name} has been approved.`,
+            `Assigned slot: ${new Date(slotIso).toLocaleString()} (${durationMins} min)`,
+            canAssignMentor && approveMentorEmail ? `Assigned mentor: ${approveMentorEmail}` : null,
+            approveNote.trim() ? `Note: ${approveNote.trim()}` : null,
+            `— OPJU IdeaLab Team`,
+          ].filter((l): l is string => l !== null).join('\n\n'),
+        })
+      }
+
       closeApprove()
     } catch {
       toast.error('Failed to approve service request')
@@ -95,6 +131,21 @@ export function ServiceRequestsPanel({ title, onlyPending, emptyMessage }: Servi
       toast.error('Failed to reject service request')
     } finally {
       setRejectLoading(false)
+    }
+  }
+
+  const handleReassign = async () => {
+    if (!reassignTarget || !reassignMentorEmail || reassignLoading) return
+    setReassignLoading(true)
+    try {
+      await reassignMentor(reassignTarget, reassignMentorEmail)
+      toast.success('Mentor reassigned')
+      setReassignTarget(null)
+      setReassignMentorEmail('')
+    } catch {
+      toast.error('Failed to reassign mentor')
+    } finally {
+      setReassignLoading(false)
     }
   }
 
@@ -138,8 +189,8 @@ export function ServiceRequestsPanel({ title, onlyPending, emptyMessage }: Servi
               <thead>
                 <tr className="border-b border-gray-200 dark:border-white/[0.08]">
                   {[
-                    'Student', 'Machine', 'Dimensions', 'Material', 'Infill', 'Copies', 'Purpose', 'STL File',
-                    ...(onlyPending ? [] : ['Status']),
+                    'Student', 'Machine', 'Dimensions', 'Material', 'Infill', 'Copies', 'Purpose', 'Team', 'STL File',
+                    ...(onlyPending ? [] : ['Status', 'Mentor']),
                     'Actions',
                   ].map(h => (
                     <th key={h} className="px-2 pb-3 text-[10px] font-semibold uppercase tracking-widest text-gray-500 dark:text-[#6e6e78] first:pl-0 whitespace-nowrap">{h}</th>
@@ -164,6 +215,7 @@ export function ServiceRequestsPanel({ title, onlyPending, emptyMessage }: Servi
                       <td className="py-3 px-2 text-gray-500 dark:text-[#9a9aa6]">{req.infill_percent != null ? `${req.infill_percent}%` : '—'}</td>
                       <td className="py-3 px-2 text-gray-500 dark:text-[#9a9aa6]">{req.copies}</td>
                       <td className="py-3 px-2 max-w-[180px] text-gray-500 dark:text-[#9a9aa6]">{truncate(req.purpose)}</td>
+                      <td className="py-3 px-2 max-w-[160px]"><TeamMembersBadgeList members={req.team_members} /></td>
                       <td className="py-3 px-2">
                         {req.stl_file_url ? (
                           <button
@@ -179,13 +231,26 @@ export function ServiceRequestsPanel({ title, onlyPending, emptyMessage }: Servi
                         )}
                       </td>
                       {!onlyPending && (
-                        <td className="py-3 px-2"><ServiceStatusBadge status={req.status} /></td>
+                        <>
+                          <td className="py-3 px-2"><ServiceStatusBadge status={req.status} /></td>
+                          <td className="py-3 px-2 text-gray-500 dark:text-[#9a9aa6]">
+                            <div>{req.assigned_mentor_email ?? '—'}</div>
+                            {canAssignMentor && req.status === 'approved' && (
+                              <button
+                                onClick={() => { setReassignTarget(req); setReassignMentorEmail(req.assigned_mentor_email ?? '') }}
+                                className="cursor-pointer text-[10px] font-semibold text-orange-400 hover:text-orange-300"
+                              >
+                                Reassign
+                              </button>
+                            )}
+                          </td>
+                        </>
                       )}
                       <td className="py-3 px-2">
                         {req.status === 'pending' ? (
                           <div className="flex items-center gap-2">
                             <button
-                              onClick={() => { setApproveTarget(req); setApproveSlot(''); setApproveDuration(30); setApproveNote('') }}
+                              onClick={() => { setApproveTarget(req); setApproveSlot(''); setApproveDuration(30); setApproveNote(''); setApproveMentorEmail('') }}
                               className="inline-flex cursor-pointer items-center gap-1.5 rounded-[9px] border border-green-400/30 bg-green-400/[0.08] px-3 py-1.5 text-[11px] font-semibold text-green-400 transition hover:bg-green-400/[0.16]"
                             >
                               Approve
@@ -275,6 +340,27 @@ export function ServiceRequestsPanel({ title, onlyPending, emptyMessage }: Servi
               />
             </div>
 
+            {canAssignMentor && (
+              <div className="mb-4">
+                <label className="mb-1.5 block text-[12.5px] font-semibold text-gray-900 dark:text-[#f4f4f6]">
+                  Assign Mentor <span className="font-normal text-gray-400 dark:text-[#6e6e78]">(optional)</span>
+                </label>
+                <select
+                  value={approveMentorEmail}
+                  onChange={e => setApproveMentorEmail(e.target.value)}
+                  className="w-full appearance-none cursor-pointer rounded-[11px] border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#0d0a08] px-3 py-[11px] text-[14px] text-gray-900 dark:text-white outline-none transition focus:border-orange-400"
+                >
+                  <option value="">No mentor</option>
+                  {mentors.map(m => (
+                    <option key={m.user_id} value={m.email}>{m.display_name ?? m.email} ({m.email})</option>
+                  ))}
+                </select>
+                {mentors.length === 0 && (
+                  <p className="mt-1.5 text-[11px] text-amber-400">No mentors found. Grant mentor access to a user first.</p>
+                )}
+              </div>
+            )}
+
             <div className="mb-6">
               <label className="mb-1.5 block text-[12.5px] font-semibold text-gray-900 dark:text-[#f4f4f6]">
                 Note to Student{' '}<span className="font-normal text-gray-400 dark:text-[#6e6e78]">(optional)</span>
@@ -357,6 +443,70 @@ export function ServiceRequestsPanel({ title, onlyPending, emptyMessage }: Servi
             </div>
           </div>
         </Modal>
+      )}
+
+      {/* ── Reassign Mentor Modal ── */}
+      {reassignTarget && (
+        <Modal onClose={() => { setReassignTarget(null); setReassignMentorEmail('') }}>
+          <div className="w-full max-w-[420px] rounded-[18px] border border-gray-200 dark:border-white/10 bg-white dark:bg-[#16161b] p-6 shadow-xl dark:shadow-[0_40px_90px_-30px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.04)]">
+            <div className="mb-1 flex items-center justify-between">
+              <h2 className="text-[17px] font-bold tracking-[-0.01em] text-gray-900 dark:text-white">Reassign Mentor</h2>
+              <button
+                onClick={() => { setReassignTarget(null); setReassignMentorEmail('') }}
+                className="grid h-8 w-8 cursor-pointer place-items-center rounded-[9px] border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/[0.04] text-gray-500 dark:text-[#9a9aa6] transition hover:bg-gray-100 dark:hover:bg-white/[0.08] hover:text-gray-900 dark:hover:text-white"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <p className="mb-5 text-[13px] text-gray-500 dark:text-[#9a9aa6]">
+              <span className="font-semibold text-gray-900 dark:text-[#f4f4f6]">{reassignTarget.student_name}</span>
+              {' '}·{' '}{reassignTarget.machine_name}
+              {' '}· currently{' '}<span className="font-mono">{reassignTarget.assigned_mentor_email ?? 'unassigned'}</span>
+            </p>
+
+            <div className="mb-6">
+              <label className="mb-1.5 block text-[12.5px] font-semibold text-gray-900 dark:text-[#f4f4f6]">
+                New Mentor <span className="text-orange-400 dark:text-orange-300">*</span>
+              </label>
+              <select
+                value={reassignMentorEmail}
+                onChange={e => setReassignMentorEmail(e.target.value)}
+                className="w-full appearance-none cursor-pointer rounded-[11px] border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#0d0a08] px-3 py-[11px] text-[14px] text-gray-900 dark:text-white outline-none transition focus:border-orange-400"
+              >
+                <option value="" disabled>Select a mentor...</option>
+                {mentors.map(m => (
+                  <option key={m.user_id} value={m.email}>{m.display_name ?? m.email} ({m.email})</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => { setReassignTarget(null); setReassignMentorEmail('') }}
+                className="cursor-pointer rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/[0.03] px-4 py-2.5 text-[14px] font-semibold text-gray-700 dark:text-white transition hover:bg-gray-100 dark:hover:bg-white/[0.06]"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => void handleReassign()}
+                disabled={!reassignMentorEmail || reassignMentorEmail === reassignTarget.assigned_mentor_email || reassignLoading}
+                className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-gradient-to-b from-orange-400 to-orange-500 px-4 py-2.5 text-[14px] font-semibold text-white transition-opacity disabled:opacity-50"
+              >
+                {reassignLoading && <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />}
+                Confirm Reassignment
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {submittedGmail && (
+        <RequestSubmittedModal
+          title="Request approved"
+          description="A record of this approval is ready to email to the student, with their professor CC'd."
+          gmail={submittedGmail}
+          onClose={() => setSubmittedGmail(null)}
+        />
       )}
     </>
   )

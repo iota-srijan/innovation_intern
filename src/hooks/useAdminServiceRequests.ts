@@ -11,6 +11,7 @@ interface ApproveParams {
   assignedSlot: string
   durationMins: number
   reviewNote: string
+  assignedMentorEmail?: string
 }
 
 export function useAdminServiceRequests(options: UseAdminServiceRequestsOptions = {}) {
@@ -33,9 +34,14 @@ export function useAdminServiceRequests(options: UseAdminServiceRequestsOptions 
   const allRequests = data ?? []
   const requests = options.onlyPending ? allRequests.filter(r => r.status === 'pending') : allRequests
 
+  const getActorEmail = async (): Promise<string> => {
+    const { data: { session } } = await supabase.auth.getSession()
+    return session?.user?.email ?? 'unknown-admin'
+  }
+
   const logAudit = async (action: string) => {
     try {
-      const actorEmail = localStorage.getItem('sp-admin-email') ?? 'unknown-admin'
+      const actorEmail = await getActorEmail()
       await supabase.from('audit_log').insert({ actor_email: actorEmail, action, action_type: 'UPDATE' })
     } catch {
       // audit failures are non-fatal
@@ -43,7 +49,7 @@ export function useAdminServiceRequests(options: UseAdminServiceRequestsOptions 
   }
 
   const approveServiceRequest = async (target: ServiceRequest, params: ApproveParams) => {
-    const adminEmail = localStorage.getItem('sp-admin-email') ?? 'unknown-admin'
+    const adminEmail = await getActorEmail()
 
     const { error } = await supabase
       .from('service_requests')
@@ -53,16 +59,18 @@ export function useAdminServiceRequests(options: UseAdminServiceRequestsOptions 
         slot_duration_mins: params.durationMins,
         review_note: params.reviewNote.trim() || null,
         reviewed_by: adminEmail,
+        assigned_mentor_email: params.assignedMentorEmail || null,
       })
       .eq('id', target.id)
     if (error) throw error
 
-    await logAudit(`Service request approved: ${target.machine_name} for ${target.student_name}`)
+    const mentorNote = params.assignedMentorEmail ? `, assigned mentor ${params.assignedMentorEmail}` : ''
+    await logAudit(`Service request approved: ${target.machine_name} for ${target.student_name}${mentorNote}`)
     await queryClient.invalidateQueries({ queryKey: ['service_requests'] })
   }
 
   const rejectServiceRequest = async (target: ServiceRequest, reviewNote: string) => {
-    const adminEmail = localStorage.getItem('sp-admin-email') ?? 'unknown-admin'
+    const adminEmail = await getActorEmail()
 
     const { error } = await supabase
       .from('service_requests')
@@ -78,5 +86,19 @@ export function useAdminServiceRequests(options: UseAdminServiceRequestsOptions 
     await queryClient.invalidateQueries({ queryKey: ['service_requests'] })
   }
 
-  return { requests, isLoading, approveServiceRequest, rejectServiceRequest }
+  // Reassigns the mentor on an already-approved service request without
+  // touching status, slot, or any other field — safe to call after the
+  // original mentor has already started working the request.
+  const reassignMentor = async (target: ServiceRequest, newMentorEmail: string) => {
+    const { error } = await supabase
+      .from('service_requests')
+      .update({ assigned_mentor_email: newMentorEmail })
+      .eq('id', target.id)
+    if (error) throw error
+
+    await logAudit(`Reassigned mentor for ${target.machine_name} (${target.student_name}) from ${target.assigned_mentor_email ?? 'none'} to ${newMentorEmail}`)
+    await queryClient.invalidateQueries({ queryKey: ['service_requests'] })
+  }
+
+  return { requests, isLoading, approveServiceRequest, rejectServiceRequest, reassignMentor }
 }

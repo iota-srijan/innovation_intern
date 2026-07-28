@@ -1,20 +1,12 @@
 import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
+import { ALLOWED_EXTRA_EMAILS, getDefaultRole as getDefaultRoleShared } from '../lib/roleConfig'
 
 // Mirrors the fallback logic in AuthContext — used only when user_roles has no row
 function getDefaultRole(email: string): 'student' | 'faculty' | 'blocked' {
-  if (email === 'srijanmishra1669@gmail.com') return 'student'
-  if (email === 'mishrasrijan2305@gmail.com') return 'faculty'
-  if (email.endsWith('@opju.ac.in')) {
-    const local = email.split('@')[0]
-    const dotIndex = local.indexOf('.')
-    if (dotIndex !== -1 && /^[a-zA-Z]{2}\d{2}/.test(local.slice(dotIndex + 1))) {
-      return 'student'
-    }
-    return 'faculty'
-  }
-  return 'blocked'
+  const role = getDefaultRoleShared(email)
+  return role === 'student' || role === 'faculty' ? role : 'blocked'
 }
 
 export default function AuthCallback() {
@@ -37,8 +29,7 @@ export default function AuthCallback() {
         // Block emails that don't match any allowed domain or known address
         const isAllowed =
           email.endsWith('@opju.ac.in') ||
-          email === 'srijanmishra1669@gmail.com' ||
-          email === 'mishrasrijan2305@gmail.com'
+          ALLOWED_EXTRA_EMAILS.includes(email)
 
         if (!isAllowed) {
           await supabase.auth.signOut()
@@ -48,6 +39,8 @@ export default function AuthCallback() {
 
         // Consult user_roles table first — this respects admin grant/revoke
         let role: 'student' | 'faculty' = 'student'
+        let dbRole: string | undefined
+
         try {
           const { data } = await supabase
             .from('user_roles')
@@ -55,9 +48,17 @@ export default function AuthCallback() {
             .eq('email', email)
             .maybeSingle()
 
-          if (data?.role === 'faculty') {
+          dbRole = data?.role as string | undefined
+
+          if (dbRole === 'super_admin' || dbRole === 'mentor') {
+            localStorage.setItem('sp-user-type', dbRole)
+            navigate(dbRole === 'super_admin' ? '/super-admin' : '/mentor-dashboard', { replace: true })
+            return
+          }
+
+          if (dbRole === 'faculty') {
             role = 'faculty'
-          } else if (data?.role === 'student') {
+          } else if (dbRole === 'student') {
             role = 'student'
           } else {
             // No DB row yet — fall back to domain rules
