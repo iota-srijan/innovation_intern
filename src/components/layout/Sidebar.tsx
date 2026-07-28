@@ -13,6 +13,7 @@ import {
   ClipboardList,
   ScrollText,
   Bell,
+  TrendingUp,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../../context/AuthContext";
@@ -32,6 +33,7 @@ const navItems = [
   { icon: ClipboardList,    path: "/admin/requests",          label: "All Requests" },     // admin only
   { icon: Bell,             path: "/admin/notifications",     label: "Notifications" },
   { icon: ScrollText,       path: "/admin/audit-log",         label: "Audit Log" },        // admin only
+  { icon: TrendingUp,       path: "/admin/analytics",         label: "Usage Analytics" },  // admin + super_admin
   { icon: Settings,         path: "/profile",                 label: "Settings" },
   { icon: Settings,         path: "/admin/settings",          label: "Settings" },
   { icon: ClipboardList,    path: "/mentor-dashboard",        label: "Assigned Requests", to: "/mentor-dashboard?section=assigned" }, // mentor only

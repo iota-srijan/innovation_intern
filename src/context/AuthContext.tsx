@@ -3,6 +3,7 @@ import { type User, type Session } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabaseClient'
 import { clearCartRef } from './CartContext'
 import { getDefaultRole, type UserRole } from '../lib/roleConfig'
+import { SESSION_TRACKING_KEY } from '../lib/analytics'
 
 // Queries user_roles for both role and display_name in one round-trip.
 async function fetchUserData(email: string): Promise<{ role: UserRole; displayName: string | null }> {
@@ -200,6 +201,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     await supabase.auth.signOut()
     localStorage.removeItem('sp-user-type')
+    sessionStorage.removeItem(SESSION_TRACKING_KEY)
     clearCartRef.current?.()
     setUserRole(null)
     setDisplayName('')

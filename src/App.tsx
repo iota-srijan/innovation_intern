@@ -3,6 +3,7 @@ import { Toaster } from 'sonner'
 
 import { useAuth } from './context/AuthContext'
 import { ProtectedRoute, AdminRoute, AdminOrMentorRoute, StudentRoute, FacultyRoute, StudentOrFacultyRoute, SuperAdminRoute, MentorRoute } from './components/ProtectedRoute'
+import { SessionTracker } from './components/SessionTracker'
 
 import LandingPage from './pages/LandingPage'
 import SignIn from './pages/SignIn'
@@ -26,6 +27,7 @@ import AdminAuditLogPage from './pages/AdminAuditLogPage'
 import AdminSettingsPage from './pages/AdminSettingsPage'
 import NotificationsPage from './pages/NotificationsPage'
 import AdminNotificationsPage from './pages/AdminNotificationsPage'
+import AdminAnalyticsPage from './pages/AdminAnalyticsPage'
 
 export default function App() {
   const { isRoleLoading } = useAuth()
@@ -36,6 +38,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      <SessionTracker />
       <Routes>
         {/* Public routes */}
         <Route path="/" element={<LandingPage />} />
@@ -64,6 +67,7 @@ export default function App() {
         <Route path="/admin/requests" element={<AdminRoute><AdminAllRequestsPage /></AdminRoute>} />
         <Route path="/admin/notifications" element={<AdminRoute><AdminNotificationsPage /></AdminRoute>} />
         <Route path="/admin/audit-log" element={<AdminRoute><AdminAuditLogPage /></AdminRoute>} />
+        <Route path="/admin/analytics" element={<AdminRoute><AdminAnalyticsPage /></AdminRoute>} />
         <Route path="/admin/settings" element={<AdminRoute><AdminSettingsPage /></AdminRoute>} />
 
         {/* Super Admin / Mentor portals */}
