@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ClipboardList, ShoppingCart, Plus, X } from 'lucide-react';
 import { AppShell } from '../components/layout/AppShell';
+import { ReturnDeadlineBadge } from '../components/requests/ReturnDeadlineBadge';
 import { useAuth } from '../context/AuthContext';
 import { useItems } from '../hooks/useItems';
 import { supabase } from '../lib/supabaseClient';
@@ -107,6 +108,10 @@ export default function FacultyRequestsPage() {
   // ── Stats ────────────────────────────────────────────────────────
   const pending  = requests.filter((r) => r.status === 'pending').length;
   const approved = requests.filter((r) => r.status === 'approved').length;
+  const overdue = requests.filter((r) => {
+    if (r.status !== 'approved' || r.physical_status !== 'issued' || !r.return_deadline) return false;
+    return new Date(r.return_deadline) < new Date(new Date().toDateString());
+  }).length;
 
   // ── Submit new request ────────────────────────────────────────────
   const handleSubmit = async () => {
@@ -202,6 +207,12 @@ export default function FacultyRequestsPage() {
               <span className="h-1.5 w-1.5 rounded-full bg-green-400" />
               {approved} approved
             </span>
+            {overdue > 0 && (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-red-500/20 bg-red-500/10 px-3 py-1 text-[11px] font-medium text-red-400">
+                <span className="h-1.5 w-1.5 rounded-full bg-red-400" />
+                {overdue} overdue
+              </span>
+            )}
           </div>
         )}
 
@@ -420,7 +431,7 @@ export default function FacultyRequestsPage() {
                       </td>
                       <td className="py-3 px-2"><StatusBadge status={req.status} /></td>
                       <td className="py-3 px-2 text-gray-500 dark:text-zinc-400">
-                        {req.return_deadline ? new Date(req.return_deadline).toLocaleDateString() : '—'}
+                        <ReturnDeadlineBadge status={req.status} physicalStatus={req.physical_status} returnDeadline={req.return_deadline} />
                       </td>
                       <td className="py-3 px-2 pr-5 text-gray-600 dark:text-zinc-500">
                         {new Date(req.created_at).toLocaleDateString()}

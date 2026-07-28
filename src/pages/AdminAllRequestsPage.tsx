@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { ClipboardList } from 'lucide-react'
+import * as XLSX from 'xlsx'
+import { ClipboardList, Download } from 'lucide-react'
 import { AppShell } from '../components/layout/AppShell'
 import { RequestTypeTabs, type RequestTypeTab } from '../components/admin/RequestTypeTabs'
 import { ServiceRequestsPanel } from '../components/admin/ServiceRequestsPanel'
@@ -8,7 +9,13 @@ import { TeamMembersBadgeList } from '../components/requests/TeamMembersBadgeLis
 import { supabase } from '../lib/supabaseClient'
 import { toast } from 'sonner'
 import { useAuth } from '../context/AuthContext'
-import type { TeamMember } from '../types'
+import type { TeamMember, ServiceRequest } from '../types'
+
+function formatTs(iso: string): string {
+  const d = new Date(iso)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -67,6 +74,7 @@ export default function AdminAllRequestsPage() {
   const [activeTab, setActiveTab]     = useState<RequestTypeTab>('equipment')
   const [allFilter, setAllFilter]     = useState<AllRequestsFilter>('All')
   const [rowActionId, setRowActionId] = useState<string | null>(null)
+  const [exporting, setExporting]     = useState(false)
 
   // ── Fetch all requests via React Query ────────────────────────────────────────
 
@@ -165,6 +173,54 @@ export default function AdminAllRequestsPage() {
     }
   }
 
+  // ── Export all requests (both types) as XLSX ──────────────────────────────────
+
+  const handleExport = async () => {
+    if (exporting) return
+    setExporting(true)
+    try {
+      const { data: serviceData, error } = await supabase
+        .from('service_requests')
+        .select('*')
+        .order('created_at', { ascending: false })
+      if (error) throw error
+
+      const issueRows = allRequests.map(r => ({
+        Timestamp: formatTs(r.created_at),
+        Student: r.student_name,
+        Email: r.student_email,
+        Item: r.item_name,
+        Qty: r.quantity_requested,
+        Purpose: r.purpose,
+        Status: r.status,
+        'Return Deadline': r.return_deadline ?? '—',
+        'Physical Status': r.physical_status ?? '—',
+      }))
+
+      const serviceRows = ((serviceData ?? []) as ServiceRequest[]).map(r => ({
+        Timestamp: formatTs(r.created_at),
+        Student: r.student_name,
+        Email: r.student_email,
+        Machine: r.machine_name,
+        Material: r.material_type ?? '—',
+        Copies: r.copies,
+        Purpose: r.purpose,
+        Status: r.status,
+        'Assigned Slot': r.assigned_slot ? formatTs(r.assigned_slot) : '—',
+      }))
+
+      const wb = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(issueRows), 'Equipment Requests')
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(serviceRows), 'Service Requests')
+      XLSX.writeFile(wb, `idealab-requests-${new Date().toISOString().slice(0, 10)}.xlsx`)
+      toast.success(`Exported ${issueRows.length} equipment + ${serviceRows.length} service requests`)
+    } catch {
+      toast.error('Failed to export requests')
+    } finally {
+      setExporting(false)
+    }
+  }
+
   // ── Render ────────────────────────────────────────────────────────────────────
 
   return (
@@ -183,15 +239,29 @@ export default function AdminAllRequestsPage() {
               View and manage all issue requests across all statuses
             </p>
           </div>
-          <button
-            onClick={() => {
-              void queryClient.invalidateQueries({ queryKey: ['issue_requests'] })
-              void queryClient.invalidateQueries({ queryKey: ['service_requests'] })
-            }}
-            className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/[0.03] px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-white transition hover:bg-gray-100 dark:hover:bg-white/[0.07]"
-          >
-            Refresh
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => void handleExport()}
+              disabled={exporting}
+              className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/[0.03] px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-white transition hover:bg-gray-100 dark:hover:bg-white/[0.07] disabled:opacity-50"
+            >
+              {exporting ? (
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-orange-400 border-t-transparent" />
+              ) : (
+                <Download className="h-4 w-4" />
+              )}
+              Export to Excel
+            </button>
+            <button
+              onClick={() => {
+                void queryClient.invalidateQueries({ queryKey: ['issue_requests'] })
+                void queryClient.invalidateQueries({ queryKey: ['service_requests'] })
+              }}
+              className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/[0.03] px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-white transition hover:bg-gray-100 dark:hover:bg-white/[0.07]"
+            >
+              Refresh
+            </button>
+          </div>
         </div>
 
         <RequestTypeTabs active={activeTab} onChange={setActiveTab} />

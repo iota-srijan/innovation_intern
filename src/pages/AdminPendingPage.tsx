@@ -8,6 +8,7 @@ import { TeamMembersBadgeList } from '../components/requests/TeamMembersBadgeLis
 import { supabase } from '../lib/supabaseClient'
 import { toast } from 'sonner'
 import { useAuth } from '../context/AuthContext'
+import { notifyUser } from '../lib/notify'
 import type { TeamMember } from '../types'
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
@@ -18,6 +19,7 @@ type IssueStatus = 'pending' | 'approved' | 'rejected'
 
 interface IssueRequest {
   id: string
+  student_id?: string | null
   item_id: string
   item_name: string
   quantity_requested: number
@@ -186,6 +188,12 @@ export default function AdminPendingPage() {
       )
 
       toast.success('Request approved')
+      void notifyUser({
+        targetUserId: approveTarget.student_id,
+        title: 'Request approved',
+        body: `Your request for ${approveTarget.item_name} x${approveTarget.quantity_requested} has been approved.${approveDeadline ? ` Return by ${new Date(approveDeadline).toLocaleDateString()}.` : ''}`,
+        createdByEmail: user?.email ?? 'unknown-admin',
+      })
       setApproveTarget(null)
       setApproveNote('')
       setApproveDeadline(tomorrowStr)
@@ -226,6 +234,12 @@ export default function AdminPendingPage() {
       )
 
       toast.success('Request rejected')
+      void notifyUser({
+        targetUserId: rejectTarget.student_id,
+        title: 'Request rejected',
+        body: `Your request for ${rejectTarget.item_name} was rejected. Reason: ${rejectNote.trim()}`,
+        createdByEmail: user?.email ?? 'unknown-admin',
+      })
       setRejectTarget(null)
       setRejectNote('')
       void queryClient.invalidateQueries({ queryKey: ['issue_requests'] })

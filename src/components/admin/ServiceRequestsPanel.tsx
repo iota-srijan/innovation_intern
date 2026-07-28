@@ -1,9 +1,13 @@
 import { useState } from 'react'
-import { X } from 'lucide-react'
+import { X, AlertTriangle } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAdminServiceRequests } from '../../hooks/useAdminServiceRequests'
 import { useMentors } from '../../hooks/useMentors'
 import { getStlPathFromUrl, getStlSignedUrl } from '../../lib/stlFiles'
+import { supabase } from '../../lib/supabaseClient'
+import { slotsOverlap } from '../../lib/scheduling'
+import { notifyUser } from '../../lib/notify'
+import { useAuth } from '../../context/AuthContext'
 import type { ServiceRequest } from '../../types'
 import { RequestSubmittedModal } from '../requests/RequestSubmittedModal'
 import { TeamMembersBadgeList } from '../requests/TeamMembersBadgeList'
@@ -42,6 +46,7 @@ interface ServiceRequestsPanelProps {
 }
 
 export function ServiceRequestsPanel({ title, onlyPending, emptyMessage, canAssignMentor = false }: ServiceRequestsPanelProps) {
+  const { user } = useAuth()
   const { requests, isLoading, approveServiceRequest, rejectServiceRequest, reassignMentor } = useAdminServiceRequests({
     onlyPending,
     refetchInterval: onlyPending ? 10000 : undefined,
@@ -88,6 +93,30 @@ export function ServiceRequestsPanel({ title, onlyPending, emptyMessage, canAssi
     try {
       const slotIso = new Date(approveSlot).toISOString()
       const durationMins = Math.max(1, Number(approveDuration) || 30)
+
+      // Prevent double-booking: check other already-approved requests on the
+      // same machine for an overlapping slot before writing this one.
+      const { data: existingBookings } = await supabase
+        .from('service_requests')
+        .select('student_name, assigned_slot, slot_duration_mins')
+        .eq('machine_id', approveTarget.machine_id)
+        .eq('status', 'approved')
+        .not('assigned_slot', 'is', null)
+        .neq('id', approveTarget.id)
+
+      const conflict = (existingBookings ?? []).find(b =>
+        b.assigned_slot && slotsOverlap(
+          new Date(slotIso), durationMins,
+          new Date(b.assigned_slot), b.slot_duration_mins ?? 30,
+        )
+      )
+      if (conflict) {
+        toast.error(
+          `Slot conflicts with ${conflict.student_name}'s booking on ${approveTarget.machine_name} at ${new Date(conflict.assigned_slot!).toLocaleString()}. Choose a different time.`
+        )
+        return
+      }
+
       await approveServiceRequest(approveTarget, {
         assignedSlot: slotIso,
         durationMins,
@@ -95,6 +124,12 @@ export function ServiceRequestsPanel({ title, onlyPending, emptyMessage, canAssi
         assignedMentorEmail: canAssignMentor ? approveMentorEmail : undefined,
       })
       toast.success('Service request approved')
+      void notifyUser({
+        targetUserId: approveTarget.student_id,
+        title: 'Service request approved',
+        body: `Your service request on ${approveTarget.machine_name} has been approved. Slot: ${new Date(slotIso).toLocaleString()} (${durationMins} min).`,
+        createdByEmail: user?.email ?? 'unknown-admin',
+      })
 
       if (approveTarget.professor_email) {
         setSubmittedGmail({
@@ -126,6 +161,12 @@ export function ServiceRequestsPanel({ title, onlyPending, emptyMessage, canAssi
     try {
       await rejectServiceRequest(rejectTarget, rejectNote)
       toast.success('Service request rejected')
+      void notifyUser({
+        targetUserId: rejectTarget.student_id,
+        title: 'Service request rejected',
+        body: `Your service request on ${rejectTarget.machine_name} was rejected. Reason: ${rejectNote.trim()}`,
+        createdByEmail: user?.email ?? 'unknown-admin',
+      })
       closeReject()
     } catch {
       toast.error('Failed to reject service request')
@@ -325,6 +366,10 @@ export function ServiceRequestsPanel({ title, onlyPending, emptyMessage, canAssi
                 onChange={e => setApproveSlot(e.target.value)}
                 className="w-full rounded-[11px] border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#0d0a08] px-3 py-[11px] text-[14px] text-gray-900 dark:text-white outline-none transition focus:border-orange-400 focus:bg-white dark:focus:bg-[#0d0a08]"
               />
+              <p className="mt-1.5 flex items-center gap-1 text-[11px] text-gray-400 dark:text-[#6e6e78]">
+                <AlertTriangle className="h-3 w-3 shrink-0" />
+                Checked against this machine's other approved bookings before confirming.
+              </p>
             </div>
 
             <div className="mb-4">

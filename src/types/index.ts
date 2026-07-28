@@ -43,12 +43,14 @@ export interface IssueRequest {
   quantity_requested: number;
   purpose: string;
   status: 'pending' | 'approved' | 'rejected';
+  physical_status?: 'pending_handover' | 'issued' | 'returned' | 'consumed' | null;
   reviewed_by?: string;
   review_note?: string;
   return_deadline?: string | null;
   professor_email?: string | null;
   team_members?: TeamMember[];
   assigned_mentor_email?: string | null;
+  archived_at?: string | null;
   created_at: string;
   updated_at?: string;
 }
@@ -85,6 +87,7 @@ export interface ServiceRequest {
   professor_email?: string | null;
   team_members?: TeamMember[];
   assigned_mentor_email?: string | null;
+  archived_at?: string | null;
   created_at: string;
   updated_at: string;
 }
