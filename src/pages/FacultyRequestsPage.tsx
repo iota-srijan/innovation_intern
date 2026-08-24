@@ -3,18 +3,20 @@ import { Link } from 'react-router-dom';
 import { ClipboardList, ShoppingCart, Plus, X } from 'lucide-react';
 import { AppShell } from '../components/layout/AppShell';
 import { ReturnDeadlineBadge } from '../components/requests/ReturnDeadlineBadge';
+import { RequestSubmittedModal } from '../components/requests/RequestSubmittedModal';
+import { TeamMembersInput, getValidTeamMembers } from '../components/requests/TeamMembersInput';
 import { useAuth } from '../context/AuthContext';
 import { useItems } from '../hooks/useItems';
 import { supabase } from '../lib/supabaseClient';
+import { composeWithTruncation, type GmailComposeParams } from '../lib/gmail';
+import { DEFAULT_APPROVER_EMAIL } from '../lib/roleConfig';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import type { TeamMember } from '../types';
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // ── Types ─────────────────────────────────────────────────────────
-
-interface TeamMember {
-  name: string;
-  email: string;
-}
 
 interface IssueRequest {
   id: string;
@@ -70,8 +72,11 @@ export default function FacultyRequestsPage() {
   const [reqItem, setReqItem]           = useState('');
   const [reqQty, setReqQty]             = useState<number | ''>(1);
   const [reqPurpose, setReqPurpose]     = useState('');
+  const [reqProfessorEmail, setReqProfessorEmail] = useState('');
+  const [reqTeamMembers, setReqTeamMembers] = useState<TeamMember[]>([]);
   const [submitting, setSubmitting]     = useState(false);
   const [submitCooldown, setSubmitCooldown] = useState(false);
+  const [submittedGmail, setSubmittedGmail] = useState<GmailComposeParams | null>(null);
 
   // ── Fetch & realtime ─────────────────────────────────────────────
   const { data: requests = [], isLoading: loading } = useQuery<IssueRequest[]>({
@@ -116,12 +121,19 @@ export default function FacultyRequestsPage() {
   // ── Submit new request ────────────────────────────────────────────
   const handleSubmit = async () => {
     if (!reqItem || !reqPurpose.trim() || !facultyEmail || submitting || submitCooldown) return;
+    const trimmedProfessorEmail = reqProfessorEmail.trim();
+    if (!EMAIL_RE.test(trimmedProfessorEmail)) {
+      toast.error('Please enter a valid professor email.');
+      return;
+    }
     const qty = Math.min(Math.max(1, Number(reqQty) || 1), 100);
     setSubmitting(true);
     try {
       const extendedItems = items as any[];
       const selectedItem = extendedItems.find((i: any) => i.id === reqItem);
       if (!selectedItem) throw new Error('Item not found');
+
+      const validTeamMembers = getValidTeamMembers(reqTeamMembers, facultyEmail);
 
       const { error } = await supabase.from('issue_requests').insert({
         student_id: user?.id,
@@ -132,13 +144,28 @@ export default function FacultyRequestsPage() {
         quantity_requested: qty,
         purpose: reqPurpose.trim().slice(0, 500),
         status: 'pending',
+        professor_email: trimmedProfessorEmail,
+        team_members: validTeamMembers,
       });
       if (error) throw error;
 
       toast.success(`Request for "${selectedItem.name}" submitted!`);
+
+      const teamLine = validTeamMembers.length > 0
+        ? `\nTeam: ${validTeamMembers.map(m => `${m.name} (${m.email})`).join(', ')}`
+        : '';
+      setSubmittedGmail(composeWithTruncation(
+        { to: DEFAULT_APPROVER_EMAIL, subject: `IdeaLab Equipment Request — ${facultyName}` },
+        `New equipment request from ${facultyName} (${facultyEmail}):${teamLine}`,
+        [`• ${selectedItem.name} x${qty} — ${reqPurpose.trim()}`],
+        `Please CC the requester's professor (${trimmedProfessorEmail}) before sending this email.`,
+      ));
+
       setReqItem('');
       setReqQty(1);
       setReqPurpose('');
+      setReqProfessorEmail('');
+      setReqTeamMembers([]);
       setShowForm(false);
       void queryClient.invalidateQueries({ queryKey: ["issue_requests", "faculty-mine", facultyEmail] });
     } catch (err) {
@@ -282,12 +309,30 @@ export default function FacultyRequestsPage() {
                     className="w-full rounded-[10px] border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-zinc-900 px-3 py-2.5 text-[12px] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-600 outline-none transition focus:border-orange-400"
                   />
                 </div>
+
+                {/* Professor email */}
+                <div>
+                  <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-widest text-zinc-400">
+                    Professor's Email <span className="text-orange-300">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    value={reqProfessorEmail}
+                    onChange={(e) => setReqProfessorEmail(e.target.value)}
+                    placeholder="professor@opju.ac.in"
+                    className="w-full rounded-[10px] border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-zinc-900 px-3 py-2.5 text-[12px] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-600 outline-none transition focus:border-orange-400"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <TeamMembersInput members={reqTeamMembers} onChange={setReqTeamMembers} ownEmail={facultyEmail} />
               </div>
 
               <div className="mt-4 flex justify-end">
                 <button
                   onClick={handleSubmit}
-                  disabled={!reqItem || !reqPurpose.trim() || submitting || submitCooldown}
+                  disabled={!reqItem || !reqPurpose.trim() || !reqProfessorEmail.trim() || submitting || submitCooldown}
                   className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-b from-orange-400 to-orange-500 px-5 py-2.5 text-[13px] font-semibold text-white disabled:opacity-50 transition-opacity cursor-pointer"
                 >
                   {submitting && (
@@ -445,6 +490,15 @@ export default function FacultyRequestsPage() {
         </div>
 
       </div>
+
+      {submittedGmail && (
+        <RequestSubmittedModal
+          title="Request submitted"
+          description="A record of your request is ready to email to the IdeaLab. Open the draft, add your professor in CC, and hit send."
+          gmail={submittedGmail}
+          onClose={() => setSubmittedGmail(null)}
+        />
+      )}
     </AppShell>
   );
 }
