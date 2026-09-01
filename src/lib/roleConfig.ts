@@ -7,9 +7,10 @@ export const DEFAULT_APPROVER_EMAIL = 'deepayan.priyadarshini@opju.ac.in'
 
 // Non-@opju.ac.in test accounts used during development, pinned to a fixed role
 // since they don't follow the department-code email convention below.
-const TEST_ROLE_OVERRIDES: Record<string, 'student' | 'faculty'> = {
+const TEST_ROLE_OVERRIDES: Record<string, 'student' | 'faculty' | 'mentor'> = {
   'srijanmishra1669@gmail.com': 'student',
   'mishrasrijan2305@gmail.com': 'faculty',
+  'pentagonstudio.dev@gmail.com': 'mentor',
 }
 
 // Every non-@opju.ac.in address allowed to sign in at all.
