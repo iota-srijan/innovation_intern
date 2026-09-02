@@ -8,7 +8,19 @@ interface ReturnDeadlineBadgeProps {
 // (approved + physically issued) — a deadline on a still-pending or
 // already-returned request isn't something the student needs to act on.
 export function ReturnDeadlineBadge({ status, physicalStatus, returnDeadline }: ReturnDeadlineBadgeProps) {
-  if (!returnDeadline) return <span className="text-gray-400 dark:text-zinc-600">—</span>
+  if (!returnDeadline) {
+    // Approved but the assigned mentor hasn't set a date yet (they set it
+    // themselves when handing the item over) — say so instead of a bare
+    // dash, which reads as "nothing to show" rather than "not decided yet".
+    if (status === 'approved') {
+      return (
+        <span className="inline-flex items-center rounded-full border border-amber-400/20 bg-amber-400/10 px-2 py-0.5 text-[10px] font-semibold text-amber-400 whitespace-nowrap">
+          Mentor to confirm
+        </span>
+      )
+    }
+    return <span className="text-gray-400 dark:text-zinc-600">—</span>
+  }
 
   const dateStr = new Date(returnDeadline).toLocaleDateString()
 
