@@ -265,6 +265,10 @@ alter table notifications enable row level security;
 drop policy if exists "Users can read own or broadcast notifications" on notifications;
 drop policy if exists "Authenticated users can insert notifications" on notifications;
 drop policy if exists "Admin can update notifications" on notifications;
+-- Leftover from dashboard-side setup outside this repo — a permissive
+-- ALL-commands policy that would silently override everything below it
+-- (Postgres ORs permissive policies together), so it must go.
+drop policy if exists "allow_all_authenticated" on notifications;
 
 create policy "Users can read own or broadcast notifications"
   on notifications for select
@@ -290,6 +294,7 @@ alter table notification_reads enable row level security;
 
 drop policy if exists "Users can read own notification reads" on notification_reads;
 drop policy if exists "Users can insert own notification reads" on notification_reads;
+drop policy if exists "allow_all_authenticated" on notification_reads;
 
 create policy "Users can read own notification reads"
   on notification_reads for select
