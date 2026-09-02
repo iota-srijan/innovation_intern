@@ -251,10 +251,10 @@ export default function StudentDashboard() {
         ? `\nTeam: ${validTeam.map(m => `${m.name} (${m.email})`).join(', ')}`
         : '';
       setSubmittedGmail(composeWithTruncation(
-        { to: DEFAULT_APPROVER_EMAIL, subject: `IdeaLab Service Request — ${studentName}` },
+        { to: DEFAULT_APPROVER_EMAIL, cc: trimmedProfessorEmail, subject: `IdeaLab Service Request — ${studentName}` },
         `New service request from ${studentName} (${studentEmail}):${teamLine}`,
         lines,
-        `Please CC the requester's professor (${trimmedProfessorEmail}) before sending this email.`,
+        `— OPJU IdeaLab Team`,
       ));
 
       resetServiceForm();
@@ -977,7 +977,7 @@ export default function StudentDashboard() {
       {submittedGmail && (
         <RequestSubmittedModal
           title="Request submitted"
-          description="A record of your request is ready to email to the IdeaLab. Open the draft, add your professor in CC, and hit send."
+          description="A record of your request is ready to email to the IdeaLab, with your professor already in CC. Open the draft and hit send."
           gmail={submittedGmail}
           onClose={() => setSubmittedGmail(null)}
         />
