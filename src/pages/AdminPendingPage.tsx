@@ -10,6 +10,7 @@ import { supabase } from '../lib/supabaseClient'
 import { toast } from 'sonner'
 import { useAuth } from '../context/AuthContext'
 import { notifyUser } from '../lib/notify'
+import { useMentors } from '../hooks/useMentors'
 import type { TeamMember } from '../types'
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
@@ -68,12 +69,14 @@ function Modal({ onClose, children }: { onClose: () => void; children: React.Rea
 export default function AdminPendingPage() {
   const { user } = useAuth()
   const queryClient = useQueryClient()
+  const { mentors } = useMentors()
 
   const [activeTab, setActiveTab] = useState<RequestTypeTab>('equipment')
 
   // Approve modal — return deadline is set by the assigned mentor once they
   // hand the item over, not chosen here.
   const [approveTarget, setApproveTarget]     = useState<IssueRequest | null>(null)
+  const [approveMentorEmail, setApproveMentorEmail] = useState('')
   const [approveNote, setApproveNote]         = useState('')
   const [approveLoading, setApproveLoading]   = useState(false)
 
@@ -116,7 +119,7 @@ export default function AdminPendingPage() {
   // ── Approve issue request ─────────────────────────────────────────────────────
 
   const handleApprove = async () => {
-    if (!approveTarget || approveLoading) return
+    if (!approveTarget || !approveMentorEmail || approveLoading) return
     setApproveLoading(true)
     try {
       // Fetch current inventory stock for this item
@@ -163,6 +166,7 @@ export default function AdminPendingPage() {
           review_note: approveNote.trim() || null,
           physical_status: 'pending_handover',
           reviewed_by: user?.id ?? null,
+          assigned_mentor_email: approveMentorEmail,
         })
         .eq('id', approveTarget.id)
 
@@ -172,7 +176,7 @@ export default function AdminPendingPage() {
       }
 
       await logAudit(
-        `Approved request for ${approveTarget.item_name} by ${approveTarget.student_email}`,
+        `Approved request for ${approveTarget.item_name} by ${approveTarget.student_email}, assigned mentor ${approveMentorEmail}`,
         'admin_action',
         {
           item_id: invItem.id,
@@ -183,7 +187,7 @@ export default function AdminPendingPage() {
         },
       )
 
-      toast.success('Request approved')
+      toast.success('Request approved and mentor assigned')
       void notifyUser({
         targetUserId: approveTarget.student_id,
         title: 'Request approved',
@@ -191,6 +195,7 @@ export default function AdminPendingPage() {
         createdByEmail: user?.email ?? 'unknown-admin',
       })
       setApproveTarget(null)
+      setApproveMentorEmail('')
       setApproveNote('')
       void queryClient.invalidateQueries({ queryKey: ['items'] })
       void queryClient.invalidateQueries({ queryKey: ['issue_requests'] })
@@ -331,7 +336,7 @@ export default function AdminPendingPage() {
                       <td className="py-3 px-2">
                         <div className="flex items-center gap-2">
                           <button
-                            onClick={() => { setApproveTarget(req); setApproveNote('') }}
+                            onClick={() => { setApproveTarget(req); setApproveMentorEmail(''); setApproveNote('') }}
                             className="inline-flex cursor-pointer items-center gap-1.5 rounded-[9px] border border-green-400/30 bg-green-400/[0.08] px-3 py-1.5 text-[11px] font-semibold text-green-400 transition hover:bg-green-400/[0.16]"
                           >
                             Approve
@@ -366,12 +371,12 @@ export default function AdminPendingPage() {
 
       {/* ── Approve Modal ── */}
       {approveTarget && (
-        <Modal onClose={() => { setApproveTarget(null); setApproveNote('') }}>
+        <Modal onClose={() => { setApproveTarget(null); setApproveMentorEmail(''); setApproveNote('') }}>
           <div className="w-full max-w-[460px] rounded-[18px] border border-gray-200 dark:border-white/10 bg-white dark:bg-[#16161b] p-6 shadow-xl dark:shadow-[0_40px_90px_-30px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.04)]">
             <div className="mb-1 flex items-center justify-between">
               <h2 className="text-[17px] font-bold tracking-[-0.01em] text-gray-900 dark:text-white">Approve Request</h2>
               <button
-                onClick={() => { setApproveTarget(null); setApproveNote('') }}
+                onClick={() => { setApproveTarget(null); setApproveMentorEmail(''); setApproveNote('') }}
                 className="grid h-8 w-8 cursor-pointer place-items-center rounded-[9px] border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/[0.04] text-gray-500 dark:text-[#9a9aa6] transition hover:bg-gray-100 dark:hover:bg-white/[0.08] hover:text-gray-900 dark:hover:text-white"
               >
                 <X className="h-4 w-4" />
@@ -381,6 +386,25 @@ export default function AdminPendingPage() {
               <span className="font-semibold text-gray-900 dark:text-[#f4f4f6]">{approveTarget.student_name}</span>
               {' '}·{' '}{approveTarget.item_name}{' '}×{' '}{approveTarget.quantity_requested}
             </p>
+
+            <div className="mb-4">
+              <label className="mb-1.5 block text-[12.5px] font-semibold text-gray-900 dark:text-[#f4f4f6]">
+                Assign Mentor <span className="text-orange-400 dark:text-orange-300">*</span>
+              </label>
+              <select
+                value={approveMentorEmail}
+                onChange={e => setApproveMentorEmail(e.target.value)}
+                className="w-full appearance-none cursor-pointer rounded-[11px] border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#0d0a08] px-3 py-[11px] text-[14px] text-gray-900 dark:text-white outline-none transition focus:border-orange-400"
+              >
+                <option value="" disabled>Select a mentor...</option>
+                {mentors.map(m => (
+                  <option key={m.user_id} value={m.email}>{m.display_name ?? m.email} ({m.email})</option>
+                ))}
+              </select>
+              {mentors.length === 0 && (
+                <p className="mt-1.5 text-[11px] text-amber-400">No mentors found. Grant mentor access to a user first.</p>
+              )}
+            </div>
 
             <div className="mb-6">
               <label className="mb-1.5 block text-[12.5px] font-semibold text-gray-900 dark:text-[#f4f4f6]">
@@ -393,18 +417,21 @@ export default function AdminPendingPage() {
                 rows={2}
                 className="w-full resize-none rounded-[11px] border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#0d0a08] px-3 py-[11px] text-[14px] leading-relaxed text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-[#6e6e78] outline-none transition focus:border-orange-400 focus:bg-white dark:focus:bg-[#0d0a08]"
               />
+              <p className="mt-1.5 text-[11px] text-gray-400 dark:text-[#6e6e78]">
+                The return deadline is set by the assigned mentor once they hand the item over, not here.
+              </p>
             </div>
 
             <div className="flex justify-end gap-3">
               <button
-                onClick={() => { setApproveTarget(null); setApproveNote('') }}
+                onClick={() => { setApproveTarget(null); setApproveMentorEmail(''); setApproveNote('') }}
                 className="cursor-pointer rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/[0.03] px-4 py-2.5 text-[14px] font-semibold text-gray-700 dark:text-white transition hover:bg-gray-100 dark:hover:bg-white/[0.06]"
               >
                 Cancel
               </button>
               <button
                 onClick={() => void handleApprove()}
-                disabled={approveLoading}
+                disabled={!approveMentorEmail || approveLoading}
                 className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-gradient-to-b from-green-500 to-green-700 px-4 py-2.5 text-[14px] font-semibold text-white transition-opacity disabled:opacity-50"
               >
                 {approveLoading && <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />}
