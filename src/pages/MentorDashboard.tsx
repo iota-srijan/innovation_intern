@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   GraduationCap, ClipboardCheck, Clock, Package, AlertTriangle,
-  Search, X, Send, Users, Package as PackageIcon, Info, Wrench,
+  Search, X, Send, Users, Package as PackageIcon, Info, Wrench, Check, Pencil,
 } from 'lucide-react'
 import { AppShell } from '../components/layout/AppShell'
 import { InventoryManagementPanel } from './AdminInventoryPage'
@@ -168,6 +168,12 @@ export default function MentorDashboard() {
   const [assignedFilter, setAssignedFilter] = useState<AssignedFilter>('all')
   const [assignedSearch, setAssignedSearch] = useState('')
   const [rowActionId, setRowActionId] = useState<string | null>(null)
+
+  // Inline return-deadline editing — the mentor is the one actually handing
+  // the item over, so they can set/adjust the deadline themselves rather
+  // than being stuck with whatever the admin picked at approval time.
+  const [editingDeadlineId, setEditingDeadlineId] = useState<string | null>(null)
+  const [deadlineDraft, setDeadlineDraft] = useState('')
 
   // Send Reminder modal
   const [reminderTarget, setReminderTarget] = useState<IssueRequest | null>(null)
@@ -353,6 +359,28 @@ export default function MentorDashboard() {
       void queryClient.invalidateQueries({ queryKey: ['mentor-assigned-requests'] })
     } catch {
       toast.error('Failed to mark as returned')
+    } finally {
+      setRowActionId(null)
+    }
+  }
+
+  // ── Edit return deadline ────────────────────────────────────────────────────
+
+  const handleSaveDeadline = async (req: IssueRequest) => {
+    if (!deadlineDraft || rowActionId) return
+    setRowActionId(req.id)
+    try {
+      const { error } = await supabase
+        .from('issue_requests')
+        .update({ return_deadline: deadlineDraft })
+        .eq('id', req.id)
+      if (error) throw error
+      await logAudit(`Set return deadline for ${req.item_name} (${req.student_email}) to ${deadlineDraft}`, 'admin_action')
+      toast.success('Return deadline updated')
+      setEditingDeadlineId(null)
+      void queryClient.invalidateQueries({ queryKey: ['mentor-assigned-requests'] })
+    } catch {
+      toast.error('Failed to update return deadline')
     } finally {
       setRowActionId(null)
     }
@@ -660,7 +688,42 @@ export default function MentorDashboard() {
                           <td className="py-3 px-2"><IssueStatusBadge status={req.status} /></td>
                           <td className="py-3 px-2 max-w-[160px]"><TeamMembersBadgeList members={req.team_members} /></td>
                           <td className={`py-3 px-2 whitespace-nowrap ${overdue ? 'font-semibold text-red-400' : 'text-gray-500 dark:text-[#6e6e78]'}`}>
-                            {req.return_deadline ? new Date(req.return_deadline).toLocaleDateString() : '—'}
+                            {editingDeadlineId === req.id ? (
+                              <div className="flex items-center gap-1.5">
+                                <input
+                                  type="date"
+                                  value={deadlineDraft}
+                                  onChange={e => setDeadlineDraft(e.target.value)}
+                                  className="rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#0d0a08] px-2 py-1 text-[11px] text-gray-900 dark:text-white outline-none focus:border-orange-400"
+                                />
+                                <button
+                                  onClick={() => void handleSaveDeadline(req)}
+                                  disabled={!deadlineDraft || rowActionId === req.id}
+                                  title="Save"
+                                  className="cursor-pointer rounded-md p-1 text-green-400 transition hover:bg-green-400/10 disabled:opacity-50"
+                                >
+                                  <Check className="h-3.5 w-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => setEditingDeadlineId(null)}
+                                  title="Cancel"
+                                  className="cursor-pointer rounded-md p-1 text-gray-400 transition hover:bg-white/10"
+                                >
+                                  <X className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            ) : ps === 'returned' ? (
+                              req.return_deadline ? new Date(req.return_deadline).toLocaleDateString() : '—'
+                            ) : (
+                              <button
+                                onClick={() => { setEditingDeadlineId(req.id); setDeadlineDraft(req.return_deadline ?? '') }}
+                                title="Click to edit"
+                                className="inline-flex cursor-pointer items-center gap-1 hover:text-orange-400"
+                              >
+                                {req.return_deadline ? new Date(req.return_deadline).toLocaleDateString() : 'Set date'}
+                                <Pencil className="h-2.5 w-2.5 opacity-50" />
+                              </button>
+                            )}
                           </td>
                           <td className="py-3 px-2"><PhysStatusBadge req={req} overdue={overdue} /></td>
                           <td className="py-3 px-2">
