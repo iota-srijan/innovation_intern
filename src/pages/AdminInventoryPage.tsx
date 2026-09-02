@@ -650,7 +650,7 @@ export function InventoryManagementPanel() {
                 <button
                   onClick={e => { e.stopPropagation(); openEditCategory(cat) }}
                   title="Edit category"
-                  className="ml-1 cursor-pointer rounded-full p-1 opacity-0 transition-opacity hover:bg-black/10 group-hover:opacity-100"
+                  className="ml-1 cursor-pointer rounded-full p-1 opacity-60 transition-opacity hover:bg-black/10 hover:opacity-100"
                 >
                   <Pencil className="h-2.5 w-2.5" />
                 </button>
