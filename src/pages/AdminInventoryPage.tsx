@@ -12,6 +12,7 @@ type ItemStatus = 'in_stock' | 'low_stock' | 'out_of_stock'
 interface Category {
   id: string
   name: string
+  unit?: string | null
 }
 
 interface InventoryItem {
@@ -287,11 +288,33 @@ export function InventoryManagementPanel() {
   const [deleteTarget, setDeleteTarget] = useState<InventoryItem | null>(null)
   const [deleteSubmitting, setDeleteSubmitting] = useState(false)
 
-  // New category
+  // New/edit category
   const [showCatModal, setShowCatModal] = useState(false)
+  const [editCatTarget, setEditCatTarget] = useState<Category | null>(null)
   const [newCatName, setNewCatName] = useState('')
   const [newCatUnit, setNewCatUnit] = useState('')
   const [catSubmitting, setCatSubmitting] = useState(false)
+
+  const openAddCategory = () => {
+    setEditCatTarget(null)
+    setNewCatName('')
+    setNewCatUnit('')
+    setShowCatModal(true)
+  }
+
+  const openEditCategory = (cat: Category) => {
+    setEditCatTarget(cat)
+    setNewCatName(cat.name)
+    setNewCatUnit(cat.unit ?? '')
+    setShowCatModal(true)
+  }
+
+  const closeCatModal = () => {
+    setShowCatModal(false)
+    setEditCatTarget(null)
+    setNewCatName('')
+    setNewCatUnit('')
+  }
 
   // CSV import
   const csvRef = useRef<HTMLInputElement>(null)
@@ -453,22 +476,20 @@ export function InventoryManagementPanel() {
 
   // ── New category ──────────────────────────────────────────────────────────
 
-  const handleAddCategory = async () => {
+  const handleSaveCategory = async () => {
     if (!newCatName.trim() || catSubmitting) return
     setCatSubmitting(true)
     try {
-      const { error } = await supabase.from('categories').insert({
-        name: newCatName.trim(),
-        unit: newCatUnit.trim() || null,
-      })
+      const payload = { name: newCatName.trim(), unit: newCatUnit.trim() || null }
+      const { error } = editCatTarget
+        ? await supabase.from('categories').update(payload).eq('id', editCatTarget.id)
+        : await supabase.from('categories').insert(payload)
       if (error) throw new Error(error.message)
-      toast.success(`Category "${newCatName.trim()}" created`)
-      setNewCatName('')
-      setNewCatUnit('')
-      setShowCatModal(false)
+      toast.success(editCatTarget ? `Category "${payload.name}" updated` : `Category "${payload.name}" created`)
+      closeCatModal()
       await fetchCategories()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to create category')
+      toast.error(err instanceof Error ? err.message : 'Failed to save category')
     } finally {
       setCatSubmitting(false)
     }
@@ -568,7 +589,7 @@ export function InventoryManagementPanel() {
 
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setShowCatModal(true)}
+              onClick={openAddCategory}
               className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/[0.03] px-3.5 py-2 text-[13px] font-semibold text-gray-700 dark:text-white transition hover:bg-gray-100 dark:hover:bg-white/[0.07]"
             >
               <FolderPlus className="h-3.5 w-3.5" />
@@ -614,18 +635,26 @@ export function InventoryManagementPanel() {
               All <span className="ml-1 tabular-nums opacity-70">{items.length}</span>
             </button>
             {categories.map((cat, idx) => (
-              <button
+              <div
                 key={cat.id}
-                onClick={() => setActiveCat(cat.id)}
-                className={`cursor-pointer rounded-full border px-3.5 py-1.5 text-[12px] font-medium transition-all ${
+                className={`group inline-flex cursor-pointer items-center rounded-full border py-1.5 pl-3.5 pr-1.5 text-[12px] font-medium transition-all ${
                   activeCat === cat.id
                     ? 'border-transparent bg-[#f97316] text-white'
                     : 'border-gray-200 dark:border-white/10 text-gray-500 dark:text-[#9a9aa6] hover:border-gray-300 hover:dark:border-white/20 hover:text-gray-900 hover:dark:text-white'
                 }`}
               >
-                <span className={`inline-block h-1.5 w-1.5 rounded-full mr-1.5 ${CAT_COLORS[idx % CAT_COLORS.length].split(' ')[0].replace('text-', 'bg-')}`} />
-                {cat.name} <span className="ml-1 tabular-nums opacity-70">{catCounts[cat.id] ?? 0}</span>
-              </button>
+                <button onClick={() => setActiveCat(cat.id)} className="flex cursor-pointer items-center">
+                  <span className={`inline-block h-1.5 w-1.5 rounded-full mr-1.5 ${CAT_COLORS[idx % CAT_COLORS.length].split(' ')[0].replace('text-', 'bg-')}`} />
+                  {cat.name} <span className="ml-1 tabular-nums opacity-70">{catCounts[cat.id] ?? 0}</span>
+                </button>
+                <button
+                  onClick={e => { e.stopPropagation(); openEditCategory(cat) }}
+                  title="Edit category"
+                  className="ml-1 cursor-pointer rounded-full p-1 opacity-0 transition-opacity hover:bg-black/10 group-hover:opacity-100"
+                >
+                  <Pencil className="h-2.5 w-2.5" />
+                </button>
+              </div>
             ))}
           </div>
 
@@ -806,14 +835,14 @@ export function InventoryManagementPanel() {
         </ModalBackdrop>
       )}
 
-      {/* ── New Category Modal ── */}
+      {/* ── New/Edit Category Modal ── */}
       {showCatModal && (
-        <ModalBackdrop onClose={() => { setShowCatModal(false); setNewCatName(''); setNewCatUnit('') }}>
+        <ModalBackdrop onClose={closeCatModal}>
           <div className="w-full max-w-[380px] rounded-[18px] border border-white/10 bg-[#16161b] p-6 shadow-[0_40px_90px_-30px_rgba(0,0,0,0.8)]">
             <div className="mb-5 flex items-center justify-between">
-              <h2 className="text-[17px] font-bold text-white">New Category</h2>
+              <h2 className="text-[17px] font-bold text-white">{editCatTarget ? 'Edit Category' : 'New Category'}</h2>
               <button
-                onClick={() => { setShowCatModal(false); setNewCatName(''); setNewCatUnit('') }}
+                onClick={closeCatModal}
                 className="grid h-8 w-8 cursor-pointer place-items-center rounded-[9px] border border-white/10 bg-white/[0.04] text-[#9a9aa6] transition hover:bg-white/[0.08] hover:text-white"
               >
                 <X className="h-4 w-4" />
@@ -827,7 +856,7 @@ export function InventoryManagementPanel() {
               type="text"
               value={newCatName}
               onChange={e => setNewCatName(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') void handleAddCategory() }}
+              onKeyDown={e => { if (e.key === 'Enter') void handleSaveCategory() }}
               placeholder="e.g. Electronics"
               className="mb-4 w-full rounded-[11px] border border-white/10 bg-[#0d0a08] px-3 py-[11px] text-[14px] text-white placeholder-[#6e6e78] outline-none transition focus:border-orange-400 focus:shadow-[0_0_0_3px_rgba(124,58,237,0.16)]"
             />
@@ -839,7 +868,7 @@ export function InventoryManagementPanel() {
               type="text"
               value={newCatUnit}
               onChange={e => setNewCatUnit(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') void handleAddCategory() }}
+              onKeyDown={e => { if (e.key === 'Enter') void handleSaveCategory() }}
               placeholder="e.g. grams — leave blank for plain unit count"
               className="mb-1.5 w-full rounded-[11px] border border-white/10 bg-[#0d0a08] px-3 py-[11px] text-[14px] text-white placeholder-[#6e6e78] outline-none transition focus:border-orange-400 focus:shadow-[0_0_0_3px_rgba(124,58,237,0.16)]"
             />
@@ -849,20 +878,20 @@ export function InventoryManagementPanel() {
 
             <div className="flex justify-end gap-3">
               <button
-                onClick={() => { setShowCatModal(false); setNewCatName(''); setNewCatUnit('') }}
+                onClick={closeCatModal}
                 className="cursor-pointer rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-[14px] font-semibold text-white transition hover:bg-white/[0.06]"
               >
                 Cancel
               </button>
               <button
-                onClick={() => void handleAddCategory()}
+                onClick={() => void handleSaveCategory()}
                 disabled={!newCatName.trim() || catSubmitting}
                 className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-gradient-to-b from-orange-400 to-orange-500 px-4 py-2.5 text-[14px] font-semibold text-white disabled:opacity-50"
               >
                 {catSubmitting && (
                   <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                 )}
-                Create Category
+                {editCatTarget ? 'Save Changes' : 'Create Category'}
               </button>
             </div>
           </div>
