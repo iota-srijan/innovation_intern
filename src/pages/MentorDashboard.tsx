@@ -11,6 +11,7 @@ import { supabase } from '../lib/supabaseClient'
 import { toast } from 'sonner'
 import { useAuth } from '../context/AuthContext'
 import { getStlPathFromUrl, getStlSignedUrl } from '../lib/stlFiles'
+import { notifySuperAdmins } from '../lib/notify'
 import { TeamMembersBadgeList } from '../components/requests/TeamMembersBadgeList'
 import type { ServiceRequest, TeamMember } from '../types'
 
@@ -355,6 +356,11 @@ export default function MentorDashboard() {
       }
 
       await logAudit(`Marked ${req.item_name} as returned by ${req.student_email}`, 'admin_action')
+      void notifySuperAdmins({
+        title: 'Item returned',
+        body: `${req.item_name} x${req.quantity_requested} was returned by ${req.student_email}, confirmed by ${mentorEmail || 'their mentor'}.`,
+        createdByEmail: mentorEmail || 'unknown-mentor',
+      })
       toast.success('Item returned, inventory updated')
       void queryClient.invalidateQueries({ queryKey: ['mentor-assigned-requests'] })
     } catch {

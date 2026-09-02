@@ -25,3 +25,22 @@ export async function notifyUser({ targetUserId, title, body, createdByEmail }: 
     // notification failures are non-fatal — the Gmail flow is the primary record
   }
 }
+
+interface NotifySuperAdminsParams {
+  title: string
+  body: string
+  createdByEmail: string
+}
+
+// Notifies every current super_admin, looked up live from user_roles rather
+// than a hardcoded email list so it reflects actual grants/revokes.
+export async function notifySuperAdmins({ title, body, createdByEmail }: NotifySuperAdminsParams) {
+  try {
+    const { data } = await supabase.from('user_roles').select('user_id').eq('role', 'super_admin')
+    await Promise.all(
+      (data ?? []).map(({ user_id }) => notifyUser({ targetUserId: user_id, title, body, createdByEmail }))
+    )
+  } catch {
+    // notification failures are non-fatal
+  }
+}
