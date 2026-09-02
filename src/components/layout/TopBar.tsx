@@ -33,8 +33,14 @@ export function TopBar({ title, isDark, onToggleDark, isPro: _isPro, cartCount }
     ? "brightness(1.8)"
     : "none";
 
+  // Matches exactly the roles that can actually reach /notifications
+  // (see Sidebar.tsx and ProtectedRoute's StudentOrFacultyRoute) — plain
+  // 'admin' has no route to it, so showing a badge for that role would
+  // link nowhere useful.
+  const canSeeNotifications = userRole === 'student' || userRole === 'faculty' || userRole === 'mentor' || userRole === 'super_admin';
+
   useEffect(() => {
-    if (!user || (userRole !== 'student' && userRole !== 'faculty')) {
+    if (!user || !canSeeNotifications) {
       setUnreadCount(0);
       return;
     }

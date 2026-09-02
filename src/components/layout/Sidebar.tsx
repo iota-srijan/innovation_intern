@@ -31,7 +31,7 @@ const navItems = [
   { icon: Package,          path: "/cart",                    label: "Request Item" },
   { icon: Clock,            path: "/admin/pending",           label: "Pending" }, // admin only
   { icon: ClipboardList,    path: "/admin/requests",          label: "All Requests" },     // admin only
-  { icon: Bell,             path: "/admin/notifications",     label: "Notifications" },
+  { icon: Bell,             path: "/admin/notifications",     label: "Broadcast" }, // send-to-all composer — distinct from the personal /notifications inbox
   { icon: ScrollText,       path: "/admin/audit-log",         label: "Audit Log" },        // admin only
   { icon: TrendingUp,       path: "/admin/analytics",         label: "Usage Analytics" },  // admin + super_admin
   { icon: Settings,         path: "/profile",                 label: "Settings" },
@@ -132,7 +132,10 @@ export function Sidebar() {
           // Super admin sees the same /admin/* routes as admin (Dashboard handled above),
           // except Pending/All Requests/Audit Log — those are consolidated as tabs inside
           // /super-admin itself (with mentor-assignment support the legacy pages lack).
-          if (userRole === 'super_admin' && !path.startsWith('/admin/')) {
+          // /notifications (the personal inbox, distinct from /admin/notifications' broadcast
+          // composer) is also exposed — otherwise a super admin has no way to see things
+          // like "item returned" alerts targeted directly at them.
+          if (userRole === 'super_admin' && !path.startsWith('/admin/') && path !== '/notifications') {
             return null;
           }
           if (userRole === 'super_admin' && ['/admin/pending', '/admin/requests', '/admin/audit-log'].includes(path)) {
