@@ -219,7 +219,7 @@ export default function StudentRequestsPage() {
                   <table className="w-full text-[11px]">
                     <thead>
                       <tr className="border-b border-white/8">
-                        {['ITEM NAME', 'QTY', 'PURPOSE', 'STATUS', 'RETURN BY', 'SUBMITTED'].map((h) => (
+                        {['ITEM NAME', 'QTY', 'PURPOSE', 'STATUS', 'MENTOR', 'RETURN BY', 'SUBMITTED'].map((h) => (
                           <th
                             key={h}
                             className="pb-2 text-left text-[9px] font-semibold uppercase tracking-wide text-zinc-500 px-2 first:pl-0"
@@ -249,6 +249,9 @@ export default function StudentRequestsPage() {
                           </td>
                           <td className="py-3 px-2">
                             <StatusBadge status={req.status} />
+                          </td>
+                          <td className="py-3 px-2 text-gray-500 dark:text-zinc-400">
+                            {req.assigned_mentor_email ?? '—'}
                           </td>
                           <td className="py-3 px-2 text-gray-500 dark:text-zinc-400">
                             <ReturnDeadlineBadge status={req.status} physicalStatus={req.physical_status} returnDeadline={req.return_deadline} />
@@ -284,7 +287,7 @@ export default function StudentRequestsPage() {
                 <table className="w-full text-[11px]">
                   <thead>
                     <tr className="border-b border-white/8">
-                      {['MACHINE', 'DIMENSIONS', 'MATERIAL', 'INFILL', 'COPIES', 'PURPOSE', 'STATUS', 'ASSIGNED SLOT', 'NOTE'].map((h) => (
+                      {['MACHINE', 'DIMENSIONS', 'MATERIAL', 'INFILL', 'COPIES', 'PURPOSE', 'STATUS', 'MENTOR', 'ASSIGNED SLOT', 'NOTE'].map((h) => (
                         <th
                           key={h}
                           className="pb-2 text-left text-[9px] font-semibold uppercase tracking-wide text-zinc-500 px-2 first:pl-0"
@@ -327,6 +330,9 @@ export default function StudentRequestsPage() {
                           </td>
                           <td className="py-3 px-2">
                             <StatusBadge status={req.status} />
+                          </td>
+                          <td className="py-3 px-2 text-gray-500 dark:text-zinc-400">
+                            {req.assigned_mentor_email ?? '—'}
                           </td>
                           <td className="py-3 px-2 text-gray-500 dark:text-zinc-400 whitespace-nowrap">
                             {req.status === 'approved' && req.assigned_slot
