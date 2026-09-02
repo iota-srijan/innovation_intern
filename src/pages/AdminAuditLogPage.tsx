@@ -39,6 +39,20 @@ export default function AdminAuditLogPage() {
   const [itemFilter, setItemFilter] = useState('')
   const [studentFilter, setStudentFilter] = useState('')
   const [adminFilter, setAdminFilter] = useState('')
+  const [adminOptions, setAdminOptions] = useState<string[]>([])
+
+  // ── Fetch distinct staff emails for the admin filter dropdown ────────────────
+
+  useEffect(() => {
+    void (async () => {
+      const { data } = await supabase
+        .from('user_roles')
+        .select('email')
+        .in('role', ['admin', 'super_admin', 'mentor'])
+        .order('email')
+      setAdminOptions((data ?? []).map(r => r.email as string))
+    })()
+  }, [])
 
   // ── Fetch audit log ──────────────────────────────────────────────────────────
 
@@ -61,7 +75,7 @@ export default function AdminAuditLogPage() {
         req = req.ilike('action', `%${studentQuery}%`)
       }
       if (adminQuery) {
-        req = req.eq('actor_email', `${adminQuery}@stockpilot.inc`)
+        req = req.eq('actor_email', adminQuery)
       }
 
       const hasAnyFilter = Boolean(itemQuery || studentQuery || adminQuery)
@@ -169,11 +183,9 @@ export default function AdminAuditLogPage() {
               className="w-full rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/[0.03] px-3 py-2 text-sm text-gray-900 dark:text-white outline-none transition focus:border-orange-400 focus:ring-1 focus:ring-orange-400/40"
             >
               <option value="">All Admins</option>
-              <option value="admin1">admin1</option>
-              <option value="admin2">admin2</option>
-              <option value="admin3">admin3</option>
-              <option value="admin4">admin4</option>
-              <option value="admin5">admin5</option>
+              {adminOptions.map(email => (
+                <option key={email} value={email}>{email}</option>
+              ))}
             </select>
           </div>
 

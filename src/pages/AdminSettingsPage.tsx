@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { Settings, User, Mail, Building, LogOut, Lock } from 'lucide-react'
 import { AppShell } from '../components/layout/AppShell'
 import { useAuth } from '../context/AuthContext'
@@ -6,10 +6,10 @@ import { toast } from 'sonner'
 import { getAdminEmail } from '../lib/adminUtils'
 
 export default function AdminSettingsPage() {
-  const { adminEmail: contextAdminEmail, signOut } = useAuth()
+  const { user, signOut } = useAuth()
   const navigate = useNavigate()
 
-  const adminEmail = getAdminEmail(contextAdminEmail)
+  const adminEmail = getAdminEmail(user?.email)
 
   const handleSignOut = async () => {
     try {
@@ -98,20 +98,6 @@ export default function AdminSettingsPage() {
                   </div>
                   <p className="text-[10px] text-gray-500 dark:text-[#6e6e78]">Managed by StockPilot admin account</p>
                 </div>
-              </div>
-
-              {/* Section 2: Password & Security */}
-              <div className="border-t border-gray-100 dark:border-white/[0.08] px-5 py-4">
-                <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Password & Security</h3>
-                <p className="text-xs text-gray-500 dark:text-[#9a9aa6] mt-0.5">Update your admin account password</p>
-              </div>
-              <div className="p-5 pt-0 mt-3">
-                <Link
-                  to="/admin/settings/password"
-                  className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-orange-400/40 px-4 py-2 text-[13px] font-semibold text-orange-300 transition hover:bg-orange-400/10"
-                >
-                  Change Password
-                </Link>
               </div>
 
               {/* BOTTOM BAR */}

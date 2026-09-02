@@ -86,7 +86,7 @@ function Modal({ onClose, children }: { onClose: () => void; children: React.Rea
 // ─── Main Component ─────────────────────────────────────────────────────────────
 
 export default function AdminDashboard() {
-  const { adminEmail } = useAuth()
+  const { user } = useAuth()
 
   const [users, setUsers]           = useState<UserRow[]>([])
   const [usersLoading, setUsersLoading] = useState(true)
@@ -175,11 +175,11 @@ export default function AdminDashboard() {
     try {
       await supabase
         .from('audit_log')
-        .insert({ actor_email: getAdminEmail(adminEmail), action, action_type: actionType })
+        .insert({ actor_email: getAdminEmail(user?.email), action, action_type: actionType })
     } catch {
       // audit failures are non-fatal
     }
-  }, [adminEmail])
+  }, [user])
 
   // ── Grant faculty ─────────────────────────────────────────────────────────────
 

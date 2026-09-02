@@ -1,20 +1,15 @@
 import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
+import { ALLOWED_EXTRA_EMAILS, getDefaultRole as getDefaultRoleShared } from '../lib/roleConfig'
 
-// Mirrors the fallback logic in AuthContext — used only when user_roles has no row
-function getDefaultRole(email: string): 'student' | 'faculty' | 'blocked' {
-  if (email === 'srijanmishra1669@gmail.com') return 'student'
-  if (email === 'mishrasrijan2305@gmail.com') return 'faculty'
-  if (email.endsWith('@opju.ac.in')) {
-    const local = email.split('@')[0]
-    const dotIndex = local.indexOf('.')
-    if (dotIndex !== -1 && /^[a-zA-Z]{2}\d{2}/.test(local.slice(dotIndex + 1))) {
-      return 'student'
-    }
-    return 'faculty'
-  }
-  return 'blocked'
+// Mirrors the fallback logic in AuthContext — used only when user_roles has no row.
+// 'mentor' is included (unlike 'super_admin') because, unlike super admins, a
+// mentor must exist as a real user_roles row to show up in the mentor-assignment
+// dropdown elsewhere in the app — see the mentor upsert below.
+function getDefaultRole(email: string): 'student' | 'faculty' | 'mentor' | 'blocked' {
+  const role = getDefaultRoleShared(email)
+  return role === 'student' || role === 'faculty' || role === 'mentor' ? role : 'blocked'
 }
 
 export default function AuthCallback() {
@@ -37,8 +32,7 @@ export default function AuthCallback() {
         // Block emails that don't match any allowed domain or known address
         const isAllowed =
           email.endsWith('@opju.ac.in') ||
-          email === 'srijanmishra1669@gmail.com' ||
-          email === 'mishrasrijan2305@gmail.com'
+          ALLOWED_EXTRA_EMAILS.includes(email)
 
         if (!isAllowed) {
           await supabase.auth.signOut()
@@ -48,6 +42,8 @@ export default function AuthCallback() {
 
         // Consult user_roles table first — this respects admin grant/revoke
         let role: 'student' | 'faculty' = 'student'
+        let dbRole: string | undefined
+
         try {
           const { data } = await supabase
             .from('user_roles')
@@ -55,18 +51,53 @@ export default function AuthCallback() {
             .eq('email', email)
             .maybeSingle()
 
-          if (data?.role === 'faculty') {
+          dbRole = data?.role as string | undefined
+
+          if (dbRole === 'super_admin' || dbRole === 'mentor') {
+            localStorage.setItem('sp-user-type', dbRole)
+            navigate(dbRole === 'super_admin' ? '/super-admin' : '/mentor-dashboard', { replace: true })
+            return
+          }
+
+          if (dbRole === 'faculty') {
             role = 'faculty'
-          } else if (data?.role === 'student') {
+          } else if (dbRole === 'student') {
             role = 'student'
           } else {
-            // No DB row yet — fall back to domain rules
+            // No DB row yet — fall back to domain rules. A fallback of
+            // 'mentor' only comes from a hardcoded test override (see
+            // roleConfig.ts) on someone's very first sign-in — upsert a
+            // real row for them (mirroring the student/faculty upsert
+            // below) so they're assignable via the mentor dropdown, then
+            // redirect straight to the mentor portal like an existing
+            // mentor row would.
             const defaultRole = getDefaultRole(email)
+            if (defaultRole === 'mentor') {
+              try {
+                await supabase.from('user_roles').upsert(
+                  { user_id: session.user.id, email, role: 'mentor' },
+                  { onConflict: 'user_id', ignoreDuplicates: true }
+                )
+              } catch {
+                // upsert failure must not block login
+              }
+              localStorage.setItem('sp-user-type', 'mentor')
+              navigate('/mentor-dashboard', { replace: true })
+              return
+            }
             role = defaultRole === 'blocked' ? 'student' : defaultRole
           }
         } catch {
-          // DB unreachable — fall back to domain rules
+          // DB unreachable — fall back to domain rules. Can't upsert here
+          // (DB is the thing that's unreachable), so a mentor fallback just
+          // redirects; AuthContext resolves the client-only 'mentor' state
+          // the same way it already does for the hardcoded super_admin emails.
           const defaultRole = getDefaultRole(email)
+          if (defaultRole === 'mentor') {
+            localStorage.setItem('sp-user-type', 'mentor')
+            navigate('/mentor-dashboard', { replace: true })
+            return
+          }
           role = defaultRole === 'blocked' ? 'student' : defaultRole
         }
 

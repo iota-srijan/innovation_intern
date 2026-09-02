@@ -1,6 +1,10 @@
 export interface Category {
   id: string;
   name: string;
+  // When set, this category is measured by amount (e.g. 'grams', 'ml')
+  // rather than plain unit count — drives the estimated-amount + STL
+  // fields on the request flow.
+  unit?: string | null;
 }
 
 export interface InventoryItem {
@@ -28,6 +32,11 @@ export interface CartItem {
   purpose: string;
 }
 
+export interface TeamMember {
+  name: string;
+  email: string;
+}
+
 export interface IssueRequest {
   id: string;
   student_id?: string;
@@ -38,9 +47,18 @@ export interface IssueRequest {
   quantity_requested: number;
   purpose: string;
   status: 'pending' | 'approved' | 'rejected';
+  physical_status?: 'pending_handover' | 'issued' | 'returned' | 'consumed' | null;
   reviewed_by?: string;
   review_note?: string;
   return_deadline?: string | null;
+  professor_email?: string | null;
+  team_members?: TeamMember[];
+  assigned_mentor_email?: string | null;
+  archived_at?: string | null;
+  estimated_amount?: number | null;
+  estimated_amount_unit?: string | null;
+  stl_file_url?: string | null;
+  stl_file_name?: string | null;
   created_at: string;
   updated_at?: string;
 }
@@ -74,6 +92,10 @@ export interface ServiceRequest {
   slot_duration_mins: number | null;
   review_note: string | null;
   reviewed_by: string | null;
+  professor_email?: string | null;
+  team_members?: TeamMember[];
+  assigned_mentor_email?: string | null;
+  archived_at?: string | null;
   created_at: string;
   updated_at: string;
 }

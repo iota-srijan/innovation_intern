@@ -33,12 +33,12 @@ serve(async () => {
       await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: {
-          Authorization: `Bearer re_MW6FcLAc_5mAXtKb3D1WbhDBG6xJYTgT3`,
+          Authorization: `Bearer ${Deno.env.get("RESEND_API_KEY")}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           from: Deno.env.get("SENDER_EMAIL"),
-          to: 'mishrasrijan2305@gmail.com',
+          to: req.student_email,
           subject: daysOffset < 0
             ? `⚠️ OVERDUE: Please return ${req.item_name} immediately`
             : `📦 Return Reminder: ${req.item_name} due ${label}`,

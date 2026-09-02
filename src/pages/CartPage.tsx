@@ -1,13 +1,20 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ShoppingCart, Trash2, ArrowLeft, PackageCheck, AlertCircle } from 'lucide-react';
+import { ShoppingCart, Trash2, ArrowLeft, PackageCheck, AlertCircle, FileUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { AppShell } from '../components/layout/AppShell';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabaseClient';
-import { useQueryClient } from '@tanstack/react-query';
-import type { CartItem } from '../types';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import type { CartItem, TeamMember } from '../types';
+import { RequestSubmittedModal } from '../components/requests/RequestSubmittedModal';
+import { TeamMembersInput, getValidTeamMembers } from '../components/requests/TeamMembersInput';
+import { composeWithTruncation, type GmailComposeParams } from '../lib/gmail';
+import { DEFAULT_APPROVER_EMAIL } from '../lib/roleConfig';
+import { uploadStlFile } from '../lib/stlFiles';
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 interface StockConflict {
   item_id: string;
@@ -26,6 +33,15 @@ export default function CartPage() {
   const [submitCooldown, setSubmitCooldown] = useState(false);
   const [stockConflicts, setStockConflicts] = useState<StockConflict[]>([]);
   const [showPurposeError, setShowPurposeError] = useState(false);
+  const [professorEmail, setProfessorEmail] = useState('');
+  const [showProfessorError, setShowProfessorError] = useState(false);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [submittedGmail, setSubmittedGmail] = useState<GmailComposeParams | null>(null);
+  // Weight/amount + STL are submission-time refinements for filament-style
+  // items — not part of the persisted cart, so they're kept as transient
+  // local state keyed by item_id rather than in CartContext/localStorage.
+  const [estimatedAmounts, setEstimatedAmounts] = useState<Record<string, string>>({});
+  const [stlFiles, setStlFiles] = useState<Record<string, File>>({});
 
   const isFaculty = userRole === 'faculty';
   const backUrl    = isFaculty ? '/faculty-dashboard' : '/student-dashboard';
@@ -34,16 +50,55 @@ export default function CartPage() {
   const studentEmail = user?.email ?? '';
   const studentName  = user?.user_metadata?.full_name ?? user?.email ?? (isFaculty ? 'Faculty' : 'Student');
 
+  // Look up which cart items belong to a category measured by amount (e.g.
+  // filament in grams) rather than plain unit count, so we know which cards
+  // need the estimated-amount + STL fields.
+  const itemIds = cart.map((c) => c.item_id);
+  const { data: itemUnits = {} } = useQuery({
+    queryKey: ['cart-item-units', itemIds],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('inventory_items')
+        .select('id, category:categories(unit)')
+        .in('id', itemIds);
+      if (error) throw error;
+      const map: Record<string, string | null> = {};
+      for (const row of data ?? []) {
+        const category = row.category as unknown as { unit: string | null } | null;
+        map[row.id as string] = category?.unit ?? null;
+      }
+      return map;
+    },
+    enabled: itemIds.length > 0,
+  });
+
+  const setStlFileFor = (item_id: string, file: File | null) => {
+    setStlFiles((prev) => {
+      const next = { ...prev };
+      if (file) next[item_id] = file;
+      else delete next[item_id];
+      return next;
+    });
+  };
+
+  const handleRemoveFromCart = (item_id: string) => {
+    removeFromCart(item_id);
+    setEstimatedAmounts((prev) => { const next = { ...prev }; delete next[item_id]; return next; });
+    setStlFileFor(item_id, null);
+  };
+
   // Validate: all purposes filled
   const emptyPurposeIds = cart
     .filter((c) => !c.purpose.trim())
     .map((c) => c.item_id);
 
-  const canSubmit = cart.length > 0 && emptyPurposeIds.length === 0;
+  const professorEmailValid = EMAIL_RE.test(professorEmail.trim());
+  const canSubmit = cart.length > 0 && emptyPurposeIds.length === 0 && professorEmailValid;
 
   async function handleSubmit() {
     if (!canSubmit) {
       setShowPurposeError(true);
+      setShowProfessorError(true);
       return;
     }
     if (submitting || submitCooldown) return;
@@ -111,17 +166,37 @@ export default function CartPage() {
         return;
       }
 
-      // ── 3. Batch insert ───────────────────────────────────────────────
-      const rows = itemsToSubmit.map((c: CartItem) => ({
-        item_id: c.item_id,
-        item_name: c.item_name,
-        quantity_requested: Math.min(Math.max(1, c.quantity_requested), 100),
-        purpose: c.purpose.trim().slice(0, 500),
-        status: 'pending',
-        student_id: user?.id,
-        student_email: studentEmail,
-        student_name: studentName,
-      }));
+      // ── 3. Upload STL files for filament-style items ──────────────────
+      const filesToUpload = itemsToSubmit.filter((c) => stlFiles[c.item_id]);
+      const uploadedEntries = await Promise.all(
+        filesToUpload.map(async (c) => [c.item_id, await uploadStlFile(stlFiles[c.item_id], user?.id, studentEmail)] as const)
+      );
+      const stlUploads = new Map(uploadedEntries);
+
+      // ── 4. Batch insert ───────────────────────────────────────────────
+      const trimmedProfessorEmail = professorEmail.trim();
+      const validTeamMembers = getValidTeamMembers(teamMembers, studentEmail);
+      const rows = itemsToSubmit.map((c: CartItem) => {
+        const unit = itemUnits[c.item_id] ?? null;
+        const amountRaw = Number(estimatedAmounts[c.item_id]);
+        const uploaded = stlUploads.get(c.item_id);
+        return {
+          item_id: c.item_id,
+          item_name: c.item_name,
+          quantity_requested: Math.min(Math.max(1, c.quantity_requested), 100),
+          purpose: c.purpose.trim().slice(0, 500),
+          status: 'pending',
+          student_id: user?.id,
+          student_email: studentEmail,
+          student_name: studentName,
+          professor_email: trimmedProfessorEmail,
+          team_members: validTeamMembers,
+          estimated_amount: unit && amountRaw > 0 ? amountRaw : null,
+          estimated_amount_unit: unit && amountRaw > 0 ? unit : null,
+          stl_file_url: uploaded?.url ?? null,
+          stl_file_name: uploaded?.name ?? null,
+        };
+      });
 
       const { error: insertError } = await supabase
         .from('issue_requests')
@@ -144,12 +219,24 @@ export default function CartPage() {
       // Clear cart: reset state and ensure localStorage key is fully removed
       clearCart();
       localStorage.removeItem('sp-cart');
+      setEstimatedAmounts({});
+      setStlFiles({});
       toast.success(
         `${itemsToSubmit.length} request${itemsToSubmit.length > 1 ? 's' : ''} submitted! Awaiting approval.`
       );
       // Invalidate all issue_requests queries (prefix match covers 'mine', 'faculty-mine', 'pending', 'all')
       await queryClient.invalidateQueries({ queryKey: ['issue_requests'] });
-      navigate(isFaculty ? '/faculty-requests' : '/student-dashboard');
+
+      const lines = itemsToSubmit.map((c: CartItem) => `• ${c.item_name} x${c.quantity_requested} — ${c.purpose.trim()}`);
+      const teamLine = validTeamMembers.length > 0
+        ? `\nTeam: ${validTeamMembers.map(m => `${m.name} (${m.email})`).join(', ')}`
+        : '';
+      setSubmittedGmail(composeWithTruncation(
+        { to: DEFAULT_APPROVER_EMAIL, cc: trimmedProfessorEmail, subject: `IdeaLab Equipment Request — ${studentName}` },
+        `New equipment request from ${studentName} (${studentEmail}):${teamLine}`,
+        lines,
+        `— OPJU IdeaLab Team`,
+      ));
     } catch {
       toast.error('Submission failed. Please try again.');
     } finally {
@@ -160,7 +247,10 @@ export default function CartPage() {
   }
 
   // ── Empty state ─────────────────────────────────────────────────────
-  if (cart.length === 0) {
+  // Note: cart becomes empty as soon as a successful submit clears it, so
+  // this branch must still render the confirmation modal below rather than
+  // skip straight past it.
+  if (cart.length === 0 && !submittedGmail) {
     return (
       <AppShell title="Your Cart">
         <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 p-8 text-center">
@@ -260,7 +350,7 @@ export default function CartPage() {
                     <div className="text-[10px] font-mono text-gray-500 dark:text-zinc-500 mt-0.5">{item.sku}</div>
                   </div>
                   <button
-                    onClick={() => removeFromCart(item.item_id)}
+                    onClick={() => handleRemoveFromCart(item.item_id)}
                     className="flex-shrink-0 flex h-7 w-7 items-center justify-center rounded-lg text-gray-400 hover:text-red-500 dark:text-zinc-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors cursor-pointer"
                     title="Remove from cart"
                   >
@@ -323,30 +413,94 @@ export default function CartPage() {
                     )}
                   </div>
                 </div>
+
+                {/* Estimated amount + STL — only for categories measured by amount (e.g. filament) */}
+                {itemUnits[item.item_id] && (
+                  <div className="mt-4 grid grid-cols-1 sm:grid-cols-[160px_1fr] gap-4 border-t border-gray-100 dark:border-white/8 pt-4">
+                    <div>
+                      <label className="text-[10px] text-gray-500 dark:text-zinc-400 uppercase tracking-widest block mb-1.5">
+                        Est. amount needed ({itemUnits[item.item_id]})
+                      </label>
+                      <input
+                        type="number"
+                        min={0}
+                        step="any"
+                        value={estimatedAmounts[item.item_id] ?? ''}
+                        onChange={(e) => setEstimatedAmounts((prev) => ({ ...prev, [item.item_id]: e.target.value }))}
+                        placeholder="e.g. 40"
+                        className="w-full rounded-lg px-3 py-2 text-xs text-gray-900 placeholder:text-gray-400 dark:text-white dark:placeholder:text-zinc-600 bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 focus:outline-none focus:border-orange-400 dark:focus:border-orange-400 transition-colors"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-gray-500 dark:text-zinc-400 uppercase tracking-widest block mb-1.5">
+                        STL File{' '}
+                        <span className="normal-case text-gray-400 dark:text-zinc-600">(optional — helps the mentor check the estimate)</span>
+                      </label>
+                      <label className="flex items-center gap-2 rounded-lg border border-dashed border-gray-300 dark:border-zinc-700 px-3 py-2 text-xs text-gray-500 dark:text-zinc-400 cursor-pointer hover:border-orange-400 transition-colors">
+                        <FileUp className="h-3.5 w-3.5 flex-shrink-0" />
+                        <span className="truncate">{stlFiles[item.item_id]?.name ?? 'Choose .stl file…'}</span>
+                        <input
+                          type="file"
+                          accept=".stl"
+                          onChange={(e) => setStlFileFor(item.item_id, e.target.files?.[0] ?? null)}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}
         </div>
 
         {/* Submit footer */}
-        <div className="rounded-2xl border border-gray-200 dark:border-white/8 bg-white dark:bg-[#1f1509] p-5 flex items-center justify-between flex-wrap gap-4">
+        <div className="rounded-2xl border border-gray-200 dark:border-white/8 bg-white dark:bg-[#1f1509] p-5 flex flex-col gap-4">
           <div>
-            <div className="text-sm font-semibold text-gray-900 dark:text-white">
-              {cart.length} item{cart.length !== 1 ? 's' : ''} ready to request
-            </div>
-            <div className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">
-              All requests go to admin for approval
-            </div>
+            <label className="text-[10px] text-gray-500 dark:text-zinc-400 uppercase tracking-widest block mb-1.5">
+              Professor's Email
+              <span className="text-red-500 ml-1">*</span>
+            </label>
+            <input
+              type="email"
+              value={professorEmail}
+              onChange={(e) => { setProfessorEmail(e.target.value); setShowProfessorError(false); }}
+              placeholder="professor@opju.ac.in"
+              className={`w-full max-w-xs rounded-lg px-3 py-2 text-xs text-gray-900 placeholder:text-gray-400 dark:text-white dark:placeholder:text-zinc-600 focus:outline-none transition-colors ${
+                showProfessorError && !professorEmailValid
+                  ? 'bg-red-50 dark:bg-red-950/20 border border-red-300 dark:border-red-500/60 focus:border-red-400'
+                  : 'bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 focus:border-orange-400 dark:focus:border-orange-400'
+              }`}
+            />
+            {showProfessorError && !professorEmailValid && (
+              <p className="mt-1 text-[10px] text-red-400 flex items-center gap-1">
+                <AlertCircle className="h-3 w-3 flex-shrink-0" />
+                A valid professor email is required so they can be CC'd on approval.
+              </p>
+            )}
           </div>
-          <button
-            onClick={handleSubmit}
-            disabled={submitting || submitCooldown || cart.length === 0}
-            className="inline-flex items-center gap-2 rounded-xl bg-orange-500 hover:bg-orange-500 disabled:opacity-50 disabled:cursor-not-allowed px-6 py-2.5 text-sm font-semibold text-white transition-colors cursor-pointer"
-          >
-            {submitting && <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />}
-            <PackageCheck className="h-4 w-4" />
-            {submitting ? 'Submitting…' : submitCooldown ? 'Submitted' : 'Submit All Requests'}
-          </button>
+
+          <TeamMembersInput members={teamMembers} onChange={setTeamMembers} ownEmail={studentEmail} />
+
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div>
+              <div className="text-sm font-semibold text-gray-900 dark:text-white">
+                {cart.length} item{cart.length !== 1 ? 's' : ''} ready to request
+              </div>
+              <div className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">
+                All requests go to admin for approval
+              </div>
+            </div>
+            <button
+              onClick={handleSubmit}
+              disabled={submitting || submitCooldown || cart.length === 0}
+              className="inline-flex items-center gap-2 rounded-xl bg-orange-500 hover:bg-orange-500 disabled:opacity-50 disabled:cursor-not-allowed px-6 py-2.5 text-sm font-semibold text-white transition-colors cursor-pointer"
+            >
+              {submitting && <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />}
+              <PackageCheck className="h-4 w-4" />
+              {submitting ? 'Submitting…' : submitCooldown ? 'Submitted' : 'Submit All Requests'}
+            </button>
+          </div>
         </div>
 
         {/* Link to existing requests */}
@@ -359,6 +513,18 @@ export default function CartPage() {
           </Link>
         </div>
       </div>
+
+      {submittedGmail && (
+        <RequestSubmittedModal
+          title="Request submitted"
+          description="A record of your request is ready to email to the IdeaLab, with your professor already in CC. Open the draft and hit send."
+          gmail={submittedGmail}
+          onClose={() => {
+            setSubmittedGmail(null);
+            navigate(isFaculty ? '/faculty-requests' : '/student-dashboard');
+          }}
+        />
+      )}
     </AppShell>
   );
 }

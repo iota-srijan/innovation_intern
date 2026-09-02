@@ -2,11 +2,19 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ClipboardList, ShoppingCart, Plus, X } from 'lucide-react';
 import { AppShell } from '../components/layout/AppShell';
+import { ReturnDeadlineBadge } from '../components/requests/ReturnDeadlineBadge';
+import { RequestSubmittedModal } from '../components/requests/RequestSubmittedModal';
+import { TeamMembersInput, getValidTeamMembers } from '../components/requests/TeamMembersInput';
 import { useAuth } from '../context/AuthContext';
 import { useItems } from '../hooks/useItems';
 import { supabase } from '../lib/supabaseClient';
+import { composeWithTruncation, type GmailComposeParams } from '../lib/gmail';
+import { DEFAULT_APPROVER_EMAIL } from '../lib/roleConfig';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import type { TeamMember } from '../types';
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // ── Types ─────────────────────────────────────────────────────────
 
@@ -23,6 +31,7 @@ interface IssueRequest {
   return_deadline?: string | null;
   review_note?: string | null;
   physical_status?: string | null;
+  team_members?: TeamMember[];
 }
 
 // ── Badges ────────────────────────────────────────────────────────
@@ -37,6 +46,14 @@ function StatusBadge({ status }: { status: string }) {
   return null;
 }
 
+function TaggedBadge() {
+  return (
+    <span className="ml-1.5 inline-flex items-center rounded-full border border-violet-400/25 bg-violet-400/[0.08] px-1.5 py-0.5 text-[9px] font-semibold text-violet-300">
+      Tagged
+    </span>
+  );
+}
+
 // ── Main Component ────────────────────────────────────────────────
 
 export default function FacultyRequestsPage() {
@@ -44,6 +61,7 @@ export default function FacultyRequestsPage() {
   const { data: items = [] } = useItems();
 
   const facultyEmail = user?.email ?? '';
+  const facultyEmailLower = facultyEmail.trim().toLowerCase();
   const facultyName  = user?.user_metadata?.full_name ?? user?.email?.split('@')[0] ?? 'Faculty';
 
   const queryClient = useQueryClient();
@@ -54,8 +72,11 @@ export default function FacultyRequestsPage() {
   const [reqItem, setReqItem]           = useState('');
   const [reqQty, setReqQty]             = useState<number | ''>(1);
   const [reqPurpose, setReqPurpose]     = useState('');
+  const [reqProfessorEmail, setReqProfessorEmail] = useState('');
+  const [reqTeamMembers, setReqTeamMembers] = useState<TeamMember[]>([]);
   const [submitting, setSubmitting]     = useState(false);
   const [submitCooldown, setSubmitCooldown] = useState(false);
+  const [submittedGmail, setSubmittedGmail] = useState<GmailComposeParams | null>(null);
 
   // ── Fetch & realtime ─────────────────────────────────────────────
   const { data: requests = [], isLoading: loading } = useQuery<IssueRequest[]>({
@@ -64,7 +85,7 @@ export default function FacultyRequestsPage() {
       const { data, error } = await supabase
         .from('issue_requests')
         .select('*')
-        .eq('student_email', facultyEmail)
+        .or(`student_email.eq.${facultyEmail},team_members.cs.${JSON.stringify([{ email: facultyEmailLower }])}`)
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data as IssueRequest[];
@@ -75,11 +96,13 @@ export default function FacultyRequestsPage() {
   useEffect(() => {
     if (!facultyEmail) return;
 
+    // Unfiltered: postgres_changes can't express the OR-across-columns match
+    // above, so we listen for any change and let the query decide relevance.
     const channel = supabase
       .channel(`faculty-requests-page-${facultyEmail}`)
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'issue_requests', filter: `student_email=eq.${facultyEmail}` },
+        { event: '*', schema: 'public', table: 'issue_requests' },
         () => { void queryClient.invalidateQueries({ queryKey: ["issue_requests", "faculty-mine", facultyEmail] }); }
       )
       .subscribe();
@@ -90,16 +113,27 @@ export default function FacultyRequestsPage() {
   // ── Stats ────────────────────────────────────────────────────────
   const pending  = requests.filter((r) => r.status === 'pending').length;
   const approved = requests.filter((r) => r.status === 'approved').length;
+  const overdue = requests.filter((r) => {
+    if (r.status !== 'approved' || r.physical_status !== 'issued' || !r.return_deadline) return false;
+    return new Date(r.return_deadline) < new Date(new Date().toDateString());
+  }).length;
 
   // ── Submit new request ────────────────────────────────────────────
   const handleSubmit = async () => {
     if (!reqItem || !reqPurpose.trim() || !facultyEmail || submitting || submitCooldown) return;
+    const trimmedProfessorEmail = reqProfessorEmail.trim();
+    if (!EMAIL_RE.test(trimmedProfessorEmail)) {
+      toast.error('Please enter a valid professor email.');
+      return;
+    }
     const qty = Math.min(Math.max(1, Number(reqQty) || 1), 100);
     setSubmitting(true);
     try {
       const extendedItems = items as any[];
       const selectedItem = extendedItems.find((i: any) => i.id === reqItem);
       if (!selectedItem) throw new Error('Item not found');
+
+      const validTeamMembers = getValidTeamMembers(reqTeamMembers, facultyEmail);
 
       const { error } = await supabase.from('issue_requests').insert({
         student_id: user?.id,
@@ -110,13 +144,28 @@ export default function FacultyRequestsPage() {
         quantity_requested: qty,
         purpose: reqPurpose.trim().slice(0, 500),
         status: 'pending',
+        professor_email: trimmedProfessorEmail,
+        team_members: validTeamMembers,
       });
       if (error) throw error;
 
       toast.success(`Request for "${selectedItem.name}" submitted!`);
+
+      const teamLine = validTeamMembers.length > 0
+        ? `\nTeam: ${validTeamMembers.map(m => `${m.name} (${m.email})`).join(', ')}`
+        : '';
+      setSubmittedGmail(composeWithTruncation(
+        { to: DEFAULT_APPROVER_EMAIL, cc: trimmedProfessorEmail, subject: `IdeaLab Equipment Request — ${facultyName}` },
+        `New equipment request from ${facultyName} (${facultyEmail}):${teamLine}`,
+        [`• ${selectedItem.name} x${qty} — ${reqPurpose.trim()}`],
+        `— OPJU IdeaLab Team`,
+      ));
+
       setReqItem('');
       setReqQty(1);
       setReqPurpose('');
+      setReqProfessorEmail('');
+      setReqTeamMembers([]);
       setShowForm(false);
       void queryClient.invalidateQueries({ queryKey: ["issue_requests", "faculty-mine", facultyEmail] });
     } catch (err) {
@@ -185,6 +234,12 @@ export default function FacultyRequestsPage() {
               <span className="h-1.5 w-1.5 rounded-full bg-green-400" />
               {approved} approved
             </span>
+            {overdue > 0 && (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-red-500/20 bg-red-500/10 px-3 py-1 text-[11px] font-medium text-red-400">
+                <span className="h-1.5 w-1.5 rounded-full bg-red-400" />
+                {overdue} overdue
+              </span>
+            )}
           </div>
         )}
 
@@ -254,12 +309,30 @@ export default function FacultyRequestsPage() {
                     className="w-full rounded-[10px] border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-zinc-900 px-3 py-2.5 text-[12px] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-600 outline-none transition focus:border-orange-400"
                   />
                 </div>
+
+                {/* Professor email */}
+                <div>
+                  <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-widest text-zinc-400">
+                    Professor's Email <span className="text-orange-300">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    value={reqProfessorEmail}
+                    onChange={(e) => setReqProfessorEmail(e.target.value)}
+                    placeholder="professor@opju.ac.in"
+                    className="w-full rounded-[10px] border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-zinc-900 px-3 py-2.5 text-[12px] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-600 outline-none transition focus:border-orange-400"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <TeamMembersInput members={reqTeamMembers} onChange={setReqTeamMembers} ownEmail={facultyEmail} />
               </div>
 
               <div className="mt-4 flex justify-end">
                 <button
                   onClick={handleSubmit}
-                  disabled={!reqItem || !reqPurpose.trim() || submitting || submitCooldown}
+                  disabled={!reqItem || !reqPurpose.trim() || !reqProfessorEmail.trim() || submitting || submitCooldown}
                   className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-b from-orange-400 to-orange-500 px-5 py-2.5 text-[13px] font-semibold text-white disabled:opacity-50 transition-opacity cursor-pointer"
                 >
                   {submitting && (
@@ -307,6 +380,7 @@ export default function FacultyRequestsPage() {
                     <tr key={req.id} className="border-b border-gray-100 dark:border-white/6 hover:bg-gray-50 dark:hover:bg-white/4 last:border-0 transition-colors">
                       <td className="py-3 px-2 first:pl-5 font-medium text-gray-900 dark:text-white">
                         {req.item_name}
+                        {req.student_email?.trim().toLowerCase() !== facultyEmailLower && <TaggedBadge />}
                       </td>
                       <td className="py-3 px-2 text-gray-500 dark:text-zinc-400">
                         {req.quantity_requested}
@@ -392,14 +466,17 @@ export default function FacultyRequestsPage() {
                       key={req.id}
                       className="border-b border-gray-100 dark:border-white/6 hover:bg-gray-50 dark:hover:bg-white/4 last:border-0 transition-colors"
                     >
-                      <td className="py-3 px-2 first:pl-5 font-medium text-gray-900 dark:text-white">{req.item_name}</td>
+                      <td className="py-3 px-2 first:pl-5 font-medium text-gray-900 dark:text-white">
+                        {req.item_name}
+                        {req.student_email?.trim().toLowerCase() !== facultyEmailLower && <TaggedBadge />}
+                      </td>
                       <td className="py-3 px-2 text-gray-500 dark:text-zinc-400">{req.quantity_requested}</td>
                       <td className="py-3 px-2 text-gray-500 dark:text-zinc-400 max-w-[200px]">
                         <span className="line-clamp-2" title={req.purpose}>{req.purpose}</span>
                       </td>
                       <td className="py-3 px-2"><StatusBadge status={req.status} /></td>
                       <td className="py-3 px-2 text-gray-500 dark:text-zinc-400">
-                        {req.return_deadline ? new Date(req.return_deadline).toLocaleDateString() : '—'}
+                        <ReturnDeadlineBadge status={req.status} physicalStatus={req.physical_status} returnDeadline={req.return_deadline} />
                       </td>
                       <td className="py-3 px-2 pr-5 text-gray-600 dark:text-zinc-500">
                         {new Date(req.created_at).toLocaleDateString()}
@@ -413,6 +490,15 @@ export default function FacultyRequestsPage() {
         </div>
 
       </div>
+
+      {submittedGmail && (
+        <RequestSubmittedModal
+          title="Request submitted"
+          description="A record of your request is ready to email to the IdeaLab, with your professor already in CC. Open the draft and hit send."
+          gmail={submittedGmail}
+          onClose={() => setSubmittedGmail(null)}
+        />
+      )}
     </AppShell>
   );
 }

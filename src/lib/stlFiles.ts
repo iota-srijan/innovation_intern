@@ -16,3 +16,19 @@ export async function getStlSignedUrl(filePath: string): Promise<string | null> 
   if (error) return null
   return data?.signedUrl ?? null
 }
+
+// Shared by any flow that lets a student attach an STL for staff review
+// (service/machine requests, and filament-style equipment requests).
+export async function uploadStlFile(
+  file: File,
+  ownerId: string | null | undefined,
+  ownerEmail: string,
+): Promise<{ url: string; name: string }> {
+  const safePath = ownerId ?? ownerEmail.replace('@', '_at_').replace(/\./g, '_')
+  const filePath = `${safePath}/${Date.now()}_${file.name}`
+  const { error: uploadError } = await supabase.storage.from(STL_BUCKET).upload(filePath, file)
+  if (uploadError) throw uploadError
+
+  const { data: publicUrlData } = supabase.storage.from(STL_BUCKET).getPublicUrl(filePath)
+  return { url: publicUrlData.publicUrl, name: file.name }
+}

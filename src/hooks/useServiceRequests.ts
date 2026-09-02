@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../lib/supabaseClient'
-import type { ServiceMachine } from '../types'
+import { uploadStlFile } from '../lib/stlFiles'
+import type { ServiceMachine, TeamMember } from '../types'
 
 export interface SubmitServiceRequestInput {
   student_id: string | null
@@ -17,6 +18,8 @@ export interface SubmitServiceRequestInput {
   copies: number
   purpose: string
   stlFile: File | null
+  professor_email: string
+  team_members: TeamMember[]
 }
 
 export function useServiceRequests() {
@@ -43,19 +46,9 @@ export function useServiceRequests() {
       let stl_file_name: string | null = null
 
       if (input.stlFile) {
-        const safePath = input.student_id ?? input.student_email.replace('@', '_at_').replace(/\./g, '_')
-        const filePath = `${safePath}/${Date.now()}_${input.stlFile.name}`
-        const { error: uploadError } = await supabase.storage
-          .from('stl-files')
-          .upload(filePath, input.stlFile)
-        if (uploadError) throw uploadError
-
-        const { data: publicUrlData } = supabase.storage
-          .from('stl-files')
-          .getPublicUrl(filePath)
-
-        stl_file_url = publicUrlData.publicUrl
-        stl_file_name = input.stlFile.name
+        const uploaded = await uploadStlFile(input.stlFile, input.student_id, input.student_email)
+        stl_file_url = uploaded.url
+        stl_file_name = uploaded.name
       }
 
       const { error: insertError } = await supabase.from('service_requests').insert({
@@ -74,6 +67,8 @@ export function useServiceRequests() {
         stl_file_url,
         stl_file_name,
         status: 'pending',
+        professor_email: input.professor_email,
+        team_members: input.team_members,
       })
       if (insertError) throw insertError
 

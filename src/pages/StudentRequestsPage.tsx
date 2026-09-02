@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ClipboardList, ShoppingCart, Wrench } from 'lucide-react';
 import { AppShell } from '../components/layout/AppShell';
 import { RequestTypeTabs, type RequestTypeTab } from '../components/admin/RequestTypeTabs';
+import { ReturnDeadlineBadge } from '../components/requests/ReturnDeadlineBadge';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabaseClient';
 import type { IssueRequest, ServiceRequest } from '../types';
@@ -34,6 +35,14 @@ function truncate(text: string, max = 60): string {
   return text.length > max ? `${text.slice(0, max)}...` : text;
 }
 
+function TaggedBadge() {
+  return (
+    <span className="ml-1.5 inline-flex items-center rounded-full border border-violet-400/25 bg-violet-400/[0.08] px-1.5 py-0.5 text-[9px] font-semibold text-violet-300">
+      Tagged
+    </span>
+  );
+}
+
 export default function StudentRequestsPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -42,15 +51,17 @@ export default function StudentRequestsPage() {
   const [serviceLoading, setServiceLoading] = useState(true);
 
   const studentEmail = user?.email ?? '';
+  const studentEmailLower = studentEmail.trim().toLowerCase();
 
-  // Fetch + realtime
+  // Fetch + realtime — matches own requests OR requests where this email is
+  // tagged as a team member (mirrors the RLS select policy on issue_requests).
   const { data: requests = [], isLoading: loading } = useQuery<IssueRequest[]>({
     queryKey: ['issue_requests', 'mine', studentEmail],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('issue_requests')
         .select('*')
-        .eq('student_email', studentEmail)
+        .or(`student_email.eq.${studentEmail},team_members.cs.${JSON.stringify([{ email: studentEmailLower }])}`)
         .order('created_at', { ascending: false });
       if (error) throw error;
       return (data ?? []) as IssueRequest[];
@@ -62,18 +73,16 @@ export default function StudentRequestsPage() {
     if (!studentEmail) return;
 
     // ── Real-time subscription ──────────────────────────────────────
+    // Unfiltered: postgres_changes filters can't express the OR-across-columns
+    // match above, so we just listen for any change on the table and let the
+    // query itself decide what belongs to this user. Request volume is low
+    // enough that this is cheap.
     const channel = supabase
       .channel(`student-requests-${studentEmail}`)
       .on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'issue_requests',
-          filter: `student_email=eq.${studentEmail}`,
-        },
+        { event: '*', schema: 'public', table: 'issue_requests' },
         () => {
-          // Re-fetch on any change (insert/update/delete)
           void queryClient.invalidateQueries({ queryKey: ['issue_requests', 'mine', studentEmail] });
         }
       )
@@ -93,7 +102,7 @@ export default function StudentRequestsPage() {
       const { data, error } = await supabase
         .from('service_requests')
         .select('*')
-        .eq('student_email', studentEmail)
+        .or(`student_email.eq.${studentEmail},team_members.cs.${JSON.stringify([{ email: studentEmailLower }])}`)
         .order('created_at', { ascending: false });
 
       if (!error && data) setServiceRequests(data as ServiceRequest[]);
@@ -106,12 +115,7 @@ export default function StudentRequestsPage() {
       .channel(`student-service-requests-${studentEmail}`)
       .on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'service_requests',
-          filter: `student_email=eq.${studentEmail}`,
-        },
+        { event: '*', schema: 'public', table: 'service_requests' },
         () => {
           void fetchServiceRequests();
         }
@@ -125,6 +129,10 @@ export default function StudentRequestsPage() {
 
   const pending = requests.filter((r) => r.status === 'pending').length;
   const approved = requests.filter((r) => r.status === 'approved').length;
+  const overdue = requests.filter((r) => {
+    if (r.status !== 'approved' || r.physical_status !== 'issued' || !r.return_deadline) return false;
+    return new Date(r.return_deadline) < new Date(new Date().toDateString());
+  }).length;
 
   return (
     <AppShell title="My Requests">
@@ -178,6 +186,12 @@ export default function StudentRequestsPage() {
                   <span className="h-1.5 w-1.5 rounded-full bg-green-400" />
                   {approved} approved
                 </span>
+                {overdue > 0 && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-red-500/20 bg-red-500/10 px-3 py-1 text-[11px] font-medium text-red-400">
+                    <span className="h-1.5 w-1.5 rounded-full bg-red-400" />
+                    {overdue} overdue
+                  </span>
+                )}
               </div>
             )}
 
@@ -205,7 +219,7 @@ export default function StudentRequestsPage() {
                   <table className="w-full text-[11px]">
                     <thead>
                       <tr className="border-b border-white/8">
-                        {['ITEM NAME', 'QTY', 'PURPOSE', 'STATUS', 'RETURN BY', 'SUBMITTED'].map((h) => (
+                        {['ITEM NAME', 'QTY', 'PURPOSE', 'STATUS', 'MENTOR', 'RETURN BY', 'SUBMITTED'].map((h) => (
                           <th
                             key={h}
                             className="pb-2 text-left text-[9px] font-semibold uppercase tracking-wide text-zinc-500 px-2 first:pl-0"
@@ -223,6 +237,7 @@ export default function StudentRequestsPage() {
                         >
                           <td className="py-3 px-2 first:pl-0 font-medium text-gray-900 dark:text-zinc-200">
                             {req.item_name}
+                            {req.student_email?.trim().toLowerCase() !== studentEmailLower && <TaggedBadge />}
                           </td>
                           <td className="py-3 px-2 text-gray-500 dark:text-zinc-400">
                             {req.quantity_requested}
@@ -236,9 +251,10 @@ export default function StudentRequestsPage() {
                             <StatusBadge status={req.status} />
                           </td>
                           <td className="py-3 px-2 text-gray-500 dark:text-zinc-400">
-                            {req.return_deadline
-                              ? new Date(req.return_deadline).toLocaleDateString()
-                              : '—'}
+                            {req.assigned_mentor_email ?? '—'}
+                          </td>
+                          <td className="py-3 px-2 text-gray-500 dark:text-zinc-400">
+                            <ReturnDeadlineBadge status={req.status} physicalStatus={req.physical_status} returnDeadline={req.return_deadline} />
                           </td>
                           <td className="py-3 px-2 text-gray-500 dark:text-zinc-500">
                             {new Date(req.created_at).toLocaleDateString()}
@@ -271,7 +287,7 @@ export default function StudentRequestsPage() {
                 <table className="w-full text-[11px]">
                   <thead>
                     <tr className="border-b border-white/8">
-                      {['MACHINE', 'DIMENSIONS', 'MATERIAL', 'INFILL', 'COPIES', 'PURPOSE', 'STATUS', 'ASSIGNED SLOT', 'NOTE'].map((h) => (
+                      {['MACHINE', 'DIMENSIONS', 'MATERIAL', 'INFILL', 'COPIES', 'PURPOSE', 'STATUS', 'MENTOR', 'ASSIGNED SLOT', 'NOTE'].map((h) => (
                         <th
                           key={h}
                           className="pb-2 text-left text-[9px] font-semibold uppercase tracking-wide text-zinc-500 px-2 first:pl-0"
@@ -293,6 +309,7 @@ export default function StudentRequestsPage() {
                         >
                           <td className="py-3 px-2 first:pl-0 font-medium text-gray-900 dark:text-zinc-200">
                             {req.machine_name}
+                            {req.student_email?.trim().toLowerCase() !== studentEmailLower && <TaggedBadge />}
                           </td>
                           <td className="py-3 px-2 text-gray-500 dark:text-zinc-400 whitespace-nowrap">
                             {dims}
@@ -313,6 +330,9 @@ export default function StudentRequestsPage() {
                           </td>
                           <td className="py-3 px-2">
                             <StatusBadge status={req.status} />
+                          </td>
+                          <td className="py-3 px-2 text-gray-500 dark:text-zinc-400">
+                            {req.assigned_mentor_email ?? '—'}
                           </td>
                           <td className="py-3 px-2 text-gray-500 dark:text-zinc-400 whitespace-nowrap">
                             {req.status === 'approved' && req.assigned_slot
