@@ -8,9 +8,23 @@ interface RequestSubmittedModalProps {
   description: string
   gmail: GmailComposeParams
   onClose: () => void
+  /** Label for the bottom close button. Defaults to "Done". */
+  closeLabel?: string
+  /**
+   * When provided, renders a second primary action button between "Open
+   * Gmail Draft" and the close button. Used by approval flows to gate the
+   * actual database write behind an explicit "I sent it" confirmation,
+   * rather than committing the approval before the email is even drafted
+   * — see SuperAdminDashboard.tsx / ServiceRequestsPanel.tsx.
+   */
+  confirmLabel?: string
+  onConfirm?: () => void
+  confirmLoading?: boolean
 }
 
-export function RequestSubmittedModal({ title, description, gmail, onClose }: RequestSubmittedModalProps) {
+export function RequestSubmittedModal({
+  title, description, gmail, onClose, closeLabel = 'Done', confirmLabel, onConfirm, confirmLoading,
+}: RequestSubmittedModalProps) {
   const [blocked, setBlocked] = useState(false)
   const [copied, setCopied] = useState(false)
   const url = buildGmailComposeUrl(gmail)
@@ -81,11 +95,22 @@ export function RequestSubmittedModal({ title, description, gmail, onClose }: Re
           </div>
         )}
 
+        {onConfirm && (
+          <button
+            onClick={onConfirm}
+            disabled={confirmLoading}
+            className="mb-3 inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-green-500 to-green-700 py-3 text-[14px] font-semibold text-white shadow-[0_1px_0_rgba(255,255,255,0.14)_inset] transition-opacity hover:opacity-90 disabled:opacity-50"
+          >
+            {confirmLoading && <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />}
+            {confirmLabel}
+          </button>
+        )}
+
         <button
           onClick={onClose}
           className="w-full cursor-pointer rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/[0.03] px-4 py-2.5 text-[14px] font-semibold text-gray-700 dark:text-white transition hover:bg-gray-100 dark:hover:bg-white/[0.06]"
         >
-          Done
+          {closeLabel}
         </button>
       </div>
     </div>

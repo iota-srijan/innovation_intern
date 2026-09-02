@@ -80,6 +80,7 @@ export function ServiceRequestsPanel({ title, onlyPending, emptyMessage, canAssi
     setApproveDuration(30)
     setApproveNote('')
     setApproveMentorEmail('')
+    setSubmittedGmail(null)
   }
 
   const closeReject = () => {
@@ -87,7 +88,45 @@ export function ServiceRequestsPanel({ title, onlyPending, emptyMessage, canAssi
     setRejectNote('')
   }
 
-  const handleApprove = async () => {
+  // Step 1: validate the form and build the Gmail draft, but write nothing
+  // to the database yet — the request stays 'pending' until
+  // handleFinalizeApproval runs, which only happens once the admin
+  // explicitly confirms they sent the email. This avoids the request
+  // silently becoming "approved" if the admin closes the Gmail tab
+  // mid-draft without actually sending it.
+  const handlePrepareApproval = () => {
+    if (!approveTarget || !approveSlot) return
+    // No professor to CC means nothing to wait on — approve immediately,
+    // same as the old behavior.
+    if (!approveTarget.professor_email) {
+      void handleFinalizeApproval()
+      return
+    }
+    const slotIso = new Date(approveSlot).toISOString()
+    const durationMins = Math.max(1, Number(approveDuration) || 30)
+    const ccAddresses = [approveTarget.professor_email, canAssignMentor ? approveMentorEmail : null]
+      .filter((e): e is string => !!e?.trim())
+      .filter((e, i, arr) => arr.indexOf(e) === i)
+      .join(',')
+    setSubmittedGmail({
+      to: approveTarget.student_email,
+      cc: ccAddresses,
+      subject: `IdeaLab Service Request Approved — ${approveTarget.machine_name}`,
+      body: [
+        `Hi ${approveTarget.student_name},`,
+        `Your service request on ${approveTarget.machine_name} has been approved.`,
+        `Assigned slot: ${new Date(slotIso).toLocaleString()} (${durationMins} min)`,
+        canAssignMentor && approveMentorEmail ? `Assigned mentor: ${approveMentorEmail}` : null,
+        approveNote.trim() ? `Note: ${approveNote.trim()}` : null,
+        `— OPJU IdeaLab Team`,
+      ].filter((l): l is string => l !== null).join('\n\n'),
+    })
+  }
+
+  // Step 2: the actual database write — only reached via the "I've sent it"
+  // confirmation button in the Gmail-draft modal (or directly from step 1
+  // for requests with no professor_email to wait on).
+  const handleFinalizeApproval = async () => {
     if (!approveTarget || !approveSlot || approveLoading) return
     setApproveLoading(true)
     try {
@@ -131,26 +170,7 @@ export function ServiceRequestsPanel({ title, onlyPending, emptyMessage, canAssi
         createdByEmail: user?.email ?? 'unknown-admin',
       })
 
-      if (approveTarget.professor_email) {
-        const ccAddresses = [approveTarget.professor_email, canAssignMentor ? approveMentorEmail : null]
-          .filter((e): e is string => !!e?.trim())
-          .filter((e, i, arr) => arr.indexOf(e) === i)
-          .join(',')
-        setSubmittedGmail({
-          to: approveTarget.student_email,
-          cc: ccAddresses,
-          subject: `IdeaLab Service Request Approved — ${approveTarget.machine_name}`,
-          body: [
-            `Hi ${approveTarget.student_name},`,
-            `Your service request on ${approveTarget.machine_name} has been approved.`,
-            `Assigned slot: ${new Date(slotIso).toLocaleString()} (${durationMins} min)`,
-            canAssignMentor && approveMentorEmail ? `Assigned mentor: ${approveMentorEmail}` : null,
-            approveNote.trim() ? `Note: ${approveNote.trim()}` : null,
-            `— OPJU IdeaLab Team`,
-          ].filter((l): l is string => l !== null).join('\n\n'),
-        })
-      }
-
+      setSubmittedGmail(null)
       closeApprove()
     } catch {
       toast.error('Failed to approve service request')
@@ -321,7 +341,7 @@ export function ServiceRequestsPanel({ title, onlyPending, emptyMessage, canAssi
       </div>
 
       {/* ── Approve Modal ── */}
-      {approveTarget && (
+      {approveTarget && !submittedGmail && (
         <Modal onClose={closeApprove}>
           <div className="w-full max-w-[460px] rounded-[18px] border border-gray-200 dark:border-white/10 bg-white dark:bg-[#16161b] p-6 shadow-xl dark:shadow-[0_40px_90px_-30px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.04)]">
             <div className="mb-1 flex items-center justify-between">
@@ -431,12 +451,12 @@ export function ServiceRequestsPanel({ title, onlyPending, emptyMessage, canAssi
                 Cancel
               </button>
               <button
-                onClick={() => void handleApprove()}
+                onClick={handlePrepareApproval}
                 disabled={!approveSlot || !approveDuration || approveLoading}
                 className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-gradient-to-b from-green-500 to-green-700 px-4 py-2.5 text-[14px] font-semibold text-white transition-opacity disabled:opacity-50"
               >
                 {approveLoading && <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />}
-                Confirm Approval
+                Continue to Email
               </button>
             </div>
           </div>
@@ -551,10 +571,14 @@ export function ServiceRequestsPanel({ title, onlyPending, emptyMessage, canAssi
 
       {submittedGmail && (
         <RequestSubmittedModal
-          title="Request approved"
-          description="A record of this approval is ready to email to the student, with their professor CC'd."
+          title="Send the approval email"
+          description="This request stays pending until you confirm you've sent this email. Open the draft, review it, hit Send in Gmail, then come back and confirm below."
           gmail={submittedGmail}
-          onClose={() => setSubmittedGmail(null)}
+          onClose={closeApprove}
+          closeLabel="Cancel — Don't Approve"
+          confirmLabel="I've Sent It — Approve Request"
+          confirmLoading={approveLoading}
+          onConfirm={() => void handleFinalizeApproval()}
         />
       )}
     </>
