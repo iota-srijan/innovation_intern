@@ -627,9 +627,13 @@ export default function SuperAdminDashboard() {
       })
 
       if (approveTarget.professor_email) {
+        const ccAddresses = [approveTarget.professor_email, approveMentorEmail]
+          .filter((e): e is string => !!e?.trim())
+          .filter((e, i, arr) => arr.indexOf(e) === i)
+          .join(',')
         setSubmittedGmail({
           to: approveTarget.student_email,
-          cc: approveTarget.professor_email,
+          cc: ccAddresses,
           subject: `IdeaLab Request Approved — ${approveTarget.item_name}`,
           body: [
             `Hi ${approveTarget.student_name},`,
