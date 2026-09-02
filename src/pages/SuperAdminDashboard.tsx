@@ -345,14 +345,10 @@ export default function SuperAdminDashboard() {
   const [addEmail, setAddEmail] = useState('')
   const [addSubmitting, setAddSubmitting] = useState(false)
 
-  // Approve modal (mentor assignment)
-  const tomorrow = new Date()
-  tomorrow.setDate(tomorrow.getDate() + 1)
-  const tomorrowStr = tomorrow.toISOString().split('T')[0]
-  const today = new Date().toISOString().split('T')[0]
+  // Approve modal (mentor assignment) — return deadline is now set by the
+  // mentor themselves once they hand the item over, not chosen here.
   const [approveTarget, setApproveTarget] = useState<IssueRequest | null>(null)
   const [approveMentorEmail, setApproveMentorEmail] = useState('')
-  const [approveDeadline, setApproveDeadline] = useState(tomorrowStr)
   const [approveNote, setApproveNote] = useState('')
   const [approveLoading, setApproveLoading] = useState(false)
   const [submittedGmail, setSubmittedGmail] = useState<GmailComposeParams | null>(null)
@@ -551,7 +547,6 @@ export default function SuperAdminDashboard() {
   const closeApprove = () => {
     setApproveTarget(null)
     setApproveMentorEmail('')
-    setApproveDeadline(tomorrowStr)
     setApproveNote('')
     setSubmittedGmail(null)
   }
@@ -563,10 +558,6 @@ export default function SuperAdminDashboard() {
   // if the admin closes the Gmail tab mid-draft without actually sending it.
   const handlePrepareApproval = () => {
     if (!approveTarget || !approveMentorEmail) return
-    if (approveDeadline && approveDeadline < today) {
-      toast.error('Return deadline cannot be in the past.')
-      return
-    }
     // Legacy requests submitted before professor_email was captured have
     // nothing to wait on — approve immediately, same as the old behavior.
     if (!approveTarget.professor_email) {
@@ -584,8 +575,8 @@ export default function SuperAdminDashboard() {
       body: [
         `Hi ${approveTarget.student_name},`,
         `Your request for ${approveTarget.item_name} x${approveTarget.quantity_requested} has been approved.`,
-        `Return deadline: ${approveDeadline}`,
         `Assigned mentor: ${approveMentorEmail}`,
+        `Your mentor will confirm the return deadline with you when handing the item over.`,
         approveNote.trim() ? `Note: ${approveNote.trim()}` : null,
         `— OPJU IdeaLab Team`,
       ].filter((l): l is string => l !== null).join('\n\n'),
@@ -597,10 +588,6 @@ export default function SuperAdminDashboard() {
   // for legacy requests with no professor_email to wait on).
   const handleFinalizeApproval = async () => {
     if (!approveTarget || approveLoading) return
-    if (approveDeadline && approveDeadline < today) {
-      toast.error('Return deadline cannot be in the past.')
-      return
-    }
     setApproveLoading(true)
     try {
       const { data: invItem, error: fetchErr } = await supabase
@@ -639,7 +626,6 @@ export default function SuperAdminDashboard() {
         .update({
           status: 'approved',
           issued_at: new Date().toISOString(),
-          return_deadline: approveDeadline,
           review_note: approveNote.trim() || null,
           physical_status: 'pending_handover',
           reviewed_by: user?.id ?? null,
@@ -667,7 +653,7 @@ export default function SuperAdminDashboard() {
       void notifyUser({
         targetUserId: approveTarget.student_id,
         title: 'Request approved',
-        body: `Your request for ${approveTarget.item_name} x${approveTarget.quantity_requested} has been approved. Return by ${new Date(approveDeadline).toLocaleDateString()}.`,
+        body: `Your request for ${approveTarget.item_name} x${approveTarget.quantity_requested} has been approved. Your mentor will confirm the return deadline when handing it over.`,
         createdByEmail: user?.email ?? 'unknown-admin',
       })
 
@@ -1338,7 +1324,7 @@ export default function SuperAdminDashboard() {
                             <td className="py-3 px-2">
                               <div className="flex items-center gap-2">
                                 <button
-                                  onClick={() => { setApproveTarget(req); setApproveMentorEmail(''); setApproveNote(''); setApproveDeadline(tomorrowStr) }}
+                                  onClick={() => { setApproveTarget(req); setApproveMentorEmail(''); setApproveNote('') }}
                                   className="inline-flex cursor-pointer items-center gap-1.5 rounded-[9px] border border-green-400/30 bg-green-400/[0.08] px-3 py-1.5 text-[11px] font-semibold text-green-400 transition hover:bg-green-400/[0.16]"
                                 >
                                   Approve
@@ -1873,19 +1859,6 @@ export default function SuperAdminDashboard() {
               )}
             </div>
 
-            <div className="mb-4">
-              <label className="mb-1.5 block text-[12.5px] font-semibold text-gray-900 dark:text-[#f4f4f6]">
-                Return Deadline <span className="text-orange-400 dark:text-orange-300">*</span>
-              </label>
-              <input
-                type="date"
-                min={today}
-                value={approveDeadline}
-                onChange={e => setApproveDeadline(e.target.value)}
-                className="w-full rounded-[11px] border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#0d0a08] px-3 py-[11px] text-[14px] text-gray-900 dark:text-white outline-none transition focus:border-orange-400"
-              />
-            </div>
-
             <div className="mb-6">
               <label className="mb-1.5 block text-[12.5px] font-semibold text-gray-900 dark:text-[#f4f4f6]">
                 Note <span className="font-normal text-gray-400 dark:text-[#6e6e78]">(optional)</span>
@@ -1897,6 +1870,9 @@ export default function SuperAdminDashboard() {
                 rows={2}
                 className="w-full resize-none rounded-[11px] border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#0d0a08] px-3 py-[11px] text-[14px] leading-relaxed text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-[#6e6e78] outline-none transition focus:border-orange-400"
               />
+              <p className="mt-1.5 text-[11px] text-gray-400 dark:text-[#6e6e78]">
+                The return deadline is set by the assigned mentor once they hand the item over, not here.
+              </p>
             </div>
 
             <div className="flex justify-end gap-3">
@@ -1905,7 +1881,7 @@ export default function SuperAdminDashboard() {
               </button>
               <button
                 onClick={handlePrepareApproval}
-                disabled={!approveMentorEmail || !approveDeadline || approveLoading}
+                disabled={!approveMentorEmail || approveLoading}
                 className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-gradient-to-b from-green-500 to-green-700 px-4 py-2.5 text-[14px] font-semibold text-white transition-opacity disabled:opacity-50"
               >
                 {approveLoading && <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />}

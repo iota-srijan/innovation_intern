@@ -71,13 +71,9 @@ export default function AdminPendingPage() {
 
   const [activeTab, setActiveTab] = useState<RequestTypeTab>('equipment')
 
-  // Approve modal
-  const tomorrow = new Date()
-  tomorrow.setDate(tomorrow.getDate() + 1)
-  const tomorrowStr = tomorrow.toISOString().split('T')[0]
-  const today = new Date().toISOString().split('T')[0]
+  // Approve modal — return deadline is set by the assigned mentor once they
+  // hand the item over, not chosen here.
   const [approveTarget, setApproveTarget]     = useState<IssueRequest | null>(null)
-  const [approveDeadline, setApproveDeadline] = useState(tomorrowStr)
   const [approveNote, setApproveNote]         = useState('')
   const [approveLoading, setApproveLoading]   = useState(false)
 
@@ -121,10 +117,6 @@ export default function AdminPendingPage() {
 
   const handleApprove = async () => {
     if (!approveTarget || approveLoading) return
-    if (approveDeadline && approveDeadline < today) {
-      toast.error('Return deadline cannot be in the past.')
-      return
-    }
     setApproveLoading(true)
     try {
       // Fetch current inventory stock for this item
@@ -168,7 +160,6 @@ export default function AdminPendingPage() {
         .from('issue_requests')
         .update({
           status: 'approved',
-          return_deadline: approveDeadline,
           review_note: approveNote.trim() || null,
           physical_status: 'pending_handover',
           reviewed_by: user?.id ?? null,
@@ -196,12 +187,11 @@ export default function AdminPendingPage() {
       void notifyUser({
         targetUserId: approveTarget.student_id,
         title: 'Request approved',
-        body: `Your request for ${approveTarget.item_name} x${approveTarget.quantity_requested} has been approved.${approveDeadline ? ` Return by ${new Date(approveDeadline).toLocaleDateString()}.` : ''}`,
+        body: `Your request for ${approveTarget.item_name} x${approveTarget.quantity_requested} has been approved.`,
         createdByEmail: user?.email ?? 'unknown-admin',
       })
       setApproveTarget(null)
       setApproveNote('')
-      setApproveDeadline(tomorrowStr)
       void queryClient.invalidateQueries({ queryKey: ['items'] })
       void queryClient.invalidateQueries({ queryKey: ['issue_requests'] })
     } catch {
@@ -341,7 +331,7 @@ export default function AdminPendingPage() {
                       <td className="py-3 px-2">
                         <div className="flex items-center gap-2">
                           <button
-                            onClick={() => { setApproveTarget(req); setApproveNote(''); setApproveDeadline(tomorrowStr) }}
+                            onClick={() => { setApproveTarget(req); setApproveNote('') }}
                             className="inline-flex cursor-pointer items-center gap-1.5 rounded-[9px] border border-green-400/30 bg-green-400/[0.08] px-3 py-1.5 text-[11px] font-semibold text-green-400 transition hover:bg-green-400/[0.16]"
                           >
                             Approve
@@ -376,12 +366,12 @@ export default function AdminPendingPage() {
 
       {/* ── Approve Modal ── */}
       {approveTarget && (
-        <Modal onClose={() => { setApproveTarget(null); setApproveNote(''); setApproveDeadline(tomorrowStr) }}>
+        <Modal onClose={() => { setApproveTarget(null); setApproveNote('') }}>
           <div className="w-full max-w-[460px] rounded-[18px] border border-gray-200 dark:border-white/10 bg-white dark:bg-[#16161b] p-6 shadow-xl dark:shadow-[0_40px_90px_-30px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.04)]">
             <div className="mb-1 flex items-center justify-between">
               <h2 className="text-[17px] font-bold tracking-[-0.01em] text-gray-900 dark:text-white">Approve Request</h2>
               <button
-                onClick={() => { setApproveTarget(null); setApproveNote(''); setApproveDeadline(tomorrowStr) }}
+                onClick={() => { setApproveTarget(null); setApproveNote('') }}
                 className="grid h-8 w-8 cursor-pointer place-items-center rounded-[9px] border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/[0.04] text-gray-500 dark:text-[#9a9aa6] transition hover:bg-gray-100 dark:hover:bg-white/[0.08] hover:text-gray-900 dark:hover:text-white"
               >
                 <X className="h-4 w-4" />
@@ -391,27 +381,6 @@ export default function AdminPendingPage() {
               <span className="font-semibold text-gray-900 dark:text-[#f4f4f6]">{approveTarget.student_name}</span>
               {' '}·{' '}{approveTarget.item_name}{' '}×{' '}{approveTarget.quantity_requested}
             </p>
-
-            <div className="mb-4">
-              <label className="mb-1.5 block text-[12.5px] font-semibold text-gray-900 dark:text-[#f4f4f6]">
-                Return Deadline <span className="text-orange-400 dark:text-orange-300">*</span>
-              </label>
-              <input
-                type="date"
-                min={today}
-                value={approveDeadline}
-                onChange={e => setApproveDeadline(e.target.value)}
-                className="w-full rounded-[11px] border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#0d0a08] px-3 py-[11px] text-[14px] text-gray-900 dark:text-white outline-none transition focus:border-orange-400 focus:bg-white dark:focus:bg-[#0d0a08]"
-              />
-              {approveDeadline && (
-                <p className="mt-1.5 text-[11px] text-gray-500 dark:text-[#6e6e78]">
-                  Return by:{' '}
-                  <span className="font-medium text-gray-700 dark:text-[#9a9aa6]">
-                    {new Date(approveDeadline).toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                  </span>
-                </p>
-              )}
-            </div>
 
             <div className="mb-6">
               <label className="mb-1.5 block text-[12.5px] font-semibold text-gray-900 dark:text-[#f4f4f6]">
@@ -428,14 +397,14 @@ export default function AdminPendingPage() {
 
             <div className="flex justify-end gap-3">
               <button
-                onClick={() => { setApproveTarget(null); setApproveNote(''); setApproveDeadline(tomorrowStr) }}
+                onClick={() => { setApproveTarget(null); setApproveNote('') }}
                 className="cursor-pointer rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/[0.03] px-4 py-2.5 text-[14px] font-semibold text-gray-700 dark:text-white transition hover:bg-gray-100 dark:hover:bg-white/[0.06]"
               >
                 Cancel
               </button>
               <button
                 onClick={() => void handleApprove()}
-                disabled={!approveDeadline || approveLoading}
+                disabled={approveLoading}
                 className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-gradient-to-b from-green-500 to-green-700 px-4 py-2.5 text-[14px] font-semibold text-white transition-opacity disabled:opacity-50"
               >
                 {approveLoading && <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />}
