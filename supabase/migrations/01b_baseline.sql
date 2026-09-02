@@ -91,6 +91,11 @@ create table if not exists issue_requests (
   updated_at             timestamptz default now()
 );
 
+-- Defensive: on a pre-existing issue_requests table (the real project),
+-- the create table above is a no-op, so this column may not exist yet if
+-- 07_super_admin_mentor_support.sql hasn't run. Add it directly so the
+-- index below never fails regardless of run order.
+alter table issue_requests add column if not exists assigned_mentor_email text;
 create index if not exists idx_issue_requests_assigned_mentor on issue_requests(assigned_mentor_email);
 
 
@@ -158,6 +163,9 @@ create table if not exists notifications (
   created_at         timestamptz default now()
 );
 
+-- Defensive: same reasoning as assigned_mentor_email above — this column
+-- may not exist on a pre-existing notifications table yet.
+alter table notifications add column if not exists target_user_id uuid references auth.users(id) on delete cascade;
 create index if not exists idx_notifications_target_user on notifications(target_user_id);
 
 
@@ -198,6 +206,14 @@ create table if not exists audit_log (
   created_at          timestamptz default now()
 );
 
+-- Defensive: same reasoning as above — these columns may not exist yet on
+-- a pre-existing audit_log table if 06_add_audit_log_item_columns.sql
+-- hasn't run.
+alter table audit_log add column if not exists item_id uuid;
+alter table audit_log add column if not exists item_name text;
+alter table audit_log add column if not exists quantity_change integer;
+alter table audit_log add column if not exists previous_quantity integer;
+alter table audit_log add column if not exists new_quantity integer;
 create index if not exists idx_audit_log_item_id on audit_log(item_id);
 
 
