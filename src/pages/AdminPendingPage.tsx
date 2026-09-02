@@ -5,6 +5,7 @@ import { AppShell } from '../components/layout/AppShell'
 import { RequestTypeTabs, type RequestTypeTab } from '../components/admin/RequestTypeTabs'
 import { ServiceRequestsPanel } from '../components/admin/ServiceRequestsPanel'
 import { TeamMembersBadgeList } from '../components/requests/TeamMembersBadgeList'
+import { StlViewButton } from '../components/requests/StlViewButton'
 import { supabase } from '../lib/supabaseClient'
 import { toast } from 'sonner'
 import { useAuth } from '../context/AuthContext'
@@ -35,6 +36,10 @@ interface IssueRequest {
   issued_at?: string | null
   returned_at?: string | null
   team_members?: TeamMember[]
+  estimated_amount?: number | null
+  estimated_amount_unit?: string | null
+  stl_file_url?: string | null
+  stl_file_name?: string | null
 }
 
 interface AuditExtra {
@@ -304,7 +309,7 @@ export default function AdminPendingPage() {
               <table className="w-full text-left text-[12px]">
                 <thead>
                   <tr className="border-b border-gray-200 dark:border-white/[0.08]">
-                    {['Student', 'Email', 'Item', 'Qty', 'Purpose', 'Team', 'Submitted', 'Actions'].map(h => (
+                    {['Student', 'Email', 'Item', 'Qty', 'Purpose', 'Estimate', 'Team', 'Submitted', 'Actions'].map(h => (
                       <th key={h} className="px-2 pb-3 text-[10px] font-semibold uppercase tracking-widest text-gray-500 dark:text-[#6e6e78] first:pl-0 whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
@@ -317,6 +322,20 @@ export default function AdminPendingPage() {
                       <td className="py-3 px-2 text-gray-900 dark:text-[#f4f4f6]">{req.item_name}</td>
                       <td className="py-3 px-2 text-gray-500 dark:text-[#9a9aa6]">{req.quantity_requested}</td>
                       <td className="py-3 px-2 max-w-[180px] truncate text-gray-500 dark:text-[#9a9aa6]">{req.purpose}</td>
+                      <td className="py-3 px-2">
+                        <div className="flex flex-col gap-1">
+                          {req.estimated_amount != null && (
+                            <span className="text-gray-500 dark:text-[#9a9aa6] whitespace-nowrap">
+                              {req.estimated_amount} {req.estimated_amount_unit}
+                            </span>
+                          )}
+                          {req.stl_file_url ? (
+                            <StlViewButton url={req.stl_file_url} />
+                          ) : req.estimated_amount == null ? (
+                            <span className="text-gray-400 dark:text-[#4b4b57]">—</span>
+                          ) : null}
+                        </div>
+                      </td>
                       <td className="py-3 px-2 max-w-[160px]"><TeamMembersBadgeList members={req.team_members} /></td>
                       <td className="py-3 px-2 text-gray-500 dark:text-[#6e6e78] whitespace-nowrap">{new Date(req.created_at).toLocaleDateString()}</td>
                       <td className="py-3 px-2">

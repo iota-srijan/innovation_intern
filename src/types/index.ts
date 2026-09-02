@@ -1,6 +1,10 @@
 export interface Category {
   id: string;
   name: string;
+  // When set, this category is measured by amount (e.g. 'grams', 'ml')
+  // rather than plain unit count — drives the estimated-amount + STL
+  // fields on the request flow.
+  unit?: string | null;
 }
 
 export interface InventoryItem {
@@ -51,6 +55,10 @@ export interface IssueRequest {
   team_members?: TeamMember[];
   assigned_mentor_email?: string | null;
   archived_at?: string | null;
+  estimated_amount?: number | null;
+  estimated_amount_unit?: string | null;
+  stl_file_url?: string | null;
+  stl_file_name?: string | null;
   created_at: string;
   updated_at?: string;
 }

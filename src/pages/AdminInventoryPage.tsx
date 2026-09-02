@@ -290,6 +290,7 @@ export function InventoryManagementPanel() {
   // New category
   const [showCatModal, setShowCatModal] = useState(false)
   const [newCatName, setNewCatName] = useState('')
+  const [newCatUnit, setNewCatUnit] = useState('')
   const [catSubmitting, setCatSubmitting] = useState(false)
 
   // CSV import
@@ -313,7 +314,7 @@ export function InventoryManagementPanel() {
 
   const fetchCategories = useCallback(async () => {
     try {
-      const { data } = await supabase.from('categories').select('id, name').order('name')
+      const { data } = await supabase.from('categories').select('id, name, unit').order('name')
       setCategories((data ?? []) as Category[])
     } catch {
       // non-fatal
@@ -456,10 +457,14 @@ export function InventoryManagementPanel() {
     if (!newCatName.trim() || catSubmitting) return
     setCatSubmitting(true)
     try {
-      const { error } = await supabase.from('categories').insert({ name: newCatName.trim() })
+      const { error } = await supabase.from('categories').insert({
+        name: newCatName.trim(),
+        unit: newCatUnit.trim() || null,
+      })
       if (error) throw new Error(error.message)
       toast.success(`Category "${newCatName.trim()}" created`)
       setNewCatName('')
+      setNewCatUnit('')
       setShowCatModal(false)
       await fetchCategories()
     } catch (err) {
@@ -803,12 +808,12 @@ export function InventoryManagementPanel() {
 
       {/* ── New Category Modal ── */}
       {showCatModal && (
-        <ModalBackdrop onClose={() => { setShowCatModal(false); setNewCatName('') }}>
+        <ModalBackdrop onClose={() => { setShowCatModal(false); setNewCatName(''); setNewCatUnit('') }}>
           <div className="w-full max-w-[380px] rounded-[18px] border border-white/10 bg-[#16161b] p-6 shadow-[0_40px_90px_-30px_rgba(0,0,0,0.8)]">
             <div className="mb-5 flex items-center justify-between">
               <h2 className="text-[17px] font-bold text-white">New Category</h2>
               <button
-                onClick={() => { setShowCatModal(false); setNewCatName('') }}
+                onClick={() => { setShowCatModal(false); setNewCatName(''); setNewCatUnit('') }}
                 className="grid h-8 w-8 cursor-pointer place-items-center rounded-[9px] border border-white/10 bg-white/[0.04] text-[#9a9aa6] transition hover:bg-white/[0.08] hover:text-white"
               >
                 <X className="h-4 w-4" />
@@ -824,12 +829,27 @@ export function InventoryManagementPanel() {
               onChange={e => setNewCatName(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') void handleAddCategory() }}
               placeholder="e.g. Electronics"
-              className="mb-5 w-full rounded-[11px] border border-white/10 bg-[#0d0a08] px-3 py-[11px] text-[14px] text-white placeholder-[#6e6e78] outline-none transition focus:border-orange-400 focus:shadow-[0_0_0_3px_rgba(124,58,237,0.16)]"
+              className="mb-4 w-full rounded-[11px] border border-white/10 bg-[#0d0a08] px-3 py-[11px] text-[14px] text-white placeholder-[#6e6e78] outline-none transition focus:border-orange-400 focus:shadow-[0_0_0_3px_rgba(124,58,237,0.16)]"
             />
+
+            <label className="mb-1.5 block text-[12.5px] font-semibold text-[#f4f4f6]">
+              Measured by amount{' '}<span className="font-normal text-[#6e6e78]">(optional)</span>
+            </label>
+            <input
+              type="text"
+              value={newCatUnit}
+              onChange={e => setNewCatUnit(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') void handleAddCategory() }}
+              placeholder="e.g. grams — leave blank for plain unit count"
+              className="mb-1.5 w-full rounded-[11px] border border-white/10 bg-[#0d0a08] px-3 py-[11px] text-[14px] text-white placeholder-[#6e6e78] outline-none transition focus:border-orange-400 focus:shadow-[0_0_0_3px_rgba(124,58,237,0.16)]"
+            />
+            <p className="mb-5 text-[11px] text-[#6e6e78]">
+              Set this for consumables like filament — students requesting items in this category can then estimate how much they need and attach an STL for review.
+            </p>
 
             <div className="flex justify-end gap-3">
               <button
-                onClick={() => { setShowCatModal(false); setNewCatName('') }}
+                onClick={() => { setShowCatModal(false); setNewCatName(''); setNewCatUnit('') }}
                 className="cursor-pointer rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-[14px] font-semibold text-white transition hover:bg-white/[0.06]"
               >
                 Cancel

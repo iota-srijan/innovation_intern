@@ -1,17 +1,18 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ShoppingCart, Trash2, ArrowLeft, PackageCheck, AlertCircle } from 'lucide-react';
+import { ShoppingCart, Trash2, ArrowLeft, PackageCheck, AlertCircle, FileUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { AppShell } from '../components/layout/AppShell';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabaseClient';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { CartItem, TeamMember } from '../types';
 import { RequestSubmittedModal } from '../components/requests/RequestSubmittedModal';
 import { TeamMembersInput, getValidTeamMembers } from '../components/requests/TeamMembersInput';
 import { composeWithTruncation, type GmailComposeParams } from '../lib/gmail';
 import { DEFAULT_APPROVER_EMAIL } from '../lib/roleConfig';
+import { uploadStlFile } from '../lib/stlFiles';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -36,6 +37,11 @@ export default function CartPage() {
   const [showProfessorError, setShowProfessorError] = useState(false);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [submittedGmail, setSubmittedGmail] = useState<GmailComposeParams | null>(null);
+  // Weight/amount + STL are submission-time refinements for filament-style
+  // items — not part of the persisted cart, so they're kept as transient
+  // local state keyed by item_id rather than in CartContext/localStorage.
+  const [estimatedAmounts, setEstimatedAmounts] = useState<Record<string, string>>({});
+  const [stlFiles, setStlFiles] = useState<Record<string, File>>({});
 
   const isFaculty = userRole === 'faculty';
   const backUrl    = isFaculty ? '/faculty-dashboard' : '/student-dashboard';
@@ -43,6 +49,43 @@ export default function CartPage() {
 
   const studentEmail = user?.email ?? '';
   const studentName  = user?.user_metadata?.full_name ?? user?.email ?? (isFaculty ? 'Faculty' : 'Student');
+
+  // Look up which cart items belong to a category measured by amount (e.g.
+  // filament in grams) rather than plain unit count, so we know which cards
+  // need the estimated-amount + STL fields.
+  const itemIds = cart.map((c) => c.item_id);
+  const { data: itemUnits = {} } = useQuery({
+    queryKey: ['cart-item-units', itemIds],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('inventory_items')
+        .select('id, category:categories(unit)')
+        .in('id', itemIds);
+      if (error) throw error;
+      const map: Record<string, string | null> = {};
+      for (const row of data ?? []) {
+        const category = row.category as unknown as { unit: string | null } | null;
+        map[row.id as string] = category?.unit ?? null;
+      }
+      return map;
+    },
+    enabled: itemIds.length > 0,
+  });
+
+  const setStlFileFor = (item_id: string, file: File | null) => {
+    setStlFiles((prev) => {
+      const next = { ...prev };
+      if (file) next[item_id] = file;
+      else delete next[item_id];
+      return next;
+    });
+  };
+
+  const handleRemoveFromCart = (item_id: string) => {
+    removeFromCart(item_id);
+    setEstimatedAmounts((prev) => { const next = { ...prev }; delete next[item_id]; return next; });
+    setStlFileFor(item_id, null);
+  };
 
   // Validate: all purposes filled
   const emptyPurposeIds = cart
@@ -123,21 +166,37 @@ export default function CartPage() {
         return;
       }
 
-      // ── 3. Batch insert ───────────────────────────────────────────────
+      // ── 3. Upload STL files for filament-style items ──────────────────
+      const filesToUpload = itemsToSubmit.filter((c) => stlFiles[c.item_id]);
+      const uploadedEntries = await Promise.all(
+        filesToUpload.map(async (c) => [c.item_id, await uploadStlFile(stlFiles[c.item_id], user?.id, studentEmail)] as const)
+      );
+      const stlUploads = new Map(uploadedEntries);
+
+      // ── 4. Batch insert ───────────────────────────────────────────────
       const trimmedProfessorEmail = professorEmail.trim();
       const validTeamMembers = getValidTeamMembers(teamMembers, studentEmail);
-      const rows = itemsToSubmit.map((c: CartItem) => ({
-        item_id: c.item_id,
-        item_name: c.item_name,
-        quantity_requested: Math.min(Math.max(1, c.quantity_requested), 100),
-        purpose: c.purpose.trim().slice(0, 500),
-        status: 'pending',
-        student_id: user?.id,
-        student_email: studentEmail,
-        student_name: studentName,
-        professor_email: trimmedProfessorEmail,
-        team_members: validTeamMembers,
-      }));
+      const rows = itemsToSubmit.map((c: CartItem) => {
+        const unit = itemUnits[c.item_id] ?? null;
+        const amountRaw = Number(estimatedAmounts[c.item_id]);
+        const uploaded = stlUploads.get(c.item_id);
+        return {
+          item_id: c.item_id,
+          item_name: c.item_name,
+          quantity_requested: Math.min(Math.max(1, c.quantity_requested), 100),
+          purpose: c.purpose.trim().slice(0, 500),
+          status: 'pending',
+          student_id: user?.id,
+          student_email: studentEmail,
+          student_name: studentName,
+          professor_email: trimmedProfessorEmail,
+          team_members: validTeamMembers,
+          estimated_amount: unit && amountRaw > 0 ? amountRaw : null,
+          estimated_amount_unit: unit && amountRaw > 0 ? unit : null,
+          stl_file_url: uploaded?.url ?? null,
+          stl_file_name: uploaded?.name ?? null,
+        };
+      });
 
       const { error: insertError } = await supabase
         .from('issue_requests')
@@ -160,6 +219,8 @@ export default function CartPage() {
       // Clear cart: reset state and ensure localStorage key is fully removed
       clearCart();
       localStorage.removeItem('sp-cart');
+      setEstimatedAmounts({});
+      setStlFiles({});
       toast.success(
         `${itemsToSubmit.length} request${itemsToSubmit.length > 1 ? 's' : ''} submitted! Awaiting approval.`
       );
@@ -289,7 +350,7 @@ export default function CartPage() {
                     <div className="text-[10px] font-mono text-gray-500 dark:text-zinc-500 mt-0.5">{item.sku}</div>
                   </div>
                   <button
-                    onClick={() => removeFromCart(item.item_id)}
+                    onClick={() => handleRemoveFromCart(item.item_id)}
                     className="flex-shrink-0 flex h-7 w-7 items-center justify-center rounded-lg text-gray-400 hover:text-red-500 dark:text-zinc-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors cursor-pointer"
                     title="Remove from cart"
                   >
@@ -352,6 +413,42 @@ export default function CartPage() {
                     )}
                   </div>
                 </div>
+
+                {/* Estimated amount + STL — only for categories measured by amount (e.g. filament) */}
+                {itemUnits[item.item_id] && (
+                  <div className="mt-4 grid grid-cols-1 sm:grid-cols-[160px_1fr] gap-4 border-t border-gray-100 dark:border-white/8 pt-4">
+                    <div>
+                      <label className="text-[10px] text-gray-500 dark:text-zinc-400 uppercase tracking-widest block mb-1.5">
+                        Est. amount needed ({itemUnits[item.item_id]})
+                      </label>
+                      <input
+                        type="number"
+                        min={0}
+                        step="any"
+                        value={estimatedAmounts[item.item_id] ?? ''}
+                        onChange={(e) => setEstimatedAmounts((prev) => ({ ...prev, [item.item_id]: e.target.value }))}
+                        placeholder="e.g. 40"
+                        className="w-full rounded-lg px-3 py-2 text-xs text-gray-900 placeholder:text-gray-400 dark:text-white dark:placeholder:text-zinc-600 bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 focus:outline-none focus:border-orange-400 dark:focus:border-orange-400 transition-colors"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-gray-500 dark:text-zinc-400 uppercase tracking-widest block mb-1.5">
+                        STL File{' '}
+                        <span className="normal-case text-gray-400 dark:text-zinc-600">(optional — helps the mentor check the estimate)</span>
+                      </label>
+                      <label className="flex items-center gap-2 rounded-lg border border-dashed border-gray-300 dark:border-zinc-700 px-3 py-2 text-xs text-gray-500 dark:text-zinc-400 cursor-pointer hover:border-orange-400 transition-colors">
+                        <FileUp className="h-3.5 w-3.5 flex-shrink-0" />
+                        <span className="truncate">{stlFiles[item.item_id]?.name ?? 'Choose .stl file…'}</span>
+                        <input
+                          type="file"
+                          accept=".stl"
+                          onChange={(e) => setStlFileFor(item.item_id, e.target.files?.[0] ?? null)}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}
