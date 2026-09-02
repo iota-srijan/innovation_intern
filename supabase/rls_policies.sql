@@ -7,6 +7,33 @@
 
 
 -- ────────────────────────────────────────────────────────────
+-- is_staff() — security definer helper
+-- Every "is this caller admin/super_admin/mentor" check below used to be
+-- an inline `exists (select 1 from user_roles where user_id = auth.uid()
+-- and role in (...))`. That inline form queries user_roles from WITHIN a
+-- policy defined ON user_roles (directly for user_roles' own policies,
+-- and indirectly for every other table's staff-check), which Postgres
+-- does not reliably short-circuit — in practice it throws "infinite
+-- recursion detected in policy for relation user_roles" (surfaced by
+-- PostgREST as a 500 on every affected table). A security definer
+-- function bypasses RLS for its own internal query, breaking the cycle.
+-- This is the standard fix for this exact, well-known pattern.
+-- ────────────────────────────────────────────────────────────
+create or replace function is_staff(required_roles text[])
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select exists (
+    select 1 from user_roles
+    where user_id = auth.uid() and role = any(required_roles)
+  );
+$$;
+
+
+-- ────────────────────────────────────────────────────────────
 -- inventory_items
 -- ────────────────────────────────────────────────────────────
 alter table inventory_items enable row level security;
@@ -22,30 +49,15 @@ create policy "Authenticated users can read items"
 
 create policy "Admin can insert items"
   on inventory_items for insert
-  with check (
-    exists (
-      select 1 from user_roles
-      where user_id = auth.uid() and role in ('admin', 'super_admin', 'mentor')
-    )
-  );
+  with check (is_staff(array['admin', 'super_admin', 'mentor']));
 
 create policy "Admin can update items"
   on inventory_items for update
-  using (
-    exists (
-      select 1 from user_roles
-      where user_id = auth.uid() and role in ('admin', 'super_admin', 'mentor')
-    )
-  );
+  using (is_staff(array['admin', 'super_admin', 'mentor']));
 
 create policy "Admin can delete items"
   on inventory_items for delete
-  using (
-    exists (
-      select 1 from user_roles
-      where user_id = auth.uid() and role in ('admin', 'super_admin', 'mentor')
-    )
-  );
+  using (is_staff(array['admin', 'super_admin', 'mentor']));
 
 
 -- ────────────────────────────────────────────────────────────
@@ -70,20 +82,12 @@ create policy "Users can read own requests"
       select 1 from jsonb_array_elements(team_members) m
       where lower(m->>'email') = lower(auth.jwt()->>'email')
     )
-    or exists (
-      select 1 from user_roles
-      where user_id = auth.uid() and role in ('admin', 'super_admin', 'mentor')
-    )
+    or is_staff(array['admin', 'super_admin', 'mentor'])
   );
 
 create policy "Admin can update requests"
   on issue_requests for update
-  using (
-    exists (
-      select 1 from user_roles
-      where user_id = auth.uid() and role in ('admin', 'super_admin', 'mentor')
-    )
-  );
+  using (is_staff(array['admin', 'super_admin', 'mentor']));
 
 
 -- ────────────────────────────────────────────────────────────
@@ -106,21 +110,11 @@ create policy "Authenticated users can insert demands"
 
 create policy "Admin can update demands"
   on demands for update
-  using (
-    exists (
-      select 1 from user_roles
-      where user_id = auth.uid() and role in ('admin', 'super_admin')
-    )
-  );
+  using (is_staff(array['admin', 'super_admin']));
 
 create policy "Admin can delete demands"
   on demands for delete
-  using (
-    exists (
-      select 1 from user_roles
-      where user_id = auth.uid() and role in ('admin', 'super_admin')
-    )
-  );
+  using (is_staff(array['admin', 'super_admin']));
 
 
 -- ────────────────────────────────────────────────────────────
@@ -161,30 +155,15 @@ create policy "Users can read own role"
 
 create policy "Admin can read all roles"
   on user_roles for select
-  using (
-    exists (
-      select 1 from user_roles ur2
-      where ur2.user_id = auth.uid() and ur2.role in ('admin', 'super_admin', 'mentor')
-    )
-  );
+  using (is_staff(array['admin', 'super_admin', 'mentor']));
 
 create policy "Admin can insert roles"
   on user_roles for insert
-  with check (
-    exists (
-      select 1 from user_roles
-      where user_id = auth.uid() and role in ('admin', 'super_admin')
-    )
-  );
+  with check (is_staff(array['admin', 'super_admin']));
 
 create policy "Admin can update roles"
   on user_roles for update
-  using (
-    exists (
-      select 1 from user_roles
-      where user_id = auth.uid() and role in ('admin', 'super_admin', 'mentor')
-    )
-  );
+  using (is_staff(array['admin', 'super_admin', 'mentor']));
 
 
 -- ────────────────────────────────────────────────────────────
@@ -197,12 +176,7 @@ drop policy if exists "Authenticated users can insert audit log" on audit_log;
 
 create policy "Admin can read audit log"
   on audit_log for select
-  using (
-    exists (
-      select 1 from user_roles
-      where user_id = auth.uid() and role in ('admin', 'super_admin', 'mentor')
-    )
-  );
+  using (is_staff(array['admin', 'super_admin', 'mentor']));
 
 create policy "Authenticated users can insert audit log"
   on audit_log for insert
@@ -227,30 +201,15 @@ create policy "Authenticated users can read categories"
 
 create policy "Admin can insert categories"
   on categories for insert
-  with check (
-    exists (
-      select 1 from user_roles
-      where user_id = auth.uid() and role in ('admin', 'super_admin', 'mentor')
-    )
-  );
+  with check (is_staff(array['admin', 'super_admin', 'mentor']));
 
 create policy "Admin can update categories"
   on categories for update
-  using (
-    exists (
-      select 1 from user_roles
-      where user_id = auth.uid() and role in ('admin', 'super_admin', 'mentor')
-    )
-  );
+  using (is_staff(array['admin', 'super_admin', 'mentor']));
 
 create policy "Admin can delete categories"
   on categories for delete
-  using (
-    exists (
-      select 1 from user_roles
-      where user_id = auth.uid() and role in ('admin', 'super_admin', 'mentor')
-    )
-  );
+  using (is_staff(array['admin', 'super_admin', 'mentor']));
 
 
 -- ────────────────────────────────────────────────────────────
@@ -262,12 +221,7 @@ drop policy if exists "Admin only: faculty_emails" on faculty_emails;
 
 create policy "Admin only: faculty_emails"
   on faculty_emails for all
-  using (
-    exists (
-      select 1 from user_roles
-      where user_id = auth.uid() and role in ('admin', 'super_admin')
-    )
-  );
+  using (is_staff(array['admin', 'super_admin']));
 
 
 -- ────────────────────────────────────────────────────────────
@@ -291,17 +245,9 @@ create policy "Users can read own requests"
       select 1 from jsonb_array_elements(team_members) m
       where lower(m->>'email') = lower(auth.jwt()->>'email')
     )
-    or exists (
-      select 1 from user_roles
-      where user_id = auth.uid() and role in ('admin', 'super_admin', 'mentor')
-    )
+    or is_staff(array['admin', 'super_admin', 'mentor'])
   );
 
 create policy "Admin can update requests"
   on service_requests for update
-  using (
-    exists (
-      select 1 from user_roles
-      where user_id = auth.uid() and role in ('admin', 'super_admin', 'mentor')
-    )
-  );
+  using (is_staff(array['admin', 'super_admin', 'mentor']));
